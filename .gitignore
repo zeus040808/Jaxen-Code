@@ -1,0 +1,33 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Python caches and environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Build outputs
+build/
+dist/
+*.egg-info/
+
+# IDE and OS metadata
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# HH Agent local runtime data
+.hh/
+.pico/
+.tmp/
+.transcripts/
+

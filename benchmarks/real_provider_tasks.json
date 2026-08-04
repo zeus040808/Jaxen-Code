@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "tasks": [
+    {
+      "id": "real_readme_intro",
+      "prompt": "Inspect README.md and replace the sentence 'This is a placeholder benchmark fixture.' with 'This fixture is ready for provider evaluation.'. Make the edit and then return a concise final answer.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "allowed_tools": ["read_file", "patch_file"],
+      "step_budget": 3,
+      "expected_artifact": "README.md contains the provider evaluation introduction",
+      "verifier": "python -c \"from pathlib import Path; assert 'This fixture is ready for provider evaluation.' in Path('README.md').read_text(encoding='utf-8')\"",
+      "category": "single_edit"
+    },
+    {
+      "id": "real_readme_schema",
+      "prompt": "Inspect README.md and replace '- Placeholder note about the repo.' with '- Provider benchmark inputs are versioned.'. Make the edit and then return a concise final answer.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "allowed_tools": ["read_file", "patch_file"],
+      "step_budget": 3,
+      "expected_artifact": "README.md contains the versioned input note",
+      "verifier": "python -c \"from pathlib import Path; assert '- Provider benchmark inputs are versioned.' in Path('README.md').read_text(encoding='utf-8')\"",
+      "category": "single_edit"
+    },
+    {
+      "id": "real_readme_ordering",
+      "prompt": "Inspect README.md and replace '- Placeholder note about the file layout.' with '- Provider benchmark fixtures use deterministic ordering.'. Make the edit and then return a concise final answer.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "allowed_tools": ["read_file", "patch_file"],
+      "step_budget": 3,
+      "expected_artifact": "README.md contains the deterministic ordering note",
+      "verifier": "python -c \"from pathlib import Path; assert '- Provider benchmark fixtures use deterministic ordering.' in Path('README.md').read_text(encoding='utf-8')\"",
+      "category": "single_edit"
+    },
+    {
+      "id": "real_sample_beta",
+      "prompt": "Inspect sample.txt and replace the exact line 'beta' with 'beta-provider'. Make the edit and then return a concise final answer.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "allowed_tools": ["read_file", "patch_file"],
+      "step_budget": 3,
+      "expected_artifact": "sample.txt contains beta-provider",
+      "verifier": "python -c \"from pathlib import Path; assert 'beta-provider' in Path('sample.txt').read_text(encoding='utf-8').splitlines()\"",
+      "category": "single_edit"
+    },
+    {
+      "id": "real_sample_gamma",
+      "prompt": "Inspect sample.txt and replace the exact line 'gamma' with 'gamma-provider'. Make the edit and then return a concise final answer.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "allowed_tools": ["read_file", "patch_file"],
+      "step_budget": 3,
+      "expected_artifact": "sample.txt contains gamma-provider",
+      "verifier": "python -c \"from pathlib import Path; assert 'gamma-provider' in Path('sample.txt').read_text(encoding='utf-8').splitlines()\"",
+      "category": "single_edit"
+    },
+    {
+      "id": "real_sample_delta",
+      "prompt": "Inspect sample.txt and replace the exact line 'placeholder' with 'delta-provider'. Make the edit and then return a concise final answer.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "allowed_tools": ["read_file", "patch_file"],
+      "step_budget": 3,
+      "expected_artifact": "sample.txt contains delta-provider",
+      "verifier": "python -c \"from pathlib import Path; assert 'delta-provider' in Path('sample.txt').read_text(encoding='utf-8').splitlines()\"",
+      "category": "single_edit"
+    },
+    {
+      "id": "real_readme_multi_edit",
+      "prompt": "Inspect README.md. Replace '- Placeholder note about the repo.' with '- Provider benchmark uses isolated workspaces.' and replace '- Placeholder note about the file layout.' with '- Provider benchmark verifies artifacts independently.'. Apply both edits and then return a concise final answer.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "allowed_tools": ["read_file", "patch_file"],
+      "step_budget": 4,
+      "expected_artifact": "README.md contains both requested notes",
+      "verifier": "python -c \"from pathlib import Path; text=Path('README.md').read_text(encoding='utf-8'); assert '- Provider benchmark uses isolated workspaces.' in text; assert '- Provider benchmark verifies artifacts independently.' in text\"",
+      "category": "multi_edit"
+    },
+    {
+      "id": "real_sample_multi_edit",
+      "prompt": "Inspect sample.txt. Replace the exact line 'beta' with 'beta-multi' and the exact line 'gamma' with 'gamma-multi'. Apply both edits and then return a concise final answer.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "allowed_tools": ["read_file", "patch_file"],
+      "step_budget": 4,
+      "expected_artifact": "sample.txt contains both requested replacements",
+      "verifier": "python -c \"from pathlib import Path; lines=Path('sample.txt').read_text(encoding='utf-8').splitlines(); assert 'beta-multi' in lines; assert 'gamma-multi' in lines\"",
+      "category": "multi_edit"
+    }
+  ]
+}

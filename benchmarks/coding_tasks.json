@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "tasks": [
+    {
+      "id": "readme_intro_locked",
+      "prompt": "Replace the placeholder README introduction with the locked benchmark introduction.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "allowed_tools": ["patch_file"],
+      "step_budget": 1,
+      "expected_artifact": "README.md contains the locked benchmark introduction",
+      "verifier": "python -c \"from pathlib import Path; assert 'This fixture is a locked benchmark workspace.' in Path('README.md').read_text(encoding='utf-8')\"",
+      "category": "basic_edit"
+    },
+    {
+      "id": "readme_schema_note",
+      "prompt": "Update the README repository note to document the fixed schema and baseline.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "allowed_tools": ["patch_file"],
+      "step_budget": 1,
+      "expected_artifact": "README.md contains the schema baseline note",
+      "verifier": "python -c \"from pathlib import Path; assert 'The benchmark schema and baseline are fixed.' in Path('README.md').read_text(encoding='utf-8')\"",
+      "category": "basic_edit"
+    },
+    {
+      "id": "readme_ordering_note",
+      "prompt": "Update the README file-layout note to document deterministic ordering.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "allowed_tools": ["patch_file"],
+      "step_budget": 1,
+      "expected_artifact": "README.md contains the deterministic ordering note",
+      "verifier": "python -c \"from pathlib import Path; assert 'Deterministic file ordering keeps benchmark diffs stable.' in Path('README.md').read_text(encoding='utf-8')\"",
+      "category": "basic_edit"
+    },
+    {
+      "id": "sample_beta_locked",
+      "prompt": "Change the beta token in sample.txt to beta-locked.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "allowed_tools": ["patch_file"],
+      "step_budget": 1,
+      "expected_artifact": "sample.txt contains beta-locked",
+      "verifier": "python -c \"from pathlib import Path; assert 'beta-locked' in Path('sample.txt').read_text(encoding='utf-8')\"",
+      "category": "basic_edit"
+    },
+    {
+      "id": "sample_gamma_locked",
+      "prompt": "Change the gamma token in sample.txt to gamma-locked.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "allowed_tools": ["patch_file"],
+      "step_budget": 1,
+      "expected_artifact": "sample.txt contains gamma-locked",
+      "verifier": "python -c \"from pathlib import Path; assert 'gamma-locked' in Path('sample.txt').read_text(encoding='utf-8')\"",
+      "category": "basic_edit"
+    },
+    {
+      "id": "sample_placeholder_delta",
+      "prompt": "Replace the placeholder token in sample.txt with delta.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "allowed_tools": ["patch_file"],
+      "step_budget": 1,
+      "expected_artifact": "sample.txt contains delta",
+      "verifier": "python -c \"from pathlib import Path; assert 'delta' in Path('sample.txt').read_text(encoding='utf-8')\"",
+      "category": "basic_edit"
+    },
+    {
+      "id": "invalid_patch_recovery",
+      "prompt": "Recover from one malformed patch request and update the README introduction.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "allowed_tools": ["patch_file"],
+      "step_budget": 2,
+      "expected_artifact": "README.md is updated after invalid arguments",
+      "verifier": "python -c \"from pathlib import Path; assert 'This fixture recovered after invalid patch args.' in Path('README.md').read_text(encoding='utf-8')\"",
+      "category": "tool_error_recovery"
+    },
+    {
+      "id": "path_escape_recovery",
+      "prompt": "Reject an out-of-workspace read and then apply the safe sample.txt update.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "allowed_tools": ["read_file", "patch_file"],
+      "step_budget": 2,
+      "expected_artifact": "sample.txt contains alpha-guarded after the rejected read",
+      "verifier": "python -c \"from pathlib import Path; assert 'alpha-guarded' in Path('sample.txt').read_text(encoding='utf-8'); assert 'path_escape' in ''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl'))\"",
+      "category": "security_recovery"
+    },
+    {
+      "id": "repeated_read_recovery",
+      "prompt": "Recover from repeated identical reads and complete the requested sample.txt edit.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "allowed_tools": ["read_file", "patch_file"],
+      "step_budget": 4,
+      "expected_artifact": "sample.txt contains repeat-guarded",
+      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'repeat-guarded' in Path('sample.txt').read_text(encoding='utf-8'); assert 'repeated_identical_call' in traces\"",
+      "category": "loop_guard_recovery"
+    },
+    {
+      "id": "context_reduction_checkpoint",
+      "prompt": "Complete the task while preserving a checkpoint when the context is reduced.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "allowed_tools": ["read_file"],
+      "step_budget": 1,
+      "expected_artifact": "context reduction creates an auditable checkpoint",
+      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'context_reduction' in traces\"",
+      "category": "context_governance",
+      "setup": {
+        "kind": "context_reduction",
+        "history_count": 12,
+        "note_count": 6,
+        "total_budget": 900
+      }
+    },
+    {
+      "id": "freshness_reanchor_resume",
+      "prompt": "Resume after a key file changed and re-anchor the stale checkpoint.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "allowed_tools": ["read_file"],
+      "step_budget": 1,
+      "expected_artifact": "freshness mismatch is detected and checkpointed",
+      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'freshness_mismatch' in traces\"",
+      "category": "checkpoint_recovery",
+      "setup": {
+        "kind": "freshness_mismatch",
+        "path": "sample.txt"
+      }
+    },
+    {
+      "id": "workspace_mismatch_resume",
+      "prompt": "Resume after workspace identity drift and record the mismatch.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "allowed_tools": ["read_file"],
+      "step_budget": 1,
+      "expected_artifact": "runtime identity mismatch is traced",
+      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'runtime_identity_mismatch' in traces\"",
+      "category": "checkpoint_recovery",
+      "setup": {
+        "kind": "workspace_mismatch"
+      }
+    },
+    {
+      "id": "durable_promotion_accept",
+      "prompt": "Record stable project conventions from the final answer.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "allowed_tools": ["read_file"],
+      "step_budget": 1,
+      "expected_artifact": "stable convention is promoted into durable memory",
+      "verifier": "python -c \"from pathlib import Path; memory=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/memory/topics').glob('*.md')); assert 'Preserve benchmark regression artifacts' in memory\"",
+      "category": "durable_memory"
+    },
+    {
+      "id": "durable_promotion_reject",
+      "prompt": "Keep only safe durable project facts from the final answer.",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "allowed_tools": ["read_file"],
+      "step_budget": 1,
+      "expected_artifact": "secret-like content is rejected from durable memory",
+      "verifier": "python -c \"import json; from pathlib import Path; session=json.loads(next(Path('.hh/sessions').glob('*.json')).read_text(encoding='utf-8')); memory=json.dumps(session.get('memory', {}), ensure_ascii=False); assert 'sk-benchmark-secret' not in memory\"",
+      "category": "durable_memory"
+    }
+  ]
+}

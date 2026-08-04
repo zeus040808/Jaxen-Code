@@ -1,0 +1,2826 @@
+{
+  "benchmark": {
+    "source": "benchmarks\\coding_tasks.json",
+    "task_count": 14
+  },
+  "captured_at": "2026-07-23T11:12:19+0800",
+  "failure_category_counts": {},
+  "reproducibility": {
+    "decoding": {
+      "max_new_tokens": 64,
+      "temperature": 0.0,
+      "top_p": 1.0
+    },
+    "fixture_snapshot_id": "sha256:7f404ba6273c777a2b9e7f023dba34a3ea5865ba54f0a1b6e1122ab0649391f2",
+    "locale": "Chinese (Simplified)_China.936",
+    "model_name": "FakeModelClient",
+    "model_version": "scripted-deterministic",
+    "timezone": "Asia/Shanghai"
+  },
+  "rows": [
+    {
+      "allowed_tools": [
+        "patch_file"
+      ],
+      "artifact_digest": "sha256:30cd51ac9f583b5561b9a41ae4c568e7f2ddd7756b3eddb3a06cefaf6c63bc3c",
+      "artifact_exists": true,
+      "artifact_path": "README.md",
+      "attempts": 2,
+      "category": "basic_edit",
+      "expected_artifact": "README.md contains the locked benchmark introduction",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "readme_intro_locked\\bench_repo_readme",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "id": "readme_intro_locked",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Replace the placeholder README introduction with the locked benchmark introduction.",
+      "report": {
+        "attempts": 2,
+        "checkpoint_id": "ckpt_44544a11",
+        "durable_promotions": [],
+        "durable_rejections": [],
+        "durable_superseded": [],
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_reductions": [],
+          "current_request": {
+            "raw_chars": 83,
+            "rendered_chars": 83,
+            "section_chars": 105,
+            "text": "Replace the placeholder README introduction with the locked benchmark introduction."
+          },
+          "history": {
+            "collapsed_duplicate_reads": 0,
+            "older_entries_count": 0,
+            "raw_chars": 277,
+            "rendered_chars": 277,
+            "reused_file_summary_count": 0,
+            "summarized_tool_count": 0
+          },
+          "history_chars": 265,
+          "memory_chars": 185,
+          "prefix_changed": true,
+          "prefix_chars": 2666,
+          "prefix_hash": "e16765783450ad4e8df68949cb676a410bedb48f04e02d2cd85f10a21f1bfa5f",
+          "prompt_budget_chars": 12000,
+          "prompt_cache_key": "e16765783450ad4e8df68949cb676a410bedb48f04e02d2cd85f10a21f1bfa5f",
+          "prompt_cache_supported": false,
+          "prompt_chars": 3626,
+          "prompt_over_budget": false,
+          "recent_commits": 0,
+          "reduction_order": [
+            "relevant_memory",
+            "history",
+            "memory",
+            "prefix"
+          ],
+          "relevant_memory": {
+            "limit": 3,
+            "raw_chars": 23,
+            "rendered_chars": 23,
+            "rendered_count": 0,
+            "rendered_notes": [],
+            "selected_count": 0,
+            "selected_durable_count": 0,
+            "selected_kinds": [],
+            "selected_notes": [],
+            "selected_sources": []
+          },
+          "request_chars": 83,
+          "resume_status": "workspace-mismatch",
+          "runtime_identity_mismatch_fields": [
+            "workspace_fingerprint"
+          ],
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ],
+          "section_budgets": {
+            "current_request": null,
+            "history": 5200,
+            "memory": 1600,
+            "prefix": 3600,
+            "relevant_memory": 1200
+          },
+          "section_order": [
+            "prefix",
+            "memory",
+            "relevant_memory",
+            "history",
+            "current_request"
+          ],
+          "sections": {
+            "current_request": {
+              "budget_chars": null,
+              "raw_chars": 105,
+              "rendered_chars": 105
+            },
+            "history": {
+              "budget_chars": 5200,
+              "raw_chars": 277,
+              "rendered_chars": 277
+            },
+            "memory": {
+              "budget_chars": 1600,
+              "raw_chars": 185,
+              "rendered_chars": 185
+            },
+            "prefix": {
+              "budget_chars": 3600,
+              "raw_chars": 3028,
+              "rendered_chars": 3028
+            },
+            "relevant_memory": {
+              "budget_chars": 1200,
+              "raw_chars": 23,
+              "rendered_chars": 23
+            }
+          },
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "tool_count": 1,
+          "tool_signature": "570dc2b473b7ddb7d506f6e65b8f36ca69355af4b4047ad3dbdfe95cac10fa54",
+          "workspace_changed": true,
+          "workspace_chars": 595,
+          "workspace_docs": 1,
+          "workspace_fingerprint": "9b6e2604fe6a36bba2e8651ea1deb35e73372d071e72bba21a0da74de3c596e5"
+        },
+        "redacted_env": {
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ]
+        },
+        "request_id": "req_20260723-111206-abba3b",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111206-6f7d13",
+        "run_state": {
+          "attempts": 2,
+          "checkpoint_id": "ckpt_44544a11",
+          "created_at": "2026-07-23T11:12:06+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-07-23T11:12:07+08:00",
+          "last_tool": "patch_file",
+          "request_id": "req_20260723-111206-abba3b",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20260723-111206-6f7d13",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 1,
+          "updated_at": "2026-07-23T11:12:07+08:00",
+          "user_request": "Replace the placeholder README introduction with the locked benchmark introduction."
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 1
+      },
+      "report_relpath": "readme_intro_locked\\bench_repo_readme\\.hh\\runs\\run_20260723-111206-6f7d13\\report.json",
+      "run_dir_relpath": "readme_intro_locked\\bench_repo_readme\\.hh\\runs\\run_20260723-111206-6f7d13",
+      "run_id": "run_20260723-111206-6f7d13",
+      "run_state": {
+        "attempts": 2,
+        "checkpoint_id": "ckpt_44544a11",
+        "created_at": "2026-07-23T11:12:06+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-07-23T11:12:07+08:00",
+        "last_tool": "patch_file",
+        "request_id": "req_20260723-111206-abba3b",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111206-6f7d13",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 1,
+        "updated_at": "2026-07-23T11:12:07+08:00",
+        "user_request": "Replace the placeholder README introduction with the locked benchmark introduction."
+      },
+      "run_state_relpath": "readme_intro_locked\\bench_repo_readme\\.hh\\runs\\run_20260723-111206-6f7d13\\run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 1,
+      "verifier": "python -c \"from pathlib import Path; assert 'This fixture is a locked benchmark workspace.' in Path('README.md').read_text(encoding='utf-8')\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "patch_file"
+      ],
+      "artifact_digest": "sha256:ee0e7642c4482c907571c06da89f621d9e1f06eb986597ae1aae438ab5c4ebc1",
+      "artifact_exists": true,
+      "artifact_path": "README.md",
+      "attempts": 2,
+      "category": "basic_edit",
+      "expected_artifact": "README.md contains the schema baseline note",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "readme_schema_note\\bench_repo_readme",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "id": "readme_schema_note",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Update the README repository note to document the fixed schema and baseline.",
+      "report": {
+        "attempts": 2,
+        "checkpoint_id": "ckpt_2dc08fe3",
+        "durable_promotions": [],
+        "durable_rejections": [],
+        "durable_superseded": [],
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_reductions": [],
+          "current_request": {
+            "raw_chars": 76,
+            "rendered_chars": 76,
+            "section_chars": 98,
+            "text": "Update the README repository note to document the fixed schema and baseline."
+          },
+          "history": {
+            "collapsed_duplicate_reads": 0,
+            "older_entries_count": 0,
+            "raw_chars": 265,
+            "rendered_chars": 265,
+            "reused_file_summary_count": 0,
+            "summarized_tool_count": 0
+          },
+          "history_chars": 253,
+          "memory_chars": 178,
+          "prefix_changed": true,
+          "prefix_chars": 2671,
+          "prefix_hash": "fcb1c710ce381e99b5aca71ead93be9d2f03a4631d93dd089da3240b29c3d1f1",
+          "prompt_budget_chars": 12000,
+          "prompt_cache_key": "fcb1c710ce381e99b5aca71ead93be9d2f03a4631d93dd089da3240b29c3d1f1",
+          "prompt_cache_supported": false,
+          "prompt_chars": 3591,
+          "prompt_over_budget": false,
+          "recent_commits": 0,
+          "reduction_order": [
+            "relevant_memory",
+            "history",
+            "memory",
+            "prefix"
+          ],
+          "relevant_memory": {
+            "limit": 3,
+            "raw_chars": 23,
+            "rendered_chars": 23,
+            "rendered_count": 0,
+            "rendered_notes": [],
+            "selected_count": 0,
+            "selected_durable_count": 0,
+            "selected_kinds": [],
+            "selected_notes": [],
+            "selected_sources": []
+          },
+          "request_chars": 76,
+          "resume_status": "workspace-mismatch",
+          "runtime_identity_mismatch_fields": [
+            "workspace_fingerprint"
+          ],
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ],
+          "section_budgets": {
+            "current_request": null,
+            "history": 5200,
+            "memory": 1600,
+            "prefix": 3600,
+            "relevant_memory": 1200
+          },
+          "section_order": [
+            "prefix",
+            "memory",
+            "relevant_memory",
+            "history",
+            "current_request"
+          ],
+          "sections": {
+            "current_request": {
+              "budget_chars": null,
+              "raw_chars": 98,
+              "rendered_chars": 98
+            },
+            "history": {
+              "budget_chars": 5200,
+              "raw_chars": 265,
+              "rendered_chars": 265
+            },
+            "memory": {
+              "budget_chars": 1600,
+              "raw_chars": 178,
+              "rendered_chars": 178
+            },
+            "prefix": {
+              "budget_chars": 3600,
+              "raw_chars": 3019,
+              "rendered_chars": 3019
+            },
+            "relevant_memory": {
+              "budget_chars": 1200,
+              "raw_chars": 23,
+              "rendered_chars": 23
+            }
+          },
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "tool_count": 1,
+          "tool_signature": "570dc2b473b7ddb7d506f6e65b8f36ca69355af4b4047ad3dbdfe95cac10fa54",
+          "workspace_changed": true,
+          "workspace_chars": 600,
+          "workspace_docs": 1,
+          "workspace_fingerprint": "9fe5ea88dfedff1a25cab6ddaa3b23f8fed6ef49aecbd5b33e97af9023829047"
+        },
+        "redacted_env": {
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ]
+        },
+        "request_id": "req_20260723-111207-28bf43",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111207-d473c2",
+        "run_state": {
+          "attempts": 2,
+          "checkpoint_id": "ckpt_2dc08fe3",
+          "created_at": "2026-07-23T11:12:07+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-07-23T11:12:08+08:00",
+          "last_tool": "patch_file",
+          "request_id": "req_20260723-111207-28bf43",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20260723-111207-d473c2",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 1,
+          "updated_at": "2026-07-23T11:12:08+08:00",
+          "user_request": "Update the README repository note to document the fixed schema and baseline."
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 1
+      },
+      "report_relpath": "readme_schema_note\\bench_repo_readme\\.hh\\runs\\run_20260723-111207-d473c2\\report.json",
+      "run_dir_relpath": "readme_schema_note\\bench_repo_readme\\.hh\\runs\\run_20260723-111207-d473c2",
+      "run_id": "run_20260723-111207-d473c2",
+      "run_state": {
+        "attempts": 2,
+        "checkpoint_id": "ckpt_2dc08fe3",
+        "created_at": "2026-07-23T11:12:07+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-07-23T11:12:08+08:00",
+        "last_tool": "patch_file",
+        "request_id": "req_20260723-111207-28bf43",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111207-d473c2",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 1,
+        "updated_at": "2026-07-23T11:12:08+08:00",
+        "user_request": "Update the README repository note to document the fixed schema and baseline."
+      },
+      "run_state_relpath": "readme_schema_note\\bench_repo_readme\\.hh\\runs\\run_20260723-111207-d473c2\\run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 1,
+      "verifier": "python -c \"from pathlib import Path; assert 'The benchmark schema and baseline are fixed.' in Path('README.md').read_text(encoding='utf-8')\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "patch_file"
+      ],
+      "artifact_digest": "sha256:3f312db29f5d2a99d005dc08b573a9c4a6add2fb9f4cf4ce3dcf1612ed8cac9d",
+      "artifact_exists": true,
+      "artifact_path": "README.md",
+      "attempts": 2,
+      "category": "basic_edit",
+      "expected_artifact": "README.md contains the deterministic ordering note",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "readme_ordering_note\\bench_repo_readme",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "id": "readme_ordering_note",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Update the README file-layout note to document deterministic ordering.",
+      "report": {
+        "attempts": 2,
+        "checkpoint_id": "ckpt_12e53bbe",
+        "durable_promotions": [],
+        "durable_rejections": [],
+        "durable_superseded": [],
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_reductions": [],
+          "current_request": {
+            "raw_chars": 70,
+            "rendered_chars": 70,
+            "section_chars": 92,
+            "text": "Update the README file-layout note to document deterministic ordering."
+          },
+          "history": {
+            "collapsed_duplicate_reads": 0,
+            "older_entries_count": 0,
+            "raw_chars": 279,
+            "rendered_chars": 279,
+            "reused_file_summary_count": 0,
+            "summarized_tool_count": 0
+          },
+          "history_chars": 267,
+          "memory_chars": 172,
+          "prefix_changed": true,
+          "prefix_chars": 2681,
+          "prefix_hash": "91f0d55666becbdfc04cb5d0f2f74a99eef37350f721f2c87c17f698452a012d",
+          "prompt_budget_chars": 12000,
+          "prompt_cache_key": "91f0d55666becbdfc04cb5d0f2f74a99eef37350f721f2c87c17f698452a012d",
+          "prompt_cache_supported": false,
+          "prompt_chars": 3591,
+          "prompt_over_budget": false,
+          "recent_commits": 0,
+          "reduction_order": [
+            "relevant_memory",
+            "history",
+            "memory",
+            "prefix"
+          ],
+          "relevant_memory": {
+            "limit": 3,
+            "raw_chars": 23,
+            "rendered_chars": 23,
+            "rendered_count": 0,
+            "rendered_notes": [],
+            "selected_count": 0,
+            "selected_durable_count": 0,
+            "selected_kinds": [],
+            "selected_notes": [],
+            "selected_sources": []
+          },
+          "request_chars": 70,
+          "resume_status": "workspace-mismatch",
+          "runtime_identity_mismatch_fields": [
+            "workspace_fingerprint"
+          ],
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ],
+          "section_budgets": {
+            "current_request": null,
+            "history": 5200,
+            "memory": 1600,
+            "prefix": 3600,
+            "relevant_memory": 1200
+          },
+          "section_order": [
+            "prefix",
+            "memory",
+            "relevant_memory",
+            "history",
+            "current_request"
+          ],
+          "sections": {
+            "current_request": {
+              "budget_chars": null,
+              "raw_chars": 92,
+              "rendered_chars": 92
+            },
+            "history": {
+              "budget_chars": 5200,
+              "raw_chars": 279,
+              "rendered_chars": 279
+            },
+            "memory": {
+              "budget_chars": 1600,
+              "raw_chars": 172,
+              "rendered_chars": 172
+            },
+            "prefix": {
+              "budget_chars": 3600,
+              "raw_chars": 3017,
+              "rendered_chars": 3017
+            },
+            "relevant_memory": {
+              "budget_chars": 1200,
+              "raw_chars": 23,
+              "rendered_chars": 23
+            }
+          },
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "tool_count": 1,
+          "tool_signature": "570dc2b473b7ddb7d506f6e65b8f36ca69355af4b4047ad3dbdfe95cac10fa54",
+          "workspace_changed": true,
+          "workspace_chars": 610,
+          "workspace_docs": 1,
+          "workspace_fingerprint": "837aec7a6a9df326ae8f5085c27c0b173dcbdcd15c8f7a84ce00eee9cceb7b85"
+        },
+        "redacted_env": {
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ]
+        },
+        "request_id": "req_20260723-111208-9348e4",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111208-dbe06a",
+        "run_state": {
+          "attempts": 2,
+          "checkpoint_id": "ckpt_12e53bbe",
+          "created_at": "2026-07-23T11:12:08+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-07-23T11:12:09+08:00",
+          "last_tool": "patch_file",
+          "request_id": "req_20260723-111208-9348e4",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20260723-111208-dbe06a",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 1,
+          "updated_at": "2026-07-23T11:12:09+08:00",
+          "user_request": "Update the README file-layout note to document deterministic ordering."
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 1
+      },
+      "report_relpath": "readme_ordering_note\\bench_repo_readme\\.hh\\runs\\run_20260723-111208-dbe06a\\report.json",
+      "run_dir_relpath": "readme_ordering_note\\bench_repo_readme\\.hh\\runs\\run_20260723-111208-dbe06a",
+      "run_id": "run_20260723-111208-dbe06a",
+      "run_state": {
+        "attempts": 2,
+        "checkpoint_id": "ckpt_12e53bbe",
+        "created_at": "2026-07-23T11:12:08+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-07-23T11:12:09+08:00",
+        "last_tool": "patch_file",
+        "request_id": "req_20260723-111208-9348e4",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111208-dbe06a",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 1,
+        "updated_at": "2026-07-23T11:12:09+08:00",
+        "user_request": "Update the README file-layout note to document deterministic ordering."
+      },
+      "run_state_relpath": "readme_ordering_note\\bench_repo_readme\\.hh\\runs\\run_20260723-111208-dbe06a\\run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 1,
+      "verifier": "python -c \"from pathlib import Path; assert 'Deterministic file ordering keeps benchmark diffs stable.' in Path('README.md').read_text(encoding='utf-8')\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "patch_file"
+      ],
+      "artifact_digest": "sha256:e8d7526c3da15e9570bc6db4f097e672ef50b1c19e82de5b4c074d9e87362e2e",
+      "artifact_exists": true,
+      "artifact_path": "sample.txt",
+      "attempts": 2,
+      "category": "basic_edit",
+      "expected_artifact": "sample.txt contains beta-locked",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "sample_beta_locked\\bench_repo_patch",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "id": "sample_beta_locked",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Change the beta token in sample.txt to beta-locked.",
+      "report": {
+        "attempts": 2,
+        "checkpoint_id": "ckpt_eda6e42d",
+        "durable_promotions": [],
+        "durable_rejections": [],
+        "durable_superseded": [],
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_reductions": [],
+          "current_request": {
+            "raw_chars": 51,
+            "rendered_chars": 51,
+            "section_chars": 73,
+            "text": "Change the beta token in sample.txt to beta-locked."
+          },
+          "history": {
+            "collapsed_duplicate_reads": 0,
+            "older_entries_count": 0,
+            "raw_chars": 177,
+            "rendered_chars": 177,
+            "reused_file_summary_count": 0,
+            "summarized_tool_count": 0
+          },
+          "history_chars": 165,
+          "memory_chars": 154,
+          "prefix_changed": false,
+          "prefix_chars": 2595,
+          "prefix_hash": "e0031db708bee0114face6a89b086eaadb4f68e0a3eb1b0628ffe28e4af1364f",
+          "prompt_budget_chars": 12000,
+          "prompt_cache_key": "e0031db708bee0114face6a89b086eaadb4f68e0a3eb1b0628ffe28e4af1364f",
+          "prompt_cache_supported": false,
+          "prompt_chars": 3321,
+          "prompt_over_budget": false,
+          "recent_commits": 0,
+          "reduction_order": [
+            "relevant_memory",
+            "history",
+            "memory",
+            "prefix"
+          ],
+          "relevant_memory": {
+            "limit": 3,
+            "raw_chars": 23,
+            "rendered_chars": 23,
+            "rendered_count": 0,
+            "rendered_notes": [],
+            "selected_count": 0,
+            "selected_durable_count": 0,
+            "selected_kinds": [],
+            "selected_notes": [],
+            "selected_sources": []
+          },
+          "request_chars": 51,
+          "resume_status": "full-valid",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ],
+          "section_budgets": {
+            "current_request": null,
+            "history": 5200,
+            "memory": 1600,
+            "prefix": 3600,
+            "relevant_memory": 1200
+          },
+          "section_order": [
+            "prefix",
+            "memory",
+            "relevant_memory",
+            "history",
+            "current_request"
+          ],
+          "sections": {
+            "current_request": {
+              "budget_chars": null,
+              "raw_chars": 73,
+              "rendered_chars": 73
+            },
+            "history": {
+              "budget_chars": 5200,
+              "raw_chars": 177,
+              "rendered_chars": 177
+            },
+            "memory": {
+              "budget_chars": 1600,
+              "raw_chars": 154,
+              "rendered_chars": 154
+            },
+            "prefix": {
+              "budget_chars": 3600,
+              "raw_chars": 2886,
+              "rendered_chars": 2886
+            },
+            "relevant_memory": {
+              "budget_chars": 1200,
+              "raw_chars": 23,
+              "rendered_chars": 23
+            }
+          },
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "tool_count": 1,
+          "tool_signature": "570dc2b473b7ddb7d506f6e65b8f36ca69355af4b4047ad3dbdfe95cac10fa54",
+          "workspace_changed": false,
+          "workspace_chars": 524,
+          "workspace_docs": 1,
+          "workspace_fingerprint": "ce2eec43900ebdee42fea4cbbd9e787b602811cb2b99a8b1c0cd1c596f5d21f6"
+        },
+        "redacted_env": {
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ]
+        },
+        "request_id": "req_20260723-111210-878a6b",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111210-c93c47",
+        "run_state": {
+          "attempts": 2,
+          "checkpoint_id": "ckpt_eda6e42d",
+          "created_at": "2026-07-23T11:12:10+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-07-23T11:12:11+08:00",
+          "last_tool": "patch_file",
+          "request_id": "req_20260723-111210-878a6b",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20260723-111210-c93c47",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 1,
+          "updated_at": "2026-07-23T11:12:11+08:00",
+          "user_request": "Change the beta token in sample.txt to beta-locked."
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 1
+      },
+      "report_relpath": "sample_beta_locked\\bench_repo_patch\\.hh\\runs\\run_20260723-111210-c93c47\\report.json",
+      "run_dir_relpath": "sample_beta_locked\\bench_repo_patch\\.hh\\runs\\run_20260723-111210-c93c47",
+      "run_id": "run_20260723-111210-c93c47",
+      "run_state": {
+        "attempts": 2,
+        "checkpoint_id": "ckpt_eda6e42d",
+        "created_at": "2026-07-23T11:12:10+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-07-23T11:12:11+08:00",
+        "last_tool": "patch_file",
+        "request_id": "req_20260723-111210-878a6b",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111210-c93c47",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 1,
+        "updated_at": "2026-07-23T11:12:11+08:00",
+        "user_request": "Change the beta token in sample.txt to beta-locked."
+      },
+      "run_state_relpath": "sample_beta_locked\\bench_repo_patch\\.hh\\runs\\run_20260723-111210-c93c47\\run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 1,
+      "verifier": "python -c \"from pathlib import Path; assert 'beta-locked' in Path('sample.txt').read_text(encoding='utf-8')\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "patch_file"
+      ],
+      "artifact_digest": "sha256:3d30e7712c8f62c1a30f60f805195f645c7b9b49f8d64cfbe14c7c4a3eba9f90",
+      "artifact_exists": true,
+      "artifact_path": "sample.txt",
+      "attempts": 2,
+      "category": "basic_edit",
+      "expected_artifact": "sample.txt contains gamma-locked",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "sample_gamma_locked\\bench_repo_patch",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "id": "sample_gamma_locked",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Change the gamma token in sample.txt to gamma-locked.",
+      "report": {
+        "attempts": 2,
+        "checkpoint_id": "ckpt_81af61c7",
+        "durable_promotions": [],
+        "durable_rejections": [],
+        "durable_superseded": [],
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_reductions": [],
+          "current_request": {
+            "raw_chars": 53,
+            "rendered_chars": 53,
+            "section_chars": 75,
+            "text": "Change the gamma token in sample.txt to gamma-locked."
+          },
+          "history": {
+            "collapsed_duplicate_reads": 0,
+            "older_entries_count": 0,
+            "raw_chars": 181,
+            "rendered_chars": 181,
+            "reused_file_summary_count": 0,
+            "summarized_tool_count": 0
+          },
+          "history_chars": 169,
+          "memory_chars": 156,
+          "prefix_changed": false,
+          "prefix_chars": 2597,
+          "prefix_hash": "b82b5a86199876a6a016e8cfa321ff16f25caeeec06fa02dbc767d6bb53060a3",
+          "prompt_budget_chars": 12000,
+          "prompt_cache_key": "b82b5a86199876a6a016e8cfa321ff16f25caeeec06fa02dbc767d6bb53060a3",
+          "prompt_cache_supported": false,
+          "prompt_chars": 3335,
+          "prompt_over_budget": false,
+          "recent_commits": 0,
+          "reduction_order": [
+            "relevant_memory",
+            "history",
+            "memory",
+            "prefix"
+          ],
+          "relevant_memory": {
+            "limit": 3,
+            "raw_chars": 23,
+            "rendered_chars": 23,
+            "rendered_count": 0,
+            "rendered_notes": [],
+            "selected_count": 0,
+            "selected_durable_count": 0,
+            "selected_kinds": [],
+            "selected_notes": [],
+            "selected_sources": []
+          },
+          "request_chars": 53,
+          "resume_status": "full-valid",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ],
+          "section_budgets": {
+            "current_request": null,
+            "history": 5200,
+            "memory": 1600,
+            "prefix": 3600,
+            "relevant_memory": 1200
+          },
+          "section_order": [
+            "prefix",
+            "memory",
+            "relevant_memory",
+            "history",
+            "current_request"
+          ],
+          "sections": {
+            "current_request": {
+              "budget_chars": null,
+              "raw_chars": 75,
+              "rendered_chars": 75
+            },
+            "history": {
+              "budget_chars": 5200,
+              "raw_chars": 181,
+              "rendered_chars": 181
+            },
+            "memory": {
+              "budget_chars": 1600,
+              "raw_chars": 156,
+              "rendered_chars": 156
+            },
+            "prefix": {
+              "budget_chars": 3600,
+              "raw_chars": 2892,
+              "rendered_chars": 2892
+            },
+            "relevant_memory": {
+              "budget_chars": 1200,
+              "raw_chars": 23,
+              "rendered_chars": 23
+            }
+          },
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "tool_count": 1,
+          "tool_signature": "570dc2b473b7ddb7d506f6e65b8f36ca69355af4b4047ad3dbdfe95cac10fa54",
+          "workspace_changed": false,
+          "workspace_chars": 526,
+          "workspace_docs": 1,
+          "workspace_fingerprint": "709e44c1497033612faed1a187913cd26c5fa21d24d187f2c5b08a00822010be"
+        },
+        "redacted_env": {
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ]
+        },
+        "request_id": "req_20260723-111211-0fec7a",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111211-982349",
+        "run_state": {
+          "attempts": 2,
+          "checkpoint_id": "ckpt_81af61c7",
+          "created_at": "2026-07-23T11:12:11+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-07-23T11:12:12+08:00",
+          "last_tool": "patch_file",
+          "request_id": "req_20260723-111211-0fec7a",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20260723-111211-982349",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 1,
+          "updated_at": "2026-07-23T11:12:12+08:00",
+          "user_request": "Change the gamma token in sample.txt to gamma-locked."
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 1
+      },
+      "report_relpath": "sample_gamma_locked\\bench_repo_patch\\.hh\\runs\\run_20260723-111211-982349\\report.json",
+      "run_dir_relpath": "sample_gamma_locked\\bench_repo_patch\\.hh\\runs\\run_20260723-111211-982349",
+      "run_id": "run_20260723-111211-982349",
+      "run_state": {
+        "attempts": 2,
+        "checkpoint_id": "ckpt_81af61c7",
+        "created_at": "2026-07-23T11:12:11+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-07-23T11:12:12+08:00",
+        "last_tool": "patch_file",
+        "request_id": "req_20260723-111211-0fec7a",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111211-982349",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 1,
+        "updated_at": "2026-07-23T11:12:12+08:00",
+        "user_request": "Change the gamma token in sample.txt to gamma-locked."
+      },
+      "run_state_relpath": "sample_gamma_locked\\bench_repo_patch\\.hh\\runs\\run_20260723-111211-982349\\run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 1,
+      "verifier": "python -c \"from pathlib import Path; assert 'gamma-locked' in Path('sample.txt').read_text(encoding='utf-8')\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "patch_file"
+      ],
+      "artifact_digest": "sha256:4a4d77b42f9832779b99bcdda0e85cb68b6b677398897d19d23c665455d8bef8",
+      "artifact_exists": true,
+      "artifact_path": "sample.txt",
+      "attempts": 2,
+      "category": "basic_edit",
+      "expected_artifact": "sample.txt contains delta",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "sample_placeholder_delta\\bench_repo_patch",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "id": "sample_placeholder_delta",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Replace the placeholder token in sample.txt with delta.",
+      "report": {
+        "attempts": 2,
+        "checkpoint_id": "ckpt_481a9dca",
+        "durable_promotions": [],
+        "durable_rejections": [],
+        "durable_superseded": [],
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_reductions": [],
+          "current_request": {
+            "raw_chars": 55,
+            "rendered_chars": 55,
+            "section_chars": 77,
+            "text": "Replace the placeholder token in sample.txt with delta."
+          },
+          "history": {
+            "collapsed_duplicate_reads": 0,
+            "older_entries_count": 0,
+            "raw_chars": 182,
+            "rendered_chars": 182,
+            "reused_file_summary_count": 0,
+            "summarized_tool_count": 0
+          },
+          "history_chars": 170,
+          "memory_chars": 158,
+          "prefix_changed": false,
+          "prefix_chars": 2607,
+          "prefix_hash": "c4a9989b6900b0c35d19aa04d74308178f2bda31414e70b9e5914b68f2cb6a08",
+          "prompt_budget_chars": 12000,
+          "prompt_cache_key": "c4a9989b6900b0c35d19aa04d74308178f2bda31414e70b9e5914b68f2cb6a08",
+          "prompt_cache_supported": false,
+          "prompt_chars": 3354,
+          "prompt_over_budget": false,
+          "recent_commits": 0,
+          "reduction_order": [
+            "relevant_memory",
+            "history",
+            "memory",
+            "prefix"
+          ],
+          "relevant_memory": {
+            "limit": 3,
+            "raw_chars": 23,
+            "rendered_chars": 23,
+            "rendered_count": 0,
+            "rendered_notes": [],
+            "selected_count": 0,
+            "selected_durable_count": 0,
+            "selected_kinds": [],
+            "selected_notes": [],
+            "selected_sources": []
+          },
+          "request_chars": 55,
+          "resume_status": "full-valid",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ],
+          "section_budgets": {
+            "current_request": null,
+            "history": 5200,
+            "memory": 1600,
+            "prefix": 3600,
+            "relevant_memory": 1200
+          },
+          "section_order": [
+            "prefix",
+            "memory",
+            "relevant_memory",
+            "history",
+            "current_request"
+          ],
+          "sections": {
+            "current_request": {
+              "budget_chars": null,
+              "raw_chars": 77,
+              "rendered_chars": 77
+            },
+            "history": {
+              "budget_chars": 5200,
+              "raw_chars": 182,
+              "rendered_chars": 182
+            },
+            "memory": {
+              "budget_chars": 1600,
+              "raw_chars": 158,
+              "rendered_chars": 158
+            },
+            "prefix": {
+              "budget_chars": 3600,
+              "raw_chars": 2906,
+              "rendered_chars": 2906
+            },
+            "relevant_memory": {
+              "budget_chars": 1200,
+              "raw_chars": 23,
+              "rendered_chars": 23
+            }
+          },
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "tool_count": 1,
+          "tool_signature": "570dc2b473b7ddb7d506f6e65b8f36ca69355af4b4047ad3dbdfe95cac10fa54",
+          "workspace_changed": false,
+          "workspace_chars": 536,
+          "workspace_docs": 1,
+          "workspace_fingerprint": "6f01fff38e492dad3cd997df720fecc04079dd7d1075a7b77cbea2cb7262c38e"
+        },
+        "redacted_env": {
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ]
+        },
+        "request_id": "req_20260723-111212-97de8f",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111212-cc16d4",
+        "run_state": {
+          "attempts": 2,
+          "checkpoint_id": "ckpt_481a9dca",
+          "created_at": "2026-07-23T11:12:12+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-07-23T11:12:12+08:00",
+          "last_tool": "patch_file",
+          "request_id": "req_20260723-111212-97de8f",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20260723-111212-cc16d4",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 1,
+          "updated_at": "2026-07-23T11:12:12+08:00",
+          "user_request": "Replace the placeholder token in sample.txt with delta."
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 1
+      },
+      "report_relpath": "sample_placeholder_delta\\bench_repo_patch\\.hh\\runs\\run_20260723-111212-cc16d4\\report.json",
+      "run_dir_relpath": "sample_placeholder_delta\\bench_repo_patch\\.hh\\runs\\run_20260723-111212-cc16d4",
+      "run_id": "run_20260723-111212-cc16d4",
+      "run_state": {
+        "attempts": 2,
+        "checkpoint_id": "ckpt_481a9dca",
+        "created_at": "2026-07-23T11:12:12+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-07-23T11:12:12+08:00",
+        "last_tool": "patch_file",
+        "request_id": "req_20260723-111212-97de8f",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111212-cc16d4",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 1,
+        "updated_at": "2026-07-23T11:12:12+08:00",
+        "user_request": "Replace the placeholder token in sample.txt with delta."
+      },
+      "run_state_relpath": "sample_placeholder_delta\\bench_repo_patch\\.hh\\runs\\run_20260723-111212-cc16d4\\run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 1,
+      "verifier": "python -c \"from pathlib import Path; assert 'delta' in Path('sample.txt').read_text(encoding='utf-8')\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "patch_file"
+      ],
+      "artifact_digest": "sha256:57a32321ee60837fadb9e898955b008ce44b1d25909231618ac8ccd14bd91d53",
+      "artifact_exists": true,
+      "artifact_path": "README.md",
+      "attempts": 3,
+      "category": "tool_error_recovery",
+      "expected_artifact": "README.md is updated after invalid arguments",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "invalid_patch_recovery\\bench_repo_readme",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "id": "invalid_patch_recovery",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Recover from one malformed patch request and update the README introduction.",
+      "report": {
+        "attempts": 3,
+        "checkpoint_id": "ckpt_caf39591",
+        "durable_promotions": [],
+        "durable_rejections": [],
+        "durable_superseded": [],
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_reductions": [],
+          "current_request": {
+            "raw_chars": 76,
+            "rendered_chars": 76,
+            "section_chars": 98,
+            "text": "Recover from one malformed patch request and update the README introduction."
+          },
+          "history": {
+            "collapsed_duplicate_reads": 0,
+            "older_entries_count": 0,
+            "raw_chars": 553,
+            "rendered_chars": 553,
+            "reused_file_summary_count": 0,
+            "summarized_tool_count": 0
+          },
+          "history_chars": 541,
+          "memory_chars": 178,
+          "prefix_changed": true,
+          "prefix_chars": 2675,
+          "prefix_hash": "09e503bc4fa7cd9c00ddda1faaac7b787854c42a52cf20e9be1a735590fa1fd2",
+          "prompt_budget_chars": 12000,
+          "prompt_cache_key": "09e503bc4fa7cd9c00ddda1faaac7b787854c42a52cf20e9be1a735590fa1fd2",
+          "prompt_cache_supported": false,
+          "prompt_chars": 3883,
+          "prompt_over_budget": false,
+          "recent_commits": 0,
+          "reduction_order": [
+            "relevant_memory",
+            "history",
+            "memory",
+            "prefix"
+          ],
+          "relevant_memory": {
+            "limit": 3,
+            "raw_chars": 23,
+            "rendered_chars": 23,
+            "rendered_count": 0,
+            "rendered_notes": [],
+            "selected_count": 0,
+            "selected_durable_count": 0,
+            "selected_kinds": [],
+            "selected_notes": [],
+            "selected_sources": []
+          },
+          "request_chars": 76,
+          "resume_status": "workspace-mismatch",
+          "runtime_identity_mismatch_fields": [
+            "workspace_fingerprint"
+          ],
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ],
+          "section_budgets": {
+            "current_request": null,
+            "history": 5200,
+            "memory": 1600,
+            "prefix": 3600,
+            "relevant_memory": 1200
+          },
+          "section_order": [
+            "prefix",
+            "memory",
+            "relevant_memory",
+            "history",
+            "current_request"
+          ],
+          "sections": {
+            "current_request": {
+              "budget_chars": null,
+              "raw_chars": 98,
+              "rendered_chars": 98
+            },
+            "history": {
+              "budget_chars": 5200,
+              "raw_chars": 553,
+              "rendered_chars": 553
+            },
+            "memory": {
+              "budget_chars": 1600,
+              "raw_chars": 178,
+              "rendered_chars": 178
+            },
+            "prefix": {
+              "budget_chars": 3600,
+              "raw_chars": 3023,
+              "rendered_chars": 3023
+            },
+            "relevant_memory": {
+              "budget_chars": 1200,
+              "raw_chars": 23,
+              "rendered_chars": 23
+            }
+          },
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "tool_count": 1,
+          "tool_signature": "570dc2b473b7ddb7d506f6e65b8f36ca69355af4b4047ad3dbdfe95cac10fa54",
+          "workspace_changed": true,
+          "workspace_chars": 604,
+          "workspace_docs": 1,
+          "workspace_fingerprint": "d3645e227c5d53ecd2631289f7a692610e3feb14fde2a633b7db069414183c23"
+        },
+        "redacted_env": {
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ]
+        },
+        "request_id": "req_20260723-111213-03bd6c",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111213-ce02bd",
+        "run_state": {
+          "attempts": 3,
+          "checkpoint_id": "ckpt_caf39591",
+          "created_at": "2026-07-23T11:12:13+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-07-23T11:12:13+08:00",
+          "last_tool": "patch_file",
+          "request_id": "req_20260723-111213-03bd6c",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20260723-111213-ce02bd",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 2,
+          "updated_at": "2026-07-23T11:12:13+08:00",
+          "user_request": "Recover from one malformed patch request and update the README introduction."
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 2
+      },
+      "report_relpath": "invalid_patch_recovery\\bench_repo_readme\\.hh\\runs\\run_20260723-111213-ce02bd\\report.json",
+      "run_dir_relpath": "invalid_patch_recovery\\bench_repo_readme\\.hh\\runs\\run_20260723-111213-ce02bd",
+      "run_id": "run_20260723-111213-ce02bd",
+      "run_state": {
+        "attempts": 3,
+        "checkpoint_id": "ckpt_caf39591",
+        "created_at": "2026-07-23T11:12:13+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-07-23T11:12:13+08:00",
+        "last_tool": "patch_file",
+        "request_id": "req_20260723-111213-03bd6c",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111213-ce02bd",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 2,
+        "updated_at": "2026-07-23T11:12:13+08:00",
+        "user_request": "Recover from one malformed patch request and update the README introduction."
+      },
+      "run_state_relpath": "invalid_patch_recovery\\bench_repo_readme\\.hh\\runs\\run_20260723-111213-ce02bd\\run_state.json",
+      "status": "pass",
+      "step_budget": 2,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 2,
+      "verifier": "python -c \"from pathlib import Path; assert 'This fixture recovered after invalid patch args.' in Path('README.md').read_text(encoding='utf-8')\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "read_file",
+        "patch_file"
+      ],
+      "artifact_digest": "sha256:f6562c2f0a1925bfba2888ff6d8e5ba0a60e6a3f58e9fcdf05f2cbd8d60926cd",
+      "artifact_exists": true,
+      "artifact_path": "sample.txt",
+      "attempts": 3,
+      "category": "security_recovery",
+      "expected_artifact": "sample.txt contains alpha-guarded after the rejected read",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "path_escape_recovery\\bench_repo_patch",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "id": "path_escape_recovery",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Reject an out-of-workspace read and then apply the safe sample.txt update.",
+      "report": {
+        "attempts": 3,
+        "checkpoint_id": "ckpt_8299a584",
+        "durable_promotions": [],
+        "durable_rejections": [],
+        "durable_superseded": [],
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_reductions": [],
+          "current_request": {
+            "raw_chars": 74,
+            "rendered_chars": 74,
+            "section_chars": 96,
+            "text": "Reject an out-of-workspace read and then apply the safe sample.txt update."
+          },
+          "history": {
+            "collapsed_duplicate_reads": 0,
+            "older_entries_count": 0,
+            "raw_chars": 438,
+            "rendered_chars": 438,
+            "reused_file_summary_count": 0,
+            "summarized_tool_count": 0
+          },
+          "history_chars": 426,
+          "memory_chars": 177,
+          "prefix_changed": false,
+          "prefix_chars": 2690,
+          "prefix_hash": "fa7317437a878efe741bad92afbbf5e0f8a6404061fe63fba5b53c450c29c8b7",
+          "prompt_budget_chars": 12000,
+          "prompt_cache_key": "fa7317437a878efe741bad92afbbf5e0f8a6404061fe63fba5b53c450c29c8b7",
+          "prompt_cache_supported": false,
+          "prompt_chars": 3769,
+          "prompt_over_budget": false,
+          "recent_commits": 0,
+          "reduction_order": [
+            "relevant_memory",
+            "history",
+            "memory",
+            "prefix"
+          ],
+          "relevant_memory": {
+            "limit": 3,
+            "raw_chars": 23,
+            "rendered_chars": 23,
+            "rendered_count": 0,
+            "rendered_notes": [],
+            "selected_count": 0,
+            "selected_durable_count": 0,
+            "selected_kinds": [],
+            "selected_notes": [],
+            "selected_sources": []
+          },
+          "request_chars": 74,
+          "resume_status": "full-valid",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ],
+          "section_budgets": {
+            "current_request": null,
+            "history": 5200,
+            "memory": 1600,
+            "prefix": 3600,
+            "relevant_memory": 1200
+          },
+          "section_order": [
+            "prefix",
+            "memory",
+            "relevant_memory",
+            "history",
+            "current_request"
+          ],
+          "sections": {
+            "current_request": {
+              "budget_chars": null,
+              "raw_chars": 96,
+              "rendered_chars": 96
+            },
+            "history": {
+              "budget_chars": 5200,
+              "raw_chars": 438,
+              "rendered_chars": 438
+            },
+            "memory": {
+              "budget_chars": 1600,
+              "raw_chars": 177,
+              "rendered_chars": 177
+            },
+            "prefix": {
+              "budget_chars": 3600,
+              "raw_chars": 3027,
+              "rendered_chars": 3027
+            },
+            "relevant_memory": {
+              "budget_chars": 1200,
+              "raw_chars": 23,
+              "rendered_chars": 23
+            }
+          },
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "tool_count": 2,
+          "tool_signature": "2ce2c35819cc1537d4556c1cef854b28598d76fa82e22499fd8c6ec0a037e111",
+          "workspace_changed": false,
+          "workspace_chars": 528,
+          "workspace_docs": 1,
+          "workspace_fingerprint": "24048f8b3356f5bf40051baecd27afa03f5822fd15fe4a8429734a020c34550c"
+        },
+        "redacted_env": {
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ]
+        },
+        "request_id": "req_20260723-111214-1e7349",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111214-70dca6",
+        "run_state": {
+          "attempts": 3,
+          "checkpoint_id": "ckpt_8299a584",
+          "created_at": "2026-07-23T11:12:14+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-07-23T11:12:14+08:00",
+          "last_tool": "patch_file",
+          "request_id": "req_20260723-111214-1e7349",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20260723-111214-70dca6",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 2,
+          "updated_at": "2026-07-23T11:12:14+08:00",
+          "user_request": "Reject an out-of-workspace read and then apply the safe sample.txt update."
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 2
+      },
+      "report_relpath": "path_escape_recovery\\bench_repo_patch\\.hh\\runs\\run_20260723-111214-70dca6\\report.json",
+      "run_dir_relpath": "path_escape_recovery\\bench_repo_patch\\.hh\\runs\\run_20260723-111214-70dca6",
+      "run_id": "run_20260723-111214-70dca6",
+      "run_state": {
+        "attempts": 3,
+        "checkpoint_id": "ckpt_8299a584",
+        "created_at": "2026-07-23T11:12:14+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-07-23T11:12:14+08:00",
+        "last_tool": "patch_file",
+        "request_id": "req_20260723-111214-1e7349",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111214-70dca6",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 2,
+        "updated_at": "2026-07-23T11:12:14+08:00",
+        "user_request": "Reject an out-of-workspace read and then apply the safe sample.txt update."
+      },
+      "run_state_relpath": "path_escape_recovery\\bench_repo_patch\\.hh\\runs\\run_20260723-111214-70dca6\\run_state.json",
+      "status": "pass",
+      "step_budget": 2,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 2,
+      "verifier": "python -c \"from pathlib import Path; assert 'alpha-guarded' in Path('sample.txt').read_text(encoding='utf-8'); assert 'path_escape' in ''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl'))\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "read_file",
+        "patch_file"
+      ],
+      "artifact_digest": "sha256:8391278d2b6a228ffabc5c858a46f94a1ee2e0df64294879f996a785c2da5086",
+      "artifact_exists": true,
+      "artifact_path": "sample.txt",
+      "attempts": 5,
+      "category": "loop_guard_recovery",
+      "expected_artifact": "sample.txt contains repeat-guarded",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "repeated_read_recovery\\bench_repo_patch",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "id": "repeated_read_recovery",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Recover from repeated identical reads and complete the requested sample.txt edit.",
+      "report": {
+        "attempts": 5,
+        "checkpoint_id": "ckpt_f5abb820",
+        "durable_promotions": [],
+        "durable_rejections": [],
+        "durable_superseded": [],
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_reductions": [],
+          "current_request": {
+            "raw_chars": 81,
+            "rendered_chars": 81,
+            "section_chars": 103,
+            "text": "Recover from repeated identical reads and complete the requested sample.txt edit."
+          },
+          "history": {
+            "collapsed_duplicate_reads": 0,
+            "older_entries_count": 0,
+            "raw_chars": 635,
+            "rendered_chars": 635,
+            "reused_file_summary_count": 0,
+            "summarized_tool_count": 0
+          },
+          "history_chars": 623,
+          "memory_chars": 184,
+          "prefix_changed": false,
+          "prefix_chars": 2694,
+          "prefix_hash": "b212e48a8cb26a6564751e76f0e5d424e0b9028cd752d5ea177aa6ded95c77f6",
+          "prompt_budget_chars": 12000,
+          "prompt_cache_key": "b212e48a8cb26a6564751e76f0e5d424e0b9028cd752d5ea177aa6ded95c77f6",
+          "prompt_cache_supported": false,
+          "prompt_chars": 4023,
+          "prompt_over_budget": false,
+          "recent_commits": 0,
+          "reduction_order": [
+            "relevant_memory",
+            "history",
+            "memory",
+            "prefix"
+          ],
+          "relevant_memory": {
+            "limit": 3,
+            "raw_chars": 48,
+            "rendered_chars": 48,
+            "rendered_count": 1,
+            "rendered_notes": [
+              "1: alpha | 2: beta | 3: gamma"
+            ],
+            "selected_count": 1,
+            "selected_durable_count": 0,
+            "selected_kinds": [
+              "episodic"
+            ],
+            "selected_notes": [
+              "1: alpha | 2: beta | 3: gamma"
+            ],
+            "selected_sources": [
+              "sample.txt"
+            ]
+          },
+          "request_chars": 81,
+          "resume_status": "full-valid",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ],
+          "section_budgets": {
+            "current_request": null,
+            "history": 5200,
+            "memory": 1600,
+            "prefix": 3600,
+            "relevant_memory": 1200
+          },
+          "section_order": [
+            "prefix",
+            "memory",
+            "relevant_memory",
+            "history",
+            "current_request"
+          ],
+          "sections": {
+            "current_request": {
+              "budget_chars": null,
+              "raw_chars": 103,
+              "rendered_chars": 103
+            },
+            "history": {
+              "budget_chars": 5200,
+              "raw_chars": 635,
+              "rendered_chars": 635
+            },
+            "memory": {
+              "budget_chars": 1600,
+              "raw_chars": 184,
+              "rendered_chars": 184
+            },
+            "prefix": {
+              "budget_chars": 3600,
+              "raw_chars": 3045,
+              "rendered_chars": 3045
+            },
+            "relevant_memory": {
+              "budget_chars": 1200,
+              "raw_chars": 48,
+              "rendered_chars": 48
+            }
+          },
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "tool_count": 2,
+          "tool_signature": "2ce2c35819cc1537d4556c1cef854b28598d76fa82e22499fd8c6ec0a037e111",
+          "workspace_changed": false,
+          "workspace_chars": 532,
+          "workspace_docs": 1,
+          "workspace_fingerprint": "6f130f3ab3166f93017f02c5d9d14ac076fb071c3806e1ff3a85369c21e822e9"
+        },
+        "redacted_env": {
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ]
+        },
+        "request_id": "req_20260723-111214-7fd5ca",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111214-eb281e",
+        "run_state": {
+          "attempts": 5,
+          "checkpoint_id": "ckpt_f5abb820",
+          "created_at": "2026-07-23T11:12:14+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-07-23T11:12:16+08:00",
+          "last_tool": "patch_file",
+          "request_id": "req_20260723-111214-7fd5ca",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20260723-111214-eb281e",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 4,
+          "updated_at": "2026-07-23T11:12:16+08:00",
+          "user_request": "Recover from repeated identical reads and complete the requested sample.txt edit."
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 4
+      },
+      "report_relpath": "repeated_read_recovery\\bench_repo_patch\\.hh\\runs\\run_20260723-111214-eb281e\\report.json",
+      "run_dir_relpath": "repeated_read_recovery\\bench_repo_patch\\.hh\\runs\\run_20260723-111214-eb281e",
+      "run_id": "run_20260723-111214-eb281e",
+      "run_state": {
+        "attempts": 5,
+        "checkpoint_id": "ckpt_f5abb820",
+        "created_at": "2026-07-23T11:12:14+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-07-23T11:12:16+08:00",
+        "last_tool": "patch_file",
+        "request_id": "req_20260723-111214-7fd5ca",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111214-eb281e",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 4,
+        "updated_at": "2026-07-23T11:12:16+08:00",
+        "user_request": "Recover from repeated identical reads and complete the requested sample.txt edit."
+      },
+      "run_state_relpath": "repeated_read_recovery\\bench_repo_patch\\.hh\\runs\\run_20260723-111214-eb281e\\run_state.json",
+      "status": "pass",
+      "step_budget": 4,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 4,
+      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'repeat-guarded' in Path('sample.txt').read_text(encoding='utf-8'); assert 'repeated_identical_call' in traces\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "read_file"
+      ],
+      "artifact_digest": "sha256:e1fb642f4924b9dba90e4d9ca47810436b274fd48fbfec832a989f09c5c00da4",
+      "artifact_exists": true,
+      "artifact_path": "README.md",
+      "attempts": 1,
+      "category": "context_governance",
+      "expected_artifact": "context reduction creates an auditable checkpoint",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "context_reduction_checkpoint\\bench_repo_readme",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "id": "context_reduction_checkpoint",
+      "initial_episodic_notes_empty": false,
+      "initial_history_empty": false,
+      "initial_memory_empty": false,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Complete the task while preserving a checkpoint when the context is reduced.",
+      "report": {
+        "attempts": 1,
+        "checkpoint_id": "ckpt_826d763c",
+        "durable_promotions": [],
+        "durable_rejections": [],
+        "durable_superseded": [],
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_reductions": [
+            {
+              "after_chars": 120,
+              "before_chars": 2656,
+              "reason": "section_budget",
+              "section": "prefix"
+            },
+            {
+              "after_chars": 120,
+              "before_chars": 170,
+              "reason": "section_budget",
+              "section": "memory"
+            },
+            {
+              "after_chars": 160,
+              "before_chars": 3103,
+              "reason": "section_budget",
+              "section": "history"
+            }
+          ],
+          "current_request": {
+            "raw_chars": 76,
+            "rendered_chars": 76,
+            "section_chars": 98,
+            "text": "Complete the task while preserving a checkpoint when the context is reduced."
+          },
+          "history": {
+            "collapsed_duplicate_reads": 0,
+            "older_entries_count": 0,
+            "raw_chars": 3103,
+            "rendered_chars": 160,
+            "reused_file_summary_count": 0,
+            "summarized_tool_count": 0
+          },
+          "history_chars": 3119,
+          "memory_chars": 170,
+          "prefix_changed": false,
+          "prefix_chars": 2656,
+          "prefix_hash": "a861650ce990d89fe270a36baf57abe74a5cad462a38cb081a7c96ab7f744c74",
+          "prompt_budget_chars": 900,
+          "prompt_cache_key": "a861650ce990d89fe270a36baf57abe74a5cad462a38cb081a7c96ab7f744c74",
+          "prompt_cache_supported": false,
+          "prompt_chars": 529,
+          "prompt_over_budget": false,
+          "recent_commits": 0,
+          "reduction_order": [
+            "relevant_memory",
+            "history",
+            "memory",
+            "prefix"
+          ],
+          "relevant_memory": {
+            "limit": 3,
+            "raw_chars": 23,
+            "rendered_chars": 23,
+            "rendered_count": 0,
+            "rendered_notes": [],
+            "selected_count": 0,
+            "selected_durable_count": 0,
+            "selected_kinds": [],
+            "selected_notes": [],
+            "selected_sources": []
+          },
+          "request_chars": 76,
+          "resume_status": "no-checkpoint",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ],
+          "section_budgets": {
+            "current_request": null,
+            "history": 160,
+            "memory": 120,
+            "prefix": 120,
+            "relevant_memory": 120
+          },
+          "section_order": [
+            "prefix",
+            "memory",
+            "relevant_memory",
+            "history",
+            "current_request"
+          ],
+          "sections": {
+            "current_request": {
+              "budget_chars": null,
+              "raw_chars": 98,
+              "rendered_chars": 98
+            },
+            "history": {
+              "budget_chars": 160,
+              "raw_chars": 3103,
+              "rendered_chars": 160
+            },
+            "memory": {
+              "budget_chars": 120,
+              "raw_chars": 170,
+              "rendered_chars": 120
+            },
+            "prefix": {
+              "budget_chars": 120,
+              "raw_chars": 2656,
+              "rendered_chars": 120
+            },
+            "relevant_memory": {
+              "budget_chars": 120,
+              "raw_chars": 23,
+              "rendered_chars": 23
+            }
+          },
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "tool_count": 1,
+          "tool_signature": "44a17ea044d760b356aa697e7f7c461c3c4eedea295c0dbd6dada802a7ff1b27",
+          "workspace_changed": false,
+          "workspace_chars": 608,
+          "workspace_docs": 1,
+          "workspace_fingerprint": "54e5dc7d309d1f1c580fc3e2e7eed71745532984395a7ac0d1ade3f4c9ee0398"
+        },
+        "redacted_env": {
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ]
+        },
+        "request_id": "req_20260723-111216-0046bc",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111216-f59cd3",
+        "run_state": {
+          "attempts": 1,
+          "checkpoint_id": "ckpt_826d763c",
+          "created_at": "2026-07-23T11:12:16+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-07-23T11:12:16+08:00",
+          "last_tool": "",
+          "request_id": "req_20260723-111216-0046bc",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20260723-111216-f59cd3",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 0,
+          "updated_at": "2026-07-23T11:12:16+08:00",
+          "user_request": "Complete the task while preserving a checkpoint when the context is reduced."
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 0
+      },
+      "report_relpath": "context_reduction_checkpoint\\bench_repo_readme\\.hh\\runs\\run_20260723-111216-f59cd3\\report.json",
+      "run_dir_relpath": "context_reduction_checkpoint\\bench_repo_readme\\.hh\\runs\\run_20260723-111216-f59cd3",
+      "run_id": "run_20260723-111216-f59cd3",
+      "run_state": {
+        "attempts": 1,
+        "checkpoint_id": "ckpt_826d763c",
+        "created_at": "2026-07-23T11:12:16+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-07-23T11:12:16+08:00",
+        "last_tool": "",
+        "request_id": "req_20260723-111216-0046bc",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111216-f59cd3",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 0,
+        "updated_at": "2026-07-23T11:12:16+08:00",
+        "user_request": "Complete the task while preserving a checkpoint when the context is reduced."
+      },
+      "run_state_relpath": "context_reduction_checkpoint\\bench_repo_readme\\.hh\\runs\\run_20260723-111216-f59cd3\\run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 0,
+      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'context_reduction' in traces\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "read_file"
+      ],
+      "artifact_digest": "sha256:982fc5b31b8685ac8e107529a4ec7586df0b68d315f41f0d52de8004e38dc904",
+      "artifact_exists": true,
+      "artifact_path": "sample.txt",
+      "attempts": 1,
+      "category": "checkpoint_recovery",
+      "expected_artifact": "freshness mismatch is detected and checkpointed",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "freshness_reanchor_resume\\bench_repo_patch",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "id": "freshness_reanchor_resume",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": false,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Resume after a key file changed and re-anchor the stale checkpoint.",
+      "report": {
+        "attempts": 1,
+        "checkpoint_id": "ckpt_cd75d74f",
+        "durable_promotions": [],
+        "durable_rejections": [],
+        "durable_superseded": [],
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_reductions": [],
+          "current_request": {
+            "raw_chars": 67,
+            "rendered_chars": 67,
+            "section_chars": 89,
+            "text": "Resume after a key file changed and re-anchor the stale checkpoint."
+          },
+          "history": {
+            "collapsed_duplicate_reads": 0,
+            "older_entries_count": 0,
+            "raw_chars": 86,
+            "rendered_chars": 86,
+            "reused_file_summary_count": 0,
+            "summarized_tool_count": 0
+          },
+          "history_chars": 74,
+          "memory_chars": 170,
+          "prefix_changed": false,
+          "prefix_chars": 2586,
+          "prefix_hash": "bdb3b3b42701000a3f9d759b0763a8057bfdf3d30d4db82cc18660f08791ec90",
+          "prompt_budget_chars": 12000,
+          "prompt_cache_key": "bdb3b3b42701000a3f9d759b0763a8057bfdf3d30d4db82cc18660f08791ec90",
+          "prompt_cache_supported": false,
+          "prompt_chars": 3205,
+          "prompt_over_budget": false,
+          "recent_commits": 0,
+          "reduction_order": [
+            "relevant_memory",
+            "history",
+            "memory",
+            "prefix"
+          ],
+          "relevant_memory": {
+            "limit": 3,
+            "raw_chars": 23,
+            "rendered_chars": 23,
+            "rendered_count": 0,
+            "rendered_notes": [],
+            "selected_count": 0,
+            "selected_durable_count": 0,
+            "selected_kinds": [],
+            "selected_notes": [],
+            "selected_sources": []
+          },
+          "request_chars": 67,
+          "resume_status": "partial-stale",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ],
+          "section_budgets": {
+            "current_request": null,
+            "history": 5200,
+            "memory": 1600,
+            "prefix": 3600,
+            "relevant_memory": 1200
+          },
+          "section_order": [
+            "prefix",
+            "memory",
+            "relevant_memory",
+            "history",
+            "current_request"
+          ],
+          "sections": {
+            "current_request": {
+              "budget_chars": null,
+              "raw_chars": 89,
+              "rendered_chars": 89
+            },
+            "history": {
+              "budget_chars": 5200,
+              "raw_chars": 86,
+              "rendered_chars": 86
+            },
+            "memory": {
+              "budget_chars": 1600,
+              "raw_chars": 170,
+              "rendered_chars": 170
+            },
+            "prefix": {
+              "budget_chars": 3600,
+              "raw_chars": 2829,
+              "rendered_chars": 2829
+            },
+            "relevant_memory": {
+              "budget_chars": 1200,
+              "raw_chars": 23,
+              "rendered_chars": 23
+            }
+          },
+          "stale_paths": [
+            "sample.txt"
+          ],
+          "stale_summary_invalidations": 1,
+          "tool_count": 1,
+          "tool_signature": "44a17ea044d760b356aa697e7f7c461c3c4eedea295c0dbd6dada802a7ff1b27",
+          "workspace_changed": false,
+          "workspace_chars": 538,
+          "workspace_docs": 1,
+          "workspace_fingerprint": "9f942ffdace43d3cb40a6481fd6b7ddb0576994c93747fbf796aab3dbc6c1ff5"
+        },
+        "redacted_env": {
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ]
+        },
+        "request_id": "req_20260723-111217-b36124",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111217-9f8231",
+        "run_state": {
+          "attempts": 1,
+          "checkpoint_id": "ckpt_cd75d74f",
+          "created_at": "2026-07-23T11:12:17+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-07-23T11:12:17+08:00",
+          "last_tool": "",
+          "request_id": "req_20260723-111217-b36124",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20260723-111217-9f8231",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 0,
+          "updated_at": "2026-07-23T11:12:17+08:00",
+          "user_request": "Resume after a key file changed and re-anchor the stale checkpoint."
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 0
+      },
+      "report_relpath": "freshness_reanchor_resume\\bench_repo_patch\\.hh\\runs\\run_20260723-111217-9f8231\\report.json",
+      "run_dir_relpath": "freshness_reanchor_resume\\bench_repo_patch\\.hh\\runs\\run_20260723-111217-9f8231",
+      "run_id": "run_20260723-111217-9f8231",
+      "run_state": {
+        "attempts": 1,
+        "checkpoint_id": "ckpt_cd75d74f",
+        "created_at": "2026-07-23T11:12:17+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-07-23T11:12:17+08:00",
+        "last_tool": "",
+        "request_id": "req_20260723-111217-b36124",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111217-9f8231",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 0,
+        "updated_at": "2026-07-23T11:12:17+08:00",
+        "user_request": "Resume after a key file changed and re-anchor the stale checkpoint."
+      },
+      "run_state_relpath": "freshness_reanchor_resume\\bench_repo_patch\\.hh\\runs\\run_20260723-111217-9f8231\\run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 0,
+      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'freshness_mismatch' in traces\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "read_file"
+      ],
+      "artifact_digest": "sha256:59fb5abc13b3820bd9a669d9748a5236a301262fb47973660a61ec32d9610fef",
+      "artifact_exists": true,
+      "artifact_path": "sample.txt",
+      "attempts": 1,
+      "category": "checkpoint_recovery",
+      "expected_artifact": "runtime identity mismatch is traced",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "workspace_mismatch_resume\\bench_repo_patch",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "id": "workspace_mismatch_resume",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Resume after workspace identity drift and record the mismatch.",
+      "report": {
+        "attempts": 1,
+        "checkpoint_id": "ckpt_edc9d79f",
+        "durable_promotions": [],
+        "durable_rejections": [],
+        "durable_superseded": [],
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_reductions": [],
+          "current_request": {
+            "raw_chars": 62,
+            "rendered_chars": 62,
+            "section_chars": 84,
+            "text": "Resume after workspace identity drift and record the mismatch."
+          },
+          "history": {
+            "collapsed_duplicate_reads": 0,
+            "older_entries_count": 0,
+            "raw_chars": 81,
+            "rendered_chars": 81,
+            "reused_file_summary_count": 0,
+            "summarized_tool_count": 0
+          },
+          "history_chars": 69,
+          "memory_chars": 156,
+          "prefix_changed": false,
+          "prefix_chars": 2586,
+          "prefix_hash": "1efdc254263773def1cc3ccc9fbf71aa6c519880348f527cbcb1ee47dd8907e5",
+          "prompt_budget_chars": 12000,
+          "prompt_cache_key": "1efdc254263773def1cc3ccc9fbf71aa6c519880348f527cbcb1ee47dd8907e5",
+          "prompt_cache_supported": false,
+          "prompt_chars": 3191,
+          "prompt_over_budget": false,
+          "recent_commits": 0,
+          "reduction_order": [
+            "relevant_memory",
+            "history",
+            "memory",
+            "prefix"
+          ],
+          "relevant_memory": {
+            "limit": 3,
+            "raw_chars": 23,
+            "rendered_chars": 23,
+            "rendered_count": 0,
+            "rendered_notes": [],
+            "selected_count": 0,
+            "selected_durable_count": 0,
+            "selected_kinds": [],
+            "selected_notes": [],
+            "selected_sources": []
+          },
+          "request_chars": 62,
+          "resume_status": "workspace-mismatch",
+          "runtime_identity_mismatch_fields": [
+            "workspace_fingerprint"
+          ],
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ],
+          "section_budgets": {
+            "current_request": null,
+            "history": 5200,
+            "memory": 1600,
+            "prefix": 3600,
+            "relevant_memory": 1200
+          },
+          "section_order": [
+            "prefix",
+            "memory",
+            "relevant_memory",
+            "history",
+            "current_request"
+          ],
+          "sections": {
+            "current_request": {
+              "budget_chars": null,
+              "raw_chars": 84,
+              "rendered_chars": 84
+            },
+            "history": {
+              "budget_chars": 5200,
+              "raw_chars": 81,
+              "rendered_chars": 81
+            },
+            "memory": {
+              "budget_chars": 1600,
+              "raw_chars": 156,
+              "rendered_chars": 156
+            },
+            "prefix": {
+              "budget_chars": 3600,
+              "raw_chars": 2839,
+              "rendered_chars": 2839
+            },
+            "relevant_memory": {
+              "budget_chars": 1200,
+              "raw_chars": 23,
+              "rendered_chars": 23
+            }
+          },
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "tool_count": 1,
+          "tool_signature": "44a17ea044d760b356aa697e7f7c461c3c4eedea295c0dbd6dada802a7ff1b27",
+          "workspace_changed": false,
+          "workspace_chars": 538,
+          "workspace_docs": 1,
+          "workspace_fingerprint": "2c4f775f44147dd14fdb4e9676df9330c47fafae35178d4b7717c5e5ba7e4006"
+        },
+        "redacted_env": {
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ]
+        },
+        "request_id": "req_20260723-111217-e5a813",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111217-c59266",
+        "run_state": {
+          "attempts": 1,
+          "checkpoint_id": "ckpt_edc9d79f",
+          "created_at": "2026-07-23T11:12:17+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-07-23T11:12:17+08:00",
+          "last_tool": "",
+          "request_id": "req_20260723-111217-e5a813",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20260723-111217-c59266",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 0,
+          "updated_at": "2026-07-23T11:12:17+08:00",
+          "user_request": "Resume after workspace identity drift and record the mismatch."
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 0
+      },
+      "report_relpath": "workspace_mismatch_resume\\bench_repo_patch\\.hh\\runs\\run_20260723-111217-c59266\\report.json",
+      "run_dir_relpath": "workspace_mismatch_resume\\bench_repo_patch\\.hh\\runs\\run_20260723-111217-c59266",
+      "run_id": "run_20260723-111217-c59266",
+      "run_state": {
+        "attempts": 1,
+        "checkpoint_id": "ckpt_edc9d79f",
+        "created_at": "2026-07-23T11:12:17+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-07-23T11:12:17+08:00",
+        "last_tool": "",
+        "request_id": "req_20260723-111217-e5a813",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111217-c59266",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 0,
+        "updated_at": "2026-07-23T11:12:17+08:00",
+        "user_request": "Resume after workspace identity drift and record the mismatch."
+      },
+      "run_state_relpath": "workspace_mismatch_resume\\bench_repo_patch\\.hh\\runs\\run_20260723-111217-c59266\\run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 0,
+      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'runtime_identity_mismatch' in traces\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "read_file"
+      ],
+      "artifact_digest": "sha256:e1fb642f4924b9dba90e4d9ca47810436b274fd48fbfec832a989f09c5c00da4",
+      "artifact_exists": true,
+      "artifact_path": "README.md",
+      "attempts": 1,
+      "category": "durable_memory",
+      "expected_artifact": "stable convention is promoted into durable memory",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Project convention: Preserve benchmark regression artifacts under artifacts/.\nDecision: Keep harness regression deterministic and reproducible.",
+      "fixture_copy_relpath": "durable_promotion_accept\\bench_repo_readme",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "id": "durable_promotion_accept",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Record stable project conventions from the final answer.",
+      "report": {
+        "attempts": 1,
+        "checkpoint_id": "ckpt_1c6b0898",
+        "durable_promotions": [
+          "project-conventions: Preserve benchmark regression artifacts under artifacts/.",
+          "key-decisions: Keep harness regression deterministic and reproducible."
+        ],
+        "durable_rejections": [],
+        "durable_superseded": [],
+        "final_answer": "Project convention: Preserve benchmark regression artifacts under artifacts/.\nDecision: Keep harness regression deterministic and reproducible.",
+        "prompt_metadata": {
+          "budget_reductions": [],
+          "current_request": {
+            "raw_chars": 56,
+            "rendered_chars": 56,
+            "section_chars": 78,
+            "text": "Record stable project conventions from the final answer."
+          },
+          "history": {
+            "collapsed_duplicate_reads": 0,
+            "older_entries_count": 0,
+            "raw_chars": 75,
+            "rendered_chars": 75,
+            "reused_file_summary_count": 0,
+            "summarized_tool_count": 0
+          },
+          "history_chars": 63,
+          "memory_chars": 150,
+          "prefix_changed": false,
+          "prefix_chars": 2648,
+          "prefix_hash": "d893fe2a1356b18d7ca30cb3eacbe8c4737ba28cfb7a932be27fec8296c86433",
+          "prompt_budget_chars": 12000,
+          "prompt_cache_key": "d893fe2a1356b18d7ca30cb3eacbe8c4737ba28cfb7a932be27fec8296c86433",
+          "prompt_cache_supported": false,
+          "prompt_chars": 2982,
+          "prompt_over_budget": false,
+          "recent_commits": 0,
+          "reduction_order": [
+            "relevant_memory",
+            "history",
+            "memory",
+            "prefix"
+          ],
+          "relevant_memory": {
+            "limit": 3,
+            "raw_chars": 23,
+            "rendered_chars": 23,
+            "rendered_count": 0,
+            "rendered_notes": [],
+            "selected_count": 0,
+            "selected_durable_count": 0,
+            "selected_kinds": [],
+            "selected_notes": [],
+            "selected_sources": []
+          },
+          "request_chars": 56,
+          "resume_status": "no-checkpoint",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ],
+          "section_budgets": {
+            "current_request": null,
+            "history": 5200,
+            "memory": 1600,
+            "prefix": 3600,
+            "relevant_memory": 1200
+          },
+          "section_order": [
+            "prefix",
+            "memory",
+            "relevant_memory",
+            "history",
+            "current_request"
+          ],
+          "sections": {
+            "current_request": {
+              "budget_chars": null,
+              "raw_chars": 78,
+              "rendered_chars": 78
+            },
+            "history": {
+              "budget_chars": 5200,
+              "raw_chars": 75,
+              "rendered_chars": 75
+            },
+            "memory": {
+              "budget_chars": 1600,
+              "raw_chars": 150,
+              "rendered_chars": 150
+            },
+            "prefix": {
+              "budget_chars": 3600,
+              "raw_chars": 2648,
+              "rendered_chars": 2648
+            },
+            "relevant_memory": {
+              "budget_chars": 1200,
+              "raw_chars": 23,
+              "rendered_chars": 23
+            }
+          },
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "tool_count": 1,
+          "tool_signature": "44a17ea044d760b356aa697e7f7c461c3c4eedea295c0dbd6dada802a7ff1b27",
+          "workspace_changed": false,
+          "workspace_chars": 600,
+          "workspace_docs": 1,
+          "workspace_fingerprint": "9a3b8aa81f44a5f3666c57c65bf79ddbfb312acd2c80b0e1863f88878138b77c"
+        },
+        "redacted_env": {
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ]
+        },
+        "request_id": "req_20260723-111218-372465",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111218-7901b4",
+        "run_state": {
+          "attempts": 1,
+          "checkpoint_id": "ckpt_1c6b0898",
+          "created_at": "2026-07-23T11:12:18+08:00",
+          "final_answer": "Project convention: Preserve benchmark regression artifacts under artifacts/.\nDecision: Keep harness regression deterministic and reproducible.",
+          "finished_at": "2026-07-23T11:12:18+08:00",
+          "last_tool": "",
+          "request_id": "req_20260723-111218-372465",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20260723-111218-7901b4",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 0,
+          "updated_at": "2026-07-23T11:12:18+08:00",
+          "user_request": "Record stable project conventions from the final answer."
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 0
+      },
+      "report_relpath": "durable_promotion_accept\\bench_repo_readme\\.hh\\runs\\run_20260723-111218-7901b4\\report.json",
+      "run_dir_relpath": "durable_promotion_accept\\bench_repo_readme\\.hh\\runs\\run_20260723-111218-7901b4",
+      "run_id": "run_20260723-111218-7901b4",
+      "run_state": {
+        "attempts": 1,
+        "checkpoint_id": "ckpt_1c6b0898",
+        "created_at": "2026-07-23T11:12:18+08:00",
+        "final_answer": "Project convention: Preserve benchmark regression artifacts under artifacts/.\nDecision: Keep harness regression deterministic and reproducible.",
+        "finished_at": "2026-07-23T11:12:18+08:00",
+        "last_tool": "",
+        "request_id": "req_20260723-111218-372465",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111218-7901b4",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 0,
+        "updated_at": "2026-07-23T11:12:18+08:00",
+        "user_request": "Record stable project conventions from the final answer."
+      },
+      "run_state_relpath": "durable_promotion_accept\\bench_repo_readme\\.hh\\runs\\run_20260723-111218-7901b4\\run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 0,
+      "verifier": "python -c \"from pathlib import Path; memory=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/memory/topics').glob('*.md')); assert 'Preserve benchmark regression artifacts' in memory\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "read_file"
+      ],
+      "artifact_digest": "sha256:e1fb642f4924b9dba90e4d9ca47810436b274fd48fbfec832a989f09c5c00da4",
+      "artifact_exists": true,
+      "artifact_path": "README.md",
+      "attempts": 1,
+      "category": "durable_memory",
+      "expected_artifact": "secret-like content is rejected from durable memory",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Project convention: Keep verifier outcomes stable across reruns.\nDependency: API key is sk-benchmark-secret.\nDecision: Current goal is debug the harness.",
+      "fixture_copy_relpath": "durable_promotion_reject\\bench_repo_readme",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "id": "durable_promotion_reject",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Keep only safe durable project facts from the final answer.",
+      "report": {
+        "attempts": 1,
+        "checkpoint_id": "ckpt_782431fb",
+        "durable_promotions": [],
+        "durable_rejections": [],
+        "durable_superseded": [],
+        "final_answer": "Project convention: Keep verifier outcomes stable across reruns.\nDependency: API key is sk-benchmark-secret.\nDecision: Current goal is debug the harness.",
+        "prompt_metadata": {
+          "budget_reductions": [],
+          "current_request": {
+            "raw_chars": 59,
+            "rendered_chars": 59,
+            "section_chars": 81,
+            "text": "Keep only safe durable project facts from the final answer."
+          },
+          "history": {
+            "collapsed_duplicate_reads": 0,
+            "older_entries_count": 0,
+            "raw_chars": 78,
+            "rendered_chars": 78,
+            "reused_file_summary_count": 0,
+            "summarized_tool_count": 0
+          },
+          "history_chars": 66,
+          "memory_chars": 153,
+          "prefix_changed": false,
+          "prefix_chars": 2648,
+          "prefix_hash": "59bf482d6f43158d7778d1122c79096e86e5ca10b3e0be08992787be4e4f018b",
+          "prompt_budget_chars": 12000,
+          "prompt_cache_key": "59bf482d6f43158d7778d1122c79096e86e5ca10b3e0be08992787be4e4f018b",
+          "prompt_cache_supported": false,
+          "prompt_chars": 2991,
+          "prompt_over_budget": false,
+          "recent_commits": 0,
+          "reduction_order": [
+            "relevant_memory",
+            "history",
+            "memory",
+            "prefix"
+          ],
+          "relevant_memory": {
+            "limit": 3,
+            "raw_chars": 23,
+            "rendered_chars": 23,
+            "rendered_count": 0,
+            "rendered_notes": [],
+            "selected_count": 0,
+            "selected_durable_count": 0,
+            "selected_kinds": [],
+            "selected_notes": [],
+            "selected_sources": []
+          },
+          "request_chars": 59,
+          "resume_status": "no-checkpoint",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ],
+          "section_budgets": {
+            "current_request": null,
+            "history": 5200,
+            "memory": 1600,
+            "prefix": 3600,
+            "relevant_memory": 1200
+          },
+          "section_order": [
+            "prefix",
+            "memory",
+            "relevant_memory",
+            "history",
+            "current_request"
+          ],
+          "sections": {
+            "current_request": {
+              "budget_chars": null,
+              "raw_chars": 81,
+              "rendered_chars": 81
+            },
+            "history": {
+              "budget_chars": 5200,
+              "raw_chars": 78,
+              "rendered_chars": 78
+            },
+            "memory": {
+              "budget_chars": 1600,
+              "raw_chars": 153,
+              "rendered_chars": 153
+            },
+            "prefix": {
+              "budget_chars": 3600,
+              "raw_chars": 2648,
+              "rendered_chars": 2648
+            },
+            "relevant_memory": {
+              "budget_chars": 1200,
+              "raw_chars": 23,
+              "rendered_chars": 23
+            }
+          },
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "tool_count": 1,
+          "tool_signature": "44a17ea044d760b356aa697e7f7c461c3c4eedea295c0dbd6dada802a7ff1b27",
+          "workspace_changed": false,
+          "workspace_chars": 600,
+          "workspace_docs": 1,
+          "workspace_fingerprint": "3705486576b230ba666b9cd3febbf6871eb6b1604b342482c971145179929e06"
+        },
+        "redacted_env": {
+          "secret_env_count": 3,
+          "secret_env_names": [
+            "DB_PASSWORD",
+            "OSS_ACCESS_KEY_SECRET",
+            "XF_API_KEY"
+          ]
+        },
+        "request_id": "req_20260723-111219-773117",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111219-b5ab64",
+        "run_state": {
+          "attempts": 1,
+          "checkpoint_id": "ckpt_782431fb",
+          "created_at": "2026-07-23T11:12:19+08:00",
+          "final_answer": "Project convention: Keep verifier outcomes stable across reruns.\nDependency: API key is sk-benchmark-secret.\nDecision: Current goal is debug the harness.",
+          "finished_at": "2026-07-23T11:12:19+08:00",
+          "last_tool": "",
+          "request_id": "req_20260723-111219-773117",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20260723-111219-b5ab64",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 0,
+          "updated_at": "2026-07-23T11:12:19+08:00",
+          "user_request": "Keep only safe durable project facts from the final answer."
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 0
+      },
+      "report_relpath": "durable_promotion_reject\\bench_repo_readme\\.hh\\runs\\run_20260723-111219-b5ab64\\report.json",
+      "run_dir_relpath": "durable_promotion_reject\\bench_repo_readme\\.hh\\runs\\run_20260723-111219-b5ab64",
+      "run_id": "run_20260723-111219-b5ab64",
+      "run_state": {
+        "attempts": 1,
+        "checkpoint_id": "ckpt_782431fb",
+        "created_at": "2026-07-23T11:12:19+08:00",
+        "final_answer": "Project convention: Keep verifier outcomes stable across reruns.\nDependency: API key is sk-benchmark-secret.\nDecision: Current goal is debug the harness.",
+        "finished_at": "2026-07-23T11:12:19+08:00",
+        "last_tool": "",
+        "request_id": "req_20260723-111219-773117",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20260723-111219-b5ab64",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 0,
+        "updated_at": "2026-07-23T11:12:19+08:00",
+        "user_request": "Keep only safe durable project facts from the final answer."
+      },
+      "run_state_relpath": "durable_promotion_reject\\bench_repo_readme\\.hh\\runs\\run_20260723-111219-b5ab64\\run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 0,
+      "verifier": "python -c \"import json; from pathlib import Path; session=json.loads(next(Path('.hh/sessions').glob('*.json')).read_text(encoding='utf-8')); memory=json.dumps(session.get('memory', {}), ensure_ascii=False); assert 'sk-benchmark-secret' not in memory\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    }
+  ],
+  "runtime": {
+    "branch": "master",
+    "commit_sha": ""
+  },
+  "schema_version": 1,
+  "summary": {
+    "failed": 0,
+    "failure_category_counts": {},
+    "pass_rate": 1.0,
+    "passed": 14,
+    "total_tasks": 14,
+    "verifier_pass_rate": 1.0,
+    "verifier_passes": 14,
+    "within_budget": 14,
+    "within_budget_rate": 1.0
+  }
+}
