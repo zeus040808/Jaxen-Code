@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-08-18T16:25:38.2400411+08:00",
+  "branch": "codex/eval-v2",
+  "source_commit": "ad7e2a8a51f186c9a62789ab4d74fde43032822a",
+  "task_set": {
+    "path": "benchmarks/reliability_tasks_v1.json",
+    "sha256": "deb65b6921aa97cd249169a8c82ed105f290b1f2e3376f248bea67a61886cb96",
+    "git_blob": "2ac81ca5cf7c0582ff9a3e8126457f00d2c276ac"
+  },
+  "fixture": {
+    "path": "benchmarks/fixtures/bench_repo_reliability",
+    "git_tree": "17d4357e36b6d55bd4cf78f4aeb0e9d20b89c8ee"
+  },
+  "excluded_runtime_artifacts": [
+    ".niceeval/",
+    "artifacts/reliability-runs/",
+    "artifacts/enterprise-eval-*/evidence/"
+  ]
+}
