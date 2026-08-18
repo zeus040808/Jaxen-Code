@@ -81,7 +81,6 @@ SCRIPTED_MODEL_OUTPUTS = {
     "repeated_read_recovery": [
         '<tool>{"name":"read_file","args":{"path":"sample.txt","start":1,"end":4}}</tool>',
         '<tool>{"name":"read_file","args":{"path":"sample.txt","start":1,"end":4}}</tool>',
-        '<tool>{"name":"read_file","args":{"path":"sample.txt","start":1,"end":4}}</tool>',
         '<tool name="patch_file" path="sample.txt"><old_text>placeholder</old_text><new_text>repeat-guarded</new_text></tool>',
         "<final>Done.</final>",
     ],
@@ -95,7 +94,7 @@ SCRIPTED_MODEL_OUTPUTS = {
         "<final>Done.</final>",
     ],
     "durable_promotion_accept": [
-        "<final>Project convention: Preserve benchmark regression artifacts under artifacts/.\nDecision: Keep harness regression deterministic and reproducible.</final>",
+        "<final>Remembered the explicit benchmark artifact convention.</final>",
     ],
     "durable_promotion_reject": [
         "<final>Project convention: Keep verifier outcomes stable across reruns.\nDependency: API key is sk-benchmark-secret.\nDecision: Current goal is debug the harness.</final>",

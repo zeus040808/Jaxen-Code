@@ -4,8 +4,7 @@
 
 import uuid
 
-from .features import memory as memorylib
-from .workspace import clip, now
+from .workspace import clip, file_freshness, now
 
 # 所以 Checkpoint 把任务进度浓缩成：
 # 目标：修复登录认证问题
@@ -91,7 +90,7 @@ def evaluate_resume_state(agent):
                 if not path:
                     continue
                 expected = item.get("freshness")
-                current = memorylib.file_freshness(path, agent.root)
+                current = file_freshness(path, agent.root)
                 if expected != current and path not in stale_paths:
                     stale_paths.append(path)
             saved_identity = dict(checkpoint.get("runtime_identity", {}) or agent.session.get("runtime_identity", {}) or {})
@@ -182,11 +181,14 @@ def create_checkpoint(agent, run_state, user_message, trigger):
     freshness = {}
     # 从 Memory 获取最近使用的文件
     memory_state = agent.memory.to_dict()
-    recent_files = memory_state.get("working", {}).get("recent_files", [])
+    recent_files = memory_state.get(
+        "recent_files",
+        memory_state.get("working", {}).get("recent_files", []),
+    )
     for path in dict.fromkeys(str(path) for path in recent_files if str(path).strip()):
-        file_freshness = memorylib.file_freshness(path, agent.root)
-        freshness[path] = file_freshness
-        key_files.append({"path": path, "freshness": file_freshness})
+        digest = file_freshness(path, agent.root)
+        freshness[path] = digest
+        key_files.append({"path": path, "freshness": digest})
 
     task_progress = agent.task_state.to_dict() if hasattr(agent, "task_state") else {}
     completed = agent.task_state.completed_summaries() if hasattr(agent, "task_state") else []

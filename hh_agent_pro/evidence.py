@@ -12,7 +12,7 @@ import hashlib
 import re
 from pathlib import Path
 
-from .workspace import clip, now
+from .workspace import clip, file_freshness, now
 
 
 EVIDENCE_SCHEMA_VERSION = "v1"
@@ -131,11 +131,21 @@ class EvidenceLedger:
 
     def _freshness(self, path):
         if self.root is None:
-            return ""
-        resolved = (self.root / path).resolve()
-        if not resolved.is_file():
-            return ""
-        return hashlib.sha256(resolved.read_bytes()).hexdigest()
+            return None
+        return file_freshness(path, self.root)
+
+    def invalidate_stale_files(self):
+        """Drop file evidence whose content no longer matches the workspace."""
+
+        stale_paths = []
+        for path, item in list(self.state["files"].items()):
+            if item.get("freshness") == self._freshness(path):
+                continue
+            stale_paths.append(path)
+            self.state["files"].pop(path, None)
+        if stale_paths:
+            self.state["updated_at"] = now()
+        return stale_paths
 
     def record_file(self, path, summary, start=1, end=None, total_lines=None, source_tool="read_file"):
         canonical = self._canonical(path)

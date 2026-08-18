@@ -88,8 +88,8 @@
       "allowed_tools": ["read_file", "patch_file"],
       "step_budget": 4,
       "expected_artifact": "sample.txt contains repeat-guarded",
-      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'repeat-guarded' in Path('sample.txt').read_text(encoding='utf-8'); assert 'repeated_identical_call' in traces\"",
-      "category": "loop_guard_recovery"
+      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'repeat-guarded' in Path('sample.txt').read_text(encoding='utf-8'); assert 'tool_cache_hit' in traces\"",
+      "category": "tool_contract_recovery"
     },
     {
       "id": "context_reduction_checkpoint",
@@ -136,12 +136,12 @@
     },
     {
       "id": "durable_promotion_accept",
-      "prompt": "Record stable project conventions from the final answer.",
+      "prompt": "Remember that Preserve benchmark regression artifacts under artifacts/.",
       "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
       "allowed_tools": ["read_file"],
       "step_budget": 1,
       "expected_artifact": "stable convention is promoted into durable memory",
-      "verifier": "python -c \"from pathlib import Path; memory=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/memory/topics').glob('*.md')); assert 'Preserve benchmark regression artifacts' in memory\"",
+      "verifier": "python -c \"from pathlib import Path; memory=Path('.hh/memory/curated.json').read_text(encoding='utf-8'); assert 'Preserve benchmark regression artifacts' in memory\"",
       "category": "durable_memory"
     },
     {

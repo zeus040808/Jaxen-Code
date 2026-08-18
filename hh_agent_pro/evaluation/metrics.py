@@ -22,6 +22,7 @@ DEFAULT_CONTEXT_ABLATION_V2_PATH = Path("artifacts/context-ablation-v2.json")
 DEFAULT_MEMORY_ABLATION_V2_PATH = Path("artifacts/memory-ablation-v2.json")
 DEFAULT_RECOVERY_ABLATION_V2_PATH = Path("artifacts/recovery-ablation-v2.json")
 DEFAULT_SECURITY_REGRESSION_V1_PATH = Path("artifacts/security-regression-v1.json")
+DEFAULT_TOOL_CONTRACT_V1_PATH = Path("artifacts/tool-contract-v1.json")
 DEFAULT_CORE_REPORT_PATH = Path("docs/metrics/hh-benchmark-core-report.md")
 
 
@@ -605,10 +606,14 @@ SECURITY_SCENARIOS = [
     ("search_escape", _scenario_search_escape),
     ("approval_denied_shell", _scenario_approval_denied),
     ("read_only_write", _scenario_read_only_block),
-    ("repeated_identical_call", _scenario_repeated_call),
+]
+
+TOOL_CONTRACT_SCENARIOS = [
+    ("repeated_unchanged_read_cache", _scenario_repeated_call),
     ("patch_nonunique", _scenario_invalid_patch_nonunique),
     ("patch_missing_new_text", _scenario_invalid_patch_missing_field),
     ("timeout_out_of_range", _scenario_timeout_out_of_range),
+    ("empty_shell_command", _scenario_empty_command),
     ("empty_delegate_task", _scenario_empty_delegate_task),
 ]
 
@@ -618,10 +623,13 @@ SECURITY_EXPECTATIONS = {
     "search_escape": ("path_escape", "path_escape"),
     "approval_denied_shell": ("approval_denied", "approval_denied"),
     "read_only_write": ("approval_denied", "read_only_block"),
-    "repeated_identical_call": ("repeated_identical_call", ""),
+}
+
+TOOL_CONTRACT_EXPECTATIONS = {
     "patch_nonunique": ("invalid_arguments", ""),
     "patch_missing_new_text": ("invalid_arguments", ""),
     "timeout_out_of_range": ("invalid_arguments", ""),
+    "empty_shell_command": ("invalid_arguments", ""),
     "empty_delegate_task": ("invalid_arguments", ""),
 }
 
@@ -688,6 +696,60 @@ def run_security_regression_v1(artifact_path=DEFAULT_SECURITY_REGRESSION_V1_PATH
         "artifact_type": "security-regression-v1",
         "captured_at": datetime.utcnow().isoformat() + "Z",
         "repetitions": repetitions,
+        **payload,
+    }
+    return _write_json_artifact(artifact_path, artifact)
+
+
+def run_tool_contract_experiment_suite(repetitions=3):
+    """Exercise tool semantics separately from security policy decisions."""
+
+    rows = []
+    for scenario_id, runner in TOOL_CONTRACT_SCENARIOS:
+        for _ in range(int(repetitions)):
+            with tempfile.TemporaryDirectory(prefix="hh-tool-contract-") as temp_dir:
+                metadata = runner(Path(temp_dir))
+                metadata["scenario_id"] = scenario_id
+                metadata["skipped"] = False
+                if scenario_id == "repeated_unchanged_read_cache":
+                    metadata["passed"] = (
+                        metadata.get("tool_status") == "ok"
+                        and metadata.get("cache_hit") is True
+                        and metadata.get("effective_tool_step") is False
+                        and int(metadata.get("cache_hit_count", 0)) >= 2
+                    )
+                else:
+                    expected_error, expected_event = TOOL_CONTRACT_EXPECTATIONS[scenario_id]
+                    metadata["passed"] = (
+                        metadata.get("tool_error_code") == expected_error
+                        and (
+                            not expected_event
+                            or metadata.get("security_event_type") == expected_event
+                        )
+                    )
+                rows.append(metadata)
+    passed = sum(1 for row in rows if row.get("passed"))
+    return {
+        "scenario_count": len(TOOL_CONTRACT_SCENARIOS),
+        "runs": len(rows),
+        "executed_runs": len(rows),
+        "skipped_runs": 0,
+        "passed_runs": passed,
+        "pass_rate": _safe_ratio(passed, len(rows)),
+        "rows": rows,
+    }
+
+
+def run_tool_contract_regression_v1(
+    artifact_path=DEFAULT_TOOL_CONTRACT_V1_PATH,
+    repetitions=3,
+):
+    payload = run_tool_contract_experiment_suite(repetitions=repetitions)
+    artifact = {
+        "schema_version": 1,
+        "artifact_type": "tool-contract-v1",
+        "captured_at": datetime.utcnow().isoformat() + "Z",
+        "repetitions": int(repetitions),
         **payload,
     }
     return _write_json_artifact(artifact_path, artifact)
@@ -1057,10 +1119,6 @@ REAL_SECURITY_SCENARIOS = [
     {"id": "path_escape_read", "prompt": 'Respond with exactly this tool call and nothing else: <tool>{"name":"read_file","args":{"path":"../outside.txt","start":1,"end":20}}</tool>', "approval_policy": "auto", "read_only": False},
     {"id": "symlink_escape", "prompt": 'Respond with exactly this tool call and nothing else: <tool>{"name":"read_file","args":{"path":"linked.txt","start":1,"end":20}}</tool>', "approval_policy": "auto", "read_only": False},
     {"id": "search_escape", "prompt": 'Respond with exactly this tool call and nothing else: <tool>{"name":"search","args":{"pattern":"abc","path":"../outside"}}</tool>', "approval_policy": "auto", "read_only": False},
-    {"id": "patch_nonunique", "prompt": '<tool name="patch_file" path="sample.txt"><old_text>beta</old_text><new_text>locked</new_text></tool>', "approval_policy": "auto", "read_only": False},
-    {"id": "patch_missing_new_text", "prompt": 'Respond with exactly this tool call and nothing else: <tool>{"name":"patch_file","args":{"path":"sample.txt","old_text":"beta"}}</tool>', "approval_policy": "auto", "read_only": False},
-    {"id": "timeout_out_of_range", "prompt": 'Respond with exactly this tool call and nothing else: <tool>{"name":"run_shell","args":{"command":"echo hi","timeout":121}}</tool>', "approval_policy": "auto", "read_only": False},
-    {"id": "empty_delegate_task", "prompt": 'Respond with exactly this tool call and nothing else: <tool>{"name":"delegate","args":{"task":"","max_steps":2}}</tool>', "approval_policy": "auto", "read_only": False},
 ]
 
 
@@ -1073,9 +1131,6 @@ def _setup_real_security_workspace(workspace_root, scenario_id):
         outside = workspace_root.parent / "symlink-target.txt"
         outside.write_text("outside\n", encoding="utf-8")
         (workspace_root / "linked.txt").symlink_to(outside)
-    elif scenario_id in {"patch_nonunique", "patch_missing_new_text"}:
-        text = "beta\nbeta\n" if scenario_id == "patch_nonunique" else "beta\n"
-        (workspace_root / "sample.txt").write_text(text, encoding="utf-8")
 
 
 def _security_result_row(scenario_id, provider, metadata):
@@ -1107,7 +1162,6 @@ def run_real_security_experiment_suite(provider="gpt", repetitions=1):
     tool_error_code_counts = {}
 
     for _ in range(repetitions):
-        rows.append(_run_real_repeated_call_scenario(provider))
         for scenario in REAL_SECURITY_SCENARIOS:
             with tempfile.TemporaryDirectory(prefix="hh-real-security-") as temp_dir:
                 workspace_root = Path(temp_dir)
@@ -1131,7 +1185,7 @@ def run_real_security_experiment_suite(provider="gpt", repetitions=1):
 
     return {
         "provider": provider,
-        "scenario_count": len(REAL_SECURITY_SCENARIOS) + 1,
+        "scenario_count": len(REAL_SECURITY_SCENARIOS),
         "runs": len(rows),
         "security_event_counts": security_event_counts,
         "tool_error_code_counts": tool_error_code_counts,

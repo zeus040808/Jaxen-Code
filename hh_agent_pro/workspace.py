@@ -54,6 +54,35 @@ def middle(text, limit):
     right = limit - 3 - left
     return text[:left] + "..." + text[-right:]
 
+
+def file_freshness(raw_path, workspace_root):
+    """Return a content digest only for a regular file inside the workspace.
+
+    Checkpoints, evidence memory, and the read cache all need exactly the same
+    answer to "is this still the file I observed?"  Keeping that decision at
+    the workspace boundary also means a symlink or ``..`` path cannot make a
+    freshness probe read outside the repository.
+    """
+
+    root = Path(workspace_root).resolve()
+    path = Path(str(raw_path))
+    resolved = (path if path.is_absolute() else root / path).resolve()
+    try:
+        resolved.relative_to(root)
+    except ValueError:
+        return None
+    if not resolved.is_file():
+        return None
+
+    digest = hashlib.sha256()
+    try:
+        with resolved.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+    except OSError:
+        return None
+    return digest.hexdigest()
+
 # 一次构建出来的 workspace 快照
 class WorkspaceContext:
     def __init__(self, cwd, repo_root, branch, default_branch, status, recent_commits, project_docs):

@@ -267,9 +267,11 @@ class HH:
         return checkpointlib.current_checkpoint(self)
 
     def invalidate_stale_memory(self):
-        # File freshness is now owned by EvidenceLedger/checkpoints, not by
-        # WorkingMemory. Kept as a checkpoint compatibility hook.
-        return []
+        # WorkingMemory only keeps paths; content claims live in EvidenceLedger.
+        # Remove stale claims before checkpoint resume evaluates the same files.
+        stale_paths = self.source_evidence.invalidate_stale_files()
+        self.session["source_evidence"] = self.source_evidence.to_dict()
+        return stale_paths
 
     def evaluate_resume_state(self):
         return checkpointlib.evaluate_resume_state(self)
@@ -876,11 +878,11 @@ class HH:
                 payload["args"] = {}
             elif not isinstance(args, dict):
                 return "retry", HH.retry_notice()
-            return "tool", payload
+            return HH.normalize_protocol_action(payload)
         if "<tool" in raw and ("<final>" not in raw or raw.find("<tool") < raw.find("<final>")):
             payload = HH.parse_xml_tool(raw)
             if payload is not None:
-                return "tool", payload
+                return HH.normalize_protocol_action(payload)
             return "retry", HH.retry_notice()
         if "<final>" in raw:
             if "</final>" not in raw:
@@ -915,6 +917,35 @@ class HH:
         if raw:
             return "final", raw
         return "retry", HH.retry_notice("model returned an empty response")
+
+    @staticmethod
+    def normalize_protocol_action(payload):
+        """Lift control-plane pseudo calls out of the executable tool path.
+
+        Some OpenAI-compatible providers may emit ``needs_user_input`` as a
+        native function call even though it is intentionally absent from the
+        tool registry. Treating that as an unknown tool turns a valid pause
+        into a tool failure. It is a protocol state, so normalize it before the
+        ToolExecutor can see it.
+        """
+
+        name = str(payload.get("name", "")).strip()
+        args = payload.get("args") if isinstance(payload.get("args"), dict) else {}
+        if name != "needs_user_input":
+            return "tool", payload
+        question = next(
+            (
+                str(args.get(key, "")).strip()
+                for key in ("question", "text", "prompt")
+                if str(args.get(key, "")).strip()
+            ),
+            "",
+        )
+        if question:
+            return "needs_user_input", question
+        return "retry", HH.retry_notice(
+            "needs_user_input requires a non-empty question"
+        )
 
     @staticmethod
     def looks_like_internal_tool_protocol(raw):
@@ -967,7 +998,7 @@ class HH:
 
         body = match.group("body")
         args = dict(attrs)
-        for key in ("content", "old_text", "new_text", "command", "task", "pattern", "path"):
+        for key in ("content", "old_text", "new_text", "command", "task", "pattern", "path", "question"):
             if f"<{key}>" in body:
                 args[key] = HH.extract_raw(body, key)
 

@@ -5,7 +5,7 @@ import hashlib
 import json
 import re
 
-from .workspace import clip
+from .workspace import clip, file_freshness
 
 
 @dataclass(frozen=True)
@@ -110,14 +110,13 @@ class ToolExecutor:
         if name not in {"read_file", "read_files"}:
             return ""
         raw_paths = [args.get("path")] if name == "read_file" else list(args.get("paths") or [])
-        digests = []
-        try:
-            for raw_path in raw_paths:
-                path = self.agent.path(raw_path)
-                digests.append(hashlib.sha256(path.read_bytes()).hexdigest())
-        except (OSError, ValueError, TypeError):
+        digests = [file_freshness(raw_path, self.agent.root) for raw_path in raw_paths]
+        if not digests or any(not digest for digest in digests):
             return ""
-        return hashlib.sha256("|".join(digests).encode("ascii")).hexdigest()
+        payload = list(zip((str(path) for path in raw_paths), digests))
+        return hashlib.sha256(
+            json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
+        ).hexdigest()
 
     def _read_cache_key(self, name, args):
         freshness = self._read_freshness(name, args)

@@ -22,7 +22,7 @@ from hh_agent_pro.run_state import (
     STOP_REASON_STEP_LIMIT_REACHED,
 )
 from hh_agent_pro.runtime import HH, SessionStore
-from hh_agent_pro.workspace import WorkspaceContext
+from hh_agent_pro.workspace import WorkspaceContext, file_freshness
 
 
 class ScriptedModel:
@@ -73,6 +73,51 @@ def test_hh_base_runtime_is_preserved_with_run_artifacts(tmp_path):
     assert (run_dir / "run_state.json").exists()
     assert (run_dir / "trace.jsonl").exists()
     assert (run_dir / "report.json").exists()
+
+
+def test_workspace_file_freshness_is_shared_and_boundary_safe(tmp_path):
+    root = tmp_path / "workspace"
+    root.mkdir()
+    source = root / "sample.py"
+    source.write_text("value = 1\n", encoding="utf-8")
+    outside = tmp_path / "outside.py"
+    outside.write_text("secret = True\n", encoding="utf-8")
+
+    first = file_freshness("sample.py", root)
+    source.write_text("value = 2\n", encoding="utf-8")
+
+    assert first
+    assert file_freshness("sample.py", root) != first
+    assert file_freshness("../outside.py", root) is None
+    assert file_freshness("missing.py", root) is None
+
+
+def test_checkpoint_with_key_files_can_resume_and_ask(tmp_path):
+    (tmp_path / "sample.py").write_text("value = 1\n", encoding="utf-8")
+    first = make_agent(
+        tmp_path,
+        [
+            '<tool>{"name":"read_file","args":{"path":"sample.py"}}</tool>',
+            "<final>first turn complete</final>",
+        ],
+    )
+    assert first.ask("inspect sample.py") == "first turn complete"
+    checkpoint = first.current_checkpoint()
+    assert checkpoint["key_files"][0]["path"] == "sample.py"
+    assert checkpoint["key_files"][0]["freshness"] == file_freshness("sample.py", tmp_path)
+
+    resumed = HH.from_session(
+        model_client=ScriptedModel(["<final>resumed safely</final>"]),
+        workspace=WorkspaceContext.build(str(tmp_path)),
+        session_store=first.session_store,
+        session_id=first.session["id"],
+        approval_policy="auto",
+        max_steps=4,
+        max_new_tokens=256,
+    )
+
+    assert resumed.ask("continue") == "resumed safely"
+    assert resumed.current_run_state.resume_status == "full-valid"
 
 
 def test_project_task_tools_use_hh_tool_executor(tmp_path):
@@ -350,6 +395,38 @@ def test_needs_user_input_has_explicit_waiting_state(tmp_path):
     assert agent.ask("change the timeout") == "Please provide the target timeout."
     assert agent.current_run_state.status == STATUS_WAITING
     assert agent.current_run_state.stop_reason == STOP_REASON_NEEDS_USER_INPUT
+
+
+def test_native_needs_user_input_pseudo_call_is_protocol_state(tmp_path):
+    agent = make_agent(
+        tmp_path,
+        [
+            '<tool>{"name":"needs_user_input","args":'
+            '{"question":"Which timeout should I use?"}}</tool>'
+        ],
+    )
+
+    assert agent.ask("change the timeout") == "Which timeout should I use?"
+    assert agent.current_run_state.status == STATUS_WAITING
+    assert agent.current_run_state.stop_reason == STOP_REASON_NEEDS_USER_INPUT
+    assert agent.current_run_state.tool_steps == 0
+    assert not agent._last_tool_result_metadata
+
+
+def test_repeated_unchanged_reads_use_cache_then_enter_final_only(tmp_path):
+    (tmp_path / "sample.py").write_text("value = 1\n", encoding="utf-8")
+    call = '<tool>{"name":"read_file","args":{"path":"sample.py"}}</tool>'
+    agent = make_agent(
+        tmp_path,
+        [call, call, call, "<final>answered from cached evidence</final>"],
+        max_steps=4,
+    )
+
+    assert agent.ask("inspect sample.py") == "answered from cached evidence"
+    assert agent.current_run_state.tool_steps == 1
+    trace = agent.run_store.trace_path(agent.current_run_state).read_text(encoding="utf-8")
+    assert trace.count('"event": "tool_cache_hit"') == 2
+    assert '"reason": "repeated_cached_read"' in trace
 
 
 def test_cron_tools_and_matching(tmp_path):

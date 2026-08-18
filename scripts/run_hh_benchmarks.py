@@ -9,6 +9,7 @@ from hh_agent_pro.evaluation.metrics import (
     run_memory_ablation_v2,
     run_recovery_ablation_v2,
     run_security_regression_v1,
+    run_tool_contract_regression_v1,
     write_benchmark_core_report,
 )
 
@@ -28,6 +29,7 @@ def main():
     memory = run_memory_ablation_v2(**({"repetitions": repetitions} if repetitions else {}))
     recovery = run_recovery_ablation_v2(**({"repetitions": repetitions} if repetitions else {}))
     security = run_security_regression_v1(**({"repetitions": repetitions} if repetitions else {}))
+    tool_contract = run_tool_contract_regression_v1(**({"repetitions": repetitions} if repetitions else {}))
     report = write_benchmark_core_report()
 
     print(
@@ -42,6 +44,10 @@ def main():
                     "executed_runs": security["executed_runs"],
                     "skipped_runs": security["skipped_runs"],
                     "pass_rate": security["pass_rate"],
+                },
+                "tool_contract": {
+                    "scenario_count": tool_contract["scenario_count"],
+                    "pass_rate": tool_contract["pass_rate"],
                 },
             },
             indent=2,
