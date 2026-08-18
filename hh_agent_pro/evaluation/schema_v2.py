@@ -148,7 +148,15 @@ def fixture_digest(root):
 
     root = Path(root).resolve()
     digest = hashlib.sha256()
-    for path in sorted((item for item in root.rglob("*") if item.is_file()), key=lambda p: p.as_posix()):
+    ignored_names = {".git", ".hh", "__pycache__", ".pytest_cache", ".ruff_cache", ".venv", "venv"}
+    files = (
+        item
+        for item in root.rglob("*")
+        if item.is_file()
+        and not any(part in ignored_names for part in item.relative_to(root).parts)
+        and item.suffix not in {".pyc", ".pyo"}
+    )
+    for path in sorted(files, key=lambda p: p.as_posix()):
         relative = path.relative_to(root).as_posix()
         digest.update(relative.encode("utf-8"))
         digest.update(b"\0")

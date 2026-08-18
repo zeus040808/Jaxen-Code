@@ -33,5 +33,10 @@ Thumbs.db
 
 # Evaluation run artifacts (keep summaries and human-review files in Git)
 .niceeval/
+node_modules/
+.pnpm-store/
 artifacts/reliability-runs/
 artifacts/enterprise-eval-*/evidence/
+artifacts/eval-v2/niceeval-*-junit.xml
+artifacts/eval-v2/niceeval-*-view/
+artifacts/eval-v2/niceeval-*.ndjson

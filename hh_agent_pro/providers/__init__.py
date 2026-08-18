@@ -2,6 +2,7 @@
 
 from .clients import (
     AnthropicCompatibleModelClient,
+    EvalScriptModelClient,
     FakeModelClient,
     OllamaModelClient,
     OpenAIChatCompatibleModelClient,
@@ -11,6 +12,7 @@ from .codex_cli import CodexCliModelClient
 
 __all__ = [
     "AnthropicCompatibleModelClient",
+    "EvalScriptModelClient",
     "FakeModelClient",
     "OllamaModelClient",
     "OpenAIChatCompatibleModelClient",

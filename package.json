@@ -1,0 +1,22 @@
+{
+  "name": "hh-agent-enterprise-evals",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.19.0",
+  "scripts": {
+    "eval:list": "niceeval list",
+    "eval:pilot": "niceeval exp hh-agent-pilot --no-early-exit",
+    "eval:deepseek-smoke": "niceeval exp hh-agent-deepseek-smoke --no-early-exit",
+    "eval:ci": "niceeval exp hh-agent-pilot --no-early-exit --json --junit artifacts/eval-v2/niceeval-junit.xml",
+    "typecheck:eval": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "@types/dockerode": "4.0.1",
+    "dockerode": "5.0.1",
+    "niceeval": "0.13.1",
+    "tsx": "4.23.12",
+    "typescript": "5.9.3"
+  }
+}

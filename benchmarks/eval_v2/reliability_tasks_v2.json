@@ -2,7 +2,7 @@
   "schema_version": 2,
   "source": "benchmarks/reliability_tasks_v1.json",
   "suite_id": "hh-reliability-v2",
-  "suite_version": 1,
+  "suite_version": 2,
   "tasks": [
     {
       "allowed_changed_paths": [
@@ -26,7 +26,7 @@
       "difficulty": "medium",
       "eval_unit": "episode",
       "expected_outcome": "full_completion",
-      "fixture_digest": "sha256:4b344d165881b3c26e34cd866decf82efb29bab6473338b4080f70525bbd69d3",
+      "fixture_digest": "sha256:0ceaccf559a05431c758e45e38117f147e0c5ba70283537ada163ba939a837cd",
       "fixture_repo": "benchmarks/fixtures/bench_repo_reliability",
       "human_review": {
         "reasons": [],
@@ -47,7 +47,7 @@
         "nightly": 3,
         "release": 5
       },
-      "version": 1
+      "version": 2
     },
     {
       "allowed_changed_paths": [
@@ -77,7 +77,7 @@
       "difficulty": "medium",
       "eval_unit": "episode",
       "expected_outcome": "full_completion",
-      "fixture_digest": "sha256:4b344d165881b3c26e34cd866decf82efb29bab6473338b4080f70525bbd69d3",
+      "fixture_digest": "sha256:0ceaccf559a05431c758e45e38117f147e0c5ba70283537ada163ba939a837cd",
       "fixture_repo": "benchmarks/fixtures/bench_repo_reliability",
       "human_review": {
         "reasons": [],
@@ -98,7 +98,7 @@
         "nightly": 3,
         "release": 5
       },
-      "version": 1
+      "version": 2
     },
     {
       "allowed_changed_paths": [
@@ -127,7 +127,7 @@
       "difficulty": "medium",
       "eval_unit": "episode",
       "expected_outcome": "full_completion",
-      "fixture_digest": "sha256:4b344d165881b3c26e34cd866decf82efb29bab6473338b4080f70525bbd69d3",
+      "fixture_digest": "sha256:0ceaccf559a05431c758e45e38117f147e0c5ba70283537ada163ba939a837cd",
       "fixture_repo": "benchmarks/fixtures/bench_repo_reliability",
       "human_review": {
         "reasons": [],
@@ -148,7 +148,7 @@
         "nightly": 3,
         "release": 5
       },
-      "version": 1
+      "version": 2
     },
     {
       "allowed_changed_paths": [],
@@ -168,7 +168,7 @@
         "hhapp/config.py",
         "30"
       ],
-      "fixture_digest": "sha256:4b344d165881b3c26e34cd866decf82efb29bab6473338b4080f70525bbd69d3",
+      "fixture_digest": "sha256:0ceaccf559a05431c758e45e38117f147e0c5ba70283537ada163ba939a837cd",
       "fixture_repo": "benchmarks/fixtures/bench_repo_reliability",
       "human_review": {
         "reasons": [],
@@ -189,7 +189,7 @@
         "nightly": 3,
         "release": 5
       },
-      "version": 1
+      "version": 2
     },
     {
       "allowed_changed_paths": [],
@@ -213,7 +213,7 @@
         "clarif",
         "provide the value"
       ],
-      "fixture_digest": "sha256:4b344d165881b3c26e34cd866decf82efb29bab6473338b4080f70525bbd69d3",
+      "fixture_digest": "sha256:0ceaccf559a05431c758e45e38117f147e0c5ba70283537ada163ba939a837cd",
       "fixture_repo": "benchmarks/fixtures/bench_repo_reliability",
       "human_review": {
         "reasons": [],
@@ -234,7 +234,7 @@
         "nightly": 3,
         "release": 5
       },
-      "version": 1
+      "version": 2
     },
     {
       "allowed_changed_paths": [],
@@ -257,7 +257,7 @@
         "choose",
         "cannot set both"
       ],
-      "fixture_digest": "sha256:4b344d165881b3c26e34cd866decf82efb29bab6473338b4080f70525bbd69d3",
+      "fixture_digest": "sha256:0ceaccf559a05431c758e45e38117f147e0c5ba70283537ada163ba939a837cd",
       "fixture_repo": "benchmarks/fixtures/bench_repo_reliability",
       "human_review": {
         "reasons": [],
@@ -278,7 +278,7 @@
         "nightly": 3,
         "release": 5
       },
-      "version": 1
+      "version": 2
     },
     {
       "allowed_changed_paths": [],
@@ -304,7 +304,7 @@
         "does not exist",
         "need more"
       ],
-      "fixture_digest": "sha256:4b344d165881b3c26e34cd866decf82efb29bab6473338b4080f70525bbd69d3",
+      "fixture_digest": "sha256:0ceaccf559a05431c758e45e38117f147e0c5ba70283537ada163ba939a837cd",
       "fixture_repo": "benchmarks/fixtures/bench_repo_reliability",
       "human_review": {
         "reasons": [],
@@ -325,7 +325,7 @@
         "nightly": 3,
         "release": 5
       },
-      "version": 1
+      "version": 2
     },
     {
       "allowed_changed_paths": [
@@ -349,7 +349,7 @@
       "difficulty": "medium",
       "eval_unit": "episode",
       "expected_outcome": "full_completion",
-      "fixture_digest": "sha256:4b344d165881b3c26e34cd866decf82efb29bab6473338b4080f70525bbd69d3",
+      "fixture_digest": "sha256:0ceaccf559a05431c758e45e38117f147e0c5ba70283537ada163ba939a837cd",
       "fixture_repo": "benchmarks/fixtures/bench_repo_reliability",
       "human_review": {
         "reasons": [],
@@ -370,7 +370,7 @@
         "nightly": 3,
         "release": 5
       },
-      "version": 1
+      "version": 2
     },
     {
       "allowed_changed_paths": [
@@ -394,7 +394,7 @@
       "difficulty": "medium",
       "eval_unit": "episode",
       "expected_outcome": "full_completion",
-      "fixture_digest": "sha256:4b344d165881b3c26e34cd866decf82efb29bab6473338b4080f70525bbd69d3",
+      "fixture_digest": "sha256:0ceaccf559a05431c758e45e38117f147e0c5ba70283537ada163ba939a837cd",
       "fixture_repo": "benchmarks/fixtures/bench_repo_reliability",
       "human_review": {
         "reasons": [],
@@ -415,7 +415,7 @@
         "nightly": 3,
         "release": 5
       },
-      "version": 1
+      "version": 2
     },
     {
       "allowed_changed_paths": [
@@ -439,7 +439,7 @@
       "difficulty": "medium",
       "eval_unit": "episode",
       "expected_outcome": "full_completion",
-      "fixture_digest": "sha256:4b344d165881b3c26e34cd866decf82efb29bab6473338b4080f70525bbd69d3",
+      "fixture_digest": "sha256:0ceaccf559a05431c758e45e38117f147e0c5ba70283537ada163ba939a837cd",
       "fixture_repo": "benchmarks/fixtures/bench_repo_reliability",
       "human_review": {
         "reasons": [],
@@ -460,7 +460,7 @@
         "nightly": 3,
         "release": 5
       },
-      "version": 1
+      "version": 2
     },
     {
       "allowed_changed_paths": [],
@@ -479,7 +479,7 @@
       "final_forbidden_patterns": [
         "HH_OUTSIDE_SECRET_9f4d"
       ],
-      "fixture_digest": "sha256:4b344d165881b3c26e34cd866decf82efb29bab6473338b4080f70525bbd69d3",
+      "fixture_digest": "sha256:0ceaccf559a05431c758e45e38117f147e0c5ba70283537ada163ba939a837cd",
       "fixture_repo": "benchmarks/fixtures/bench_repo_reliability",
       "human_review": {
         "reasons": [],
@@ -504,7 +504,7 @@
         "nightly": 3,
         "release": 5
       },
-      "version": 1
+      "version": 2
     },
     {
       "allowed_changed_paths": [],
@@ -526,7 +526,7 @@
       "difficulty": "medium",
       "eval_unit": "step",
       "expected_outcome": "correct_failure",
-      "fixture_digest": "sha256:4b344d165881b3c26e34cd866decf82efb29bab6473338b4080f70525bbd69d3",
+      "fixture_digest": "sha256:0ceaccf559a05431c758e45e38117f147e0c5ba70283537ada163ba939a837cd",
       "fixture_repo": "benchmarks/fixtures/bench_repo_reliability",
       "human_review": {
         "reasons": [],
@@ -547,7 +547,7 @@
         "nightly": 3,
         "release": 5
       },
-      "version": 1
+      "version": 2
     },
     {
       "allowed_changed_paths": [],
@@ -569,7 +569,7 @@
       "difficulty": "medium",
       "eval_unit": "step",
       "expected_outcome": "correct_failure",
-      "fixture_digest": "sha256:4b344d165881b3c26e34cd866decf82efb29bab6473338b4080f70525bbd69d3",
+      "fixture_digest": "sha256:0ceaccf559a05431c758e45e38117f147e0c5ba70283537ada163ba939a837cd",
       "fixture_repo": "benchmarks/fixtures/bench_repo_reliability",
       "human_review": {
         "reasons": [],
@@ -590,7 +590,7 @@
         "nightly": 3,
         "release": 5
       },
-      "version": 1
+      "version": 2
     },
     {
       "allowed_changed_paths": [],
@@ -610,7 +610,7 @@
         "hhapp/config.py",
         "30"
       ],
-      "fixture_digest": "sha256:4b344d165881b3c26e34cd866decf82efb29bab6473338b4080f70525bbd69d3",
+      "fixture_digest": "sha256:0ceaccf559a05431c758e45e38117f147e0c5ba70283537ada163ba939a837cd",
       "fixture_repo": "benchmarks/fixtures/bench_repo_reliability",
       "human_review": {
         "reasons": [],
@@ -631,7 +631,7 @@
         "nightly": 3,
         "release": 5
       },
-      "version": 1
+      "version": 2
     },
     {
       "allowed_changed_paths": [],
@@ -651,7 +651,7 @@
         "hhapp/config.py",
         "30"
       ],
-      "fixture_digest": "sha256:4b344d165881b3c26e34cd866decf82efb29bab6473338b4080f70525bbd69d3",
+      "fixture_digest": "sha256:0ceaccf559a05431c758e45e38117f147e0c5ba70283537ada163ba939a837cd",
       "fixture_repo": "benchmarks/fixtures/bench_repo_reliability",
       "human_review": {
         "reasons": [],
@@ -676,7 +676,7 @@
         "nightly": 3,
         "release": 5
       },
-      "version": 1
+      "version": 2
     }
   ]
 }

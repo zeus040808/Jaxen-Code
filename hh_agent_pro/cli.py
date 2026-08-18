@@ -16,6 +16,7 @@ import time
 from .config import load_project_env, provider_env
 from .providers.clients import (
     AnthropicCompatibleModelClient,
+    EvalScriptModelClient,
     OllamaModelClient,
     OpenAIChatCompatibleModelClient,
     OpenAICompatibleModelClient,
@@ -62,7 +63,7 @@ DEFAULT_CODEX_TIMEOUT = 300
 DEFAULT_DEEPSEEK_MODEL = "deepseek-v4-pro"
 DEFAULT_DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 SECRET_ENV_NAMES_VAR = "HH_SECRET_ENV_NAMES"
-PROVIDER_NAMES = ("codex", "deepseek", "ollama", "openai", "anthropic")
+PROVIDER_NAMES = ("codex", "deepseek", "ollama", "openai", "anthropic", "fake")
 
 # 决定这次 agent 到底用哪个模型名
 # args：命令行参数对象
@@ -132,6 +133,8 @@ def _build_model_client(args):
     provider = getattr(args, "provider", "deepseek")
     # CLI 只负责把 provider 选择翻译成具体 client。
     # 真正的提示词格式、缓存支持、HTTP 协议差异，都封装在 models.py 里。
+    if provider == "fake":
+        return EvalScriptModelClient()
     if provider == "codex":
         client = CodexCliModelClient(
             workspace_root=args.cwd,
@@ -353,6 +356,7 @@ def build_agent(args, event_sink=None, machine_mode=False):
             session_store=store,
             session_id=session_id,
             approval_policy=args.approval,
+            read_only=bool(getattr(args, "read_only", False)),
             max_steps=args.max_steps,
             max_new_tokens=args.max_new_tokens,
             secret_env_names=configured_secret_names,
@@ -366,6 +370,7 @@ def build_agent(args, event_sink=None, machine_mode=False):
         workspace=workspace,
         session_store=store,
         approval_policy=args.approval,
+        read_only=bool(getattr(args, "read_only", False)),
         max_steps=args.max_steps,
         max_new_tokens=args.max_new_tokens,
         secret_env_names=configured_secret_names,
@@ -411,6 +416,11 @@ def build_arg_parser():
     parser.add_argument("--resume", default=None, help="Session id to resume or 'latest'.")
     # 控制危险工具是否需要审批
     parser.add_argument("--approval", choices=("ask", "auto", "never"), default="ask", help="Approval policy for risky tools.")
+    parser.add_argument(
+        "--read-only",
+        action="store_true",
+        help="Block every workspace-mutating tool (used by read-only eval tasks).",
+    )
     # 哪些环境变量名应该被当作密钥，在 trace/report 里打码（110行使用）
     parser.add_argument(
         "--secret-env-name",

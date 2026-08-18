@@ -6,6 +6,8 @@ runtime 只关心一件事：给我一个 prompt，我拿回一段文本。
 """
 
 import json
+import os
+from pathlib import Path
 import time
 from http.client import RemoteDisconnected
 import urllib.error
@@ -29,6 +31,88 @@ class FakeModelClient:
         if not self.outputs:
             raise RuntimeError("fake model ran out of outputs")
         return self.outputs.pop(0)
+
+
+class EvalScriptModelClient:
+    """Deterministic, persisted model script used only by isolated evals.
+
+    Unlike ``FakeModelClient`` (a unit-test helper), this client survives a
+    fresh JSONL process for every HITL turn. The script and cursor live outside
+    the evaluated workspace, so they cannot pollute the agent diff.
+    """
+
+    ENABLE_ENV = "HH_ALLOW_EVAL_FAKE_PROVIDER"
+    SCRIPT_ENV = "HH_EVAL_FAKE_SCRIPT_PATH"
+    STATE_ENV = "HH_EVAL_FAKE_STATE_PATH"
+
+    def __init__(self):
+        if os.environ.get(self.ENABLE_ENV) != "1":
+            raise RuntimeError(
+                "The fake provider is eval-only. Set HH_ALLOW_EVAL_FAKE_PROVIDER=1 "
+                "inside an isolated evaluation sandbox."
+            )
+        script_value = os.environ.get(self.SCRIPT_ENV, "").strip()
+        if not script_value:
+            raise RuntimeError(f"{self.SCRIPT_ENV} is required for the fake provider")
+        self.script_path = Path(script_value).resolve()
+        state_value = os.environ.get(self.STATE_ENV, "").strip()
+        self.state_path = (
+            Path(state_value).resolve()
+            if state_value
+            else self.script_path.with_suffix(self.script_path.suffix + ".state.json")
+        )
+        self.model = "scripted-eval"
+        self.provider = "fake"
+        self.supports_prompt_cache = False
+        self.supports_native_tools = False
+        self.last_completion_metadata = {}
+
+    def _outputs(self):
+        try:
+            payload = json.loads(self.script_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise RuntimeError(f"could not load eval fake script: {exc}") from exc
+        outputs = payload.get("outputs") if isinstance(payload, dict) else payload
+        if not isinstance(outputs, list) or not outputs:
+            raise RuntimeError("eval fake script must contain a non-empty outputs list")
+        return outputs
+
+    def _cursor(self):
+        if not self.state_path.exists():
+            return 0
+        try:
+            payload = json.loads(self.state_path.read_text(encoding="utf-8"))
+            return max(0, int(payload.get("cursor", 0)))
+        except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
+            raise RuntimeError(f"could not load eval fake state: {exc}") from exc
+
+    def complete(self, prompt, max_new_tokens, **kwargs):
+        outputs = self._outputs()
+        cursor = self._cursor()
+        if cursor >= len(outputs):
+            raise RuntimeError("eval fake model ran out of scripted outputs")
+        item = outputs[cursor]
+        if isinstance(item, str):
+            text, usage = item, {}
+        elif isinstance(item, dict) and isinstance(item.get("text"), str):
+            text, usage = item["text"], dict(item.get("usage") or {})
+        else:
+            raise RuntimeError(f"eval fake output {cursor} must be a string or text object")
+
+        self.state_path.parent.mkdir(parents=True, exist_ok=True)
+        self.state_path.write_text(
+            json.dumps({"cursor": cursor + 1}, sort_keys=True),
+            encoding="utf-8",
+        )
+        # These counters are observations emitted by the deterministic fake
+        # transport, not estimates of a paid provider's billing counters.
+        self.last_completion_metadata = {
+            "input_tokens": int(usage.get("input_tokens", len(str(prompt).split()))),
+            "output_tokens": int(usage.get("output_tokens", len(text.split()))),
+            "cached_tokens": int(usage.get("cached_tokens", 0)),
+            "cache_write_tokens": int(usage.get("cache_write_tokens", 0)),
+        }
+        return text
 
 
 class OllamaModelClient:
