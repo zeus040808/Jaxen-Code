@@ -3,7 +3,12 @@
 import time
 
 from .checkpoint import CHECKPOINT_NONE_STATUS, CHECKPOINT_PARTIAL_STALE_STATUS, CHECKPOINT_WORKSPACE_MISMATCH_STATUS
-from .run_state import RunState, STOP_REASON_BLOCKED, STOP_REASON_REPEATED_FAILED_CALL
+from .run_state import (
+    RunState,
+    STOP_REASON_BLOCKED,
+    STOP_REASON_EPISODE_TIMEOUT,
+    STOP_REASON_REPEATED_FAILED_CALL,
+)
 from . import tools as toolkit
 from .workspace import clip, now
 
@@ -89,7 +94,37 @@ class AgentLoop:
             agent.emit_trace(run_state, "background_notification", {"content": clip(notification, 500)})
         return notifications
 
-    def run(self, user_message):
+    def _episode_timed_out(self, run_started_at):
+        return (
+            time.monotonic() - run_started_at
+        ) * 1000 >= self.agent.episode_timeout_ms
+
+    def _finish_episode_timeout(self, run_state, user_message, run_started_at):
+        agent = self.agent
+        final = (
+            f"Episode wall-clock timeout exceeded ({agent.episode_timeout_ms} ms). "
+            "The run stopped before another action could start."
+        )
+        run_state.stop(STOP_REASON_EPISODE_TIMEOUT, final_answer=final)
+        agent.task_state.mark_paused(
+            run_state.stop_reason,
+            "Resume with a larger episode timeout or a narrower request.",
+        )
+        agent.record({"role": "assistant", "content": final, "created_at": now()})
+        agent.emit_ui(
+            "error",
+            error_type="episode_timeout",
+            message=final,
+        )
+        self._finalize_run(
+            run_state,
+            user_message,
+            trigger=run_state.stop_reason,
+            run_started_at=run_started_at,
+        )
+        return final
+
+    def run(self, user_message, responses=None, request_id=None):
         agent = self.agent
         run_started_at = time.monotonic()
         agent.last_prompt_metadata = {}
@@ -112,19 +147,14 @@ class AgentLoop:
         agent.last_auto_skill = {"status": "idle"}
         agent.last_auto_memory = {"status": "idle"}
         agent.tool_executor.reset_run_state()
-        agent.memory.set_task_summary(user_message)
         agent.final_only_mode = bool(resume_partial)
 
-        # record将用户消息保存在history
-        agent.record({"role": "user", "content": user_message, "created_at": now()})
-
         # 创建一个run状态（每轮对话）
-        run_state = RunState.create(run_id=agent.new_run_id(), request_id=agent.new_request_id(), user_request=user_message)
-        agent.task_state.begin(user_message, run_state.run_id)
-        agent.source_evidence.begin(agent.task_state.to_dict().get("task_id", ""))
-        agent.session["source_evidence"] = agent.source_evidence.to_dict()
-        agent.session["task_state"] = agent.task_state.to_dict()
-        agent.session_path = agent.session_store.save(agent.session)
+        run_state = RunState.create(
+            run_id=agent.new_run_id(),
+            request_id=str(request_id or agent.new_request_id()),
+            user_request=user_message,
+        )
         run_state.resume_status = agent.resume_state.get("status", CHECKPOINT_NONE_STATUS)
         agent.current_run_state = run_state
         # 每次 ask() 都会生成一个 run 目录。
@@ -139,6 +169,106 @@ class AgentLoop:
             },
         )
         agent.emit_ui("run_started", request=user_message)
+
+        pending_resolution = agent.resolve_pending_input(
+            responses=responses,
+            fallback_text=user_message,
+        )
+        resolution_status = pending_resolution.get("status")
+        effective_user_message = str(pending_resolution.get("text", user_message))
+        if resolution_status == "approved":
+            action = pending_resolution["action"]
+            safe_args = agent.redact_artifact(action["args"])
+            agent.emit_ui("tool_started", name=action["name"], args=safe_args, resumed=True)
+            tool_started_at = time.monotonic()
+            resumed_result = agent.execute_pending_action(
+                action,
+                pending_resolution["expected_fingerprint"],
+            )
+            if bool(resumed_result.metadata.get("effective_tool_step", True)):
+                run_state.record_tool(action["name"])
+            agent.source_evidence.record_action(
+                action["name"],
+                action["args"],
+                status=resumed_result.metadata.get("tool_status", "unknown"),
+            )
+            agent.session["source_evidence"] = agent.source_evidence.to_dict()
+            agent.emit_ui(
+                "tool_finished",
+                name=action["name"],
+                result=clip(resumed_result.content, 1200),
+                metadata=dict(resumed_result.metadata or {}),
+                resumed=True,
+            )
+            agent.emit_trace(
+                run_state,
+                "tool_executed",
+                {
+                    "name": action["name"],
+                    "args": safe_args,
+                    "result": clip(resumed_result.content, 500),
+                    "resumed_after_approval": True,
+                    "duration_ms": int((time.monotonic() - tool_started_at) * 1000),
+                    **dict(resumed_result.metadata or {}),
+                },
+            )
+            effective_user_message = "Approval granted for the exact pending action. Continue from its result."
+            agent.record(
+                {
+                    "role": "user",
+                    "content": effective_user_message + "\n" + resumed_result.prompt_content(),
+                    "created_at": now(),
+                }
+            )
+        elif resolution_status == "denied":
+            effective_user_message = "Approval denied for the pending action."
+        elif resolution_status in {"waiting", "invalid"}:
+            request = pending_resolution.get("input") or agent.session.get("pending_input", {})
+            final = str(request.get("question", "Waiting for the requested user input."))
+            if resolution_status == "invalid":
+                final = "Pending approval could not be resumed safely: " + str(
+                    pending_resolution.get("reason", "invalid pending state")
+                )
+            run_state.wait_for_user(final)
+            agent.task_state.mark_waiting(final)
+            agent.record({"role": "assistant", "content": final, "created_at": now()})
+            agent.emit_ui(
+                "needs_user_input",
+                input_id=str(request.get("input_id", "")),
+                question=final,
+                input_kind=str(request.get("kind", "clarification")),
+            )
+            self._finalize_run(
+                run_state,
+                user_message,
+                trigger=run_state.stop_reason,
+                run_started_at=run_started_at,
+            )
+            return final
+
+        agent.memory.set_task_summary(effective_user_message)
+        if resolution_status != "approved":
+            agent.record({"role": "user", "content": effective_user_message, "created_at": now()})
+        agent.task_state.begin(effective_user_message, run_state.run_id)
+        agent.source_evidence.begin(agent.task_state.to_dict().get("task_id", ""))
+        agent.session["source_evidence"] = agent.source_evidence.to_dict()
+        agent.session["task_state"] = agent.task_state.to_dict()
+        agent.session_path = agent.session_store.save(agent.session)
+
+        if resolution_status == "denied":
+            final = "Approval denied. The pending action was not executed."
+            run_state.finish_success(final)
+            agent.task_state.mark_completed(final)
+            agent.record({"role": "assistant", "content": final, "created_at": now()})
+            agent.emit_ui("approval_resolved", decision="denied", executed=False)
+            self._finalize_run(
+                run_state,
+                effective_user_message,
+                trigger="approval_denied_by_user",
+                run_started_at=run_started_at,
+            )
+            return final
+
         self._collect_background_notifications(run_state)
         for job in agent.cron_scheduler.consume():
             scheduled_message = f"[Scheduled] {job.prompt}"
@@ -146,7 +276,7 @@ class AgentLoop:
             agent.record({"role": "user", "content": scheduled_message, "created_at": now()})
             agent.emit_trace(run_state, "cron_delivered", {"cron_id": job.id, "prompt": clip(job.prompt, 500)})
 
-        tool_steps = 0
+        tool_steps = int(run_state.tool_steps)
         attempts = 0
         max_attempts = max(agent.max_steps * 3, agent.max_steps + 4)
         truncation_recoveries = 0
@@ -159,6 +289,10 @@ class AgentLoop:
         # 4. 记录：把结果写回 history / run_state / trace / memory
         # 然后进入下一轮，直到停机条件满足
         while attempts < max_attempts:
+            if self._episode_timed_out(run_started_at):
+                return self._finish_episode_timeout(
+                    run_state, effective_user_message, run_started_at
+                )
             # 显式后台任务完成后，在下一次模型决策前立即回填。
             self._collect_background_notifications(run_state)
             attempts += 1
@@ -176,7 +310,7 @@ class AgentLoop:
                     f"tools {tool_steps}/{agent.max_steps}{mode}"
                 ),
             )
-            prompt, prompt_metadata = agent._build_prompt_and_metadata(user_message)
+            prompt, prompt_metadata = agent._build_prompt_and_metadata(effective_user_message)
             # 更新元数据
             agent.last_prompt_metadata = prompt_metadata
             agent.emit_trace(
@@ -191,7 +325,7 @@ class AgentLoop:
             # 关键文件发生变化时创建
             if prompt_metadata.get("resume_status") == CHECKPOINT_PARTIAL_STALE_STATUS:
                 # 创建checkpoint
-                checkpoint = agent.create_checkpoint(run_state, user_message, trigger="freshness_mismatch")
+                checkpoint = agent.create_checkpoint(run_state, effective_user_message, trigger="freshness_mismatch")
                 agent.run_store.write_run_state(run_state)
                 agent.emit_trace(
                     run_state,
@@ -210,7 +344,7 @@ class AgentLoop:
                         "fields": list(prompt_metadata.get("runtime_identity_mismatch_fields", [])),
                     },
                 )
-                checkpoint = agent.create_checkpoint(run_state, user_message, trigger="workspace_mismatch")
+                checkpoint = agent.create_checkpoint(run_state, effective_user_message, trigger="workspace_mismatch")
                 agent.run_store.write_run_state(run_state)
                 agent.emit_trace(
                     run_state,
@@ -229,7 +363,12 @@ class AgentLoop:
                 if item.get("reason") == "total_budget"
             ]
             if material_reductions:
-                checkpoint = agent.create_checkpoint(run_state, user_message, trigger="context_reduction")
+                agent.emit_ui(
+                    "compaction",
+                    reason="total_budget",
+                    reductions=material_reductions,
+                )
+                checkpoint = agent.create_checkpoint(run_state, effective_user_message, trigger="context_reduction")
                 agent.run_store.write_run_state(run_state)
                 agent.emit_trace(
                     run_state,
@@ -262,7 +401,7 @@ class AgentLoop:
                 if hasattr(agent.model_client, "complete_stream"):
                     provider_kwargs = {}
                     if bool(getattr(agent.model_client, "supports_native_tools", False)):
-                        provider_kwargs = agent.context_manager.provider_request(user_message)
+                        provider_kwargs = agent.context_manager.provider_request(effective_user_message)
                     raw = agent.model_client.complete_stream(
                         prompt,
                         agent.max_new_tokens,
@@ -293,6 +432,15 @@ class AgentLoop:
                     prompt_metadata.update(completion_metadata)
                 agent.last_completion_metadata = completion_metadata
                 agent.last_prompt_metadata = prompt_metadata
+                if completion_metadata:
+                    agent.emit_ui(
+                        "usage",
+                        input_tokens=int(completion_metadata.get("input_tokens", 0) or 0),
+                        output_tokens=int(completion_metadata.get("output_tokens", 0) or 0),
+                        cache_read_tokens=int(completion_metadata.get("cached_tokens", 0) or 0),
+                        cache_write_tokens=int(completion_metadata.get("cache_write_tokens", 0) or 0),
+                        requests=1,
+                    )
 
                 # `finish_reason=length` 是不完整输出，不能交给宽松文本解析器
                 # 误判成成功答案。主循环会在下方走一次无工具续写恢复。
@@ -308,7 +456,7 @@ class AgentLoop:
                 agent.emit_trace(run_state, "run_interrupted", {"attempt": attempts, "tool_steps": tool_steps})
                 self._finalize_run(
                     run_state,
-                    user_message,
+                    effective_user_message,
                     trigger=run_state.stop_reason,
                     run_started_at=run_started_at,
                 )
@@ -328,13 +476,22 @@ class AgentLoop:
                         "duration_ms": int((time.monotonic() - model_started_at) * 1000),
                     },
                 )
+                agent.emit_ui(
+                    "error",
+                    error_type=exc.__class__.__name__,
+                    message=error_detail,
+                )
                 self._finalize_run(
                     run_state,
-                    user_message,
+                    effective_user_message,
                     trigger=run_state.stop_reason,
                     run_started_at=run_started_at,
                 )
                 raise RuntimeError(final) from exc
+            if self._episode_timed_out(run_started_at):
+                return self._finish_episode_timeout(
+                    run_state, effective_user_message, run_started_at
+                )
             agent.emit_trace(
                 run_state,
                 "model_parsed",
@@ -390,7 +547,7 @@ class AgentLoop:
                     "Retry with a narrower request or increase --max-new-tokens."
                 )
                 agent.session["pending_output"] = {
-                    "original_request": str(user_message),
+                    "original_request": str(effective_user_message),
                     "partial_answer": partial,
                     "run_id": run_state.run_id,
                     "created_at": now(),
@@ -403,7 +560,7 @@ class AgentLoop:
                 agent.record({"role": "assistant", "content": final, "created_at": now()})
                 self._finalize_run(
                     run_state,
-                    user_message,
+                    effective_user_message,
                     trigger=run_state.stop_reason,
                     run_started_at=run_started_at,
                 )
@@ -430,7 +587,7 @@ class AgentLoop:
                     agent.record({"role": "assistant", "content": final, "created_at": now()})
                     self._finalize_run(
                         run_state,
-                        user_message,
+                        effective_user_message,
                         trigger=run_state.stop_reason,
                         run_started_at=run_started_at,
                     )
@@ -525,7 +682,7 @@ class AgentLoop:
                     },
                 )
                 # 工具执行完成
-                checkpoint = agent.create_checkpoint(run_state, user_message, trigger="tool_executed")
+                checkpoint = agent.create_checkpoint(run_state, effective_user_message, trigger="tool_executed")
                 agent.run_store.write_run_state(run_state)
                 agent.emit_trace(
                     run_state,
@@ -535,6 +692,26 @@ class AgentLoop:
                         "trigger": "tool_executed",
                     },
                 )
+                if tool_result.metadata.get("tool_status") == "waiting":
+                    input_request = dict(
+                        tool_result.metadata.get("input_request") or {}
+                    )
+                    final = str(
+                        input_request.get("question")
+                        or f"Approval is required before {name} can execute."
+                    )
+                    run_state.wait_for_user(final)
+                    agent.task_state.mark_waiting(final)
+                    agent.record(
+                        {"role": "assistant", "content": final, "created_at": now()}
+                    )
+                    self._finalize_run(
+                        run_state,
+                        effective_user_message,
+                        trigger="approval_requested",
+                        run_started_at=run_started_at,
+                    )
+                    return final
                 if tool_result.metadata.get("stop_run"):
                     error_code = str(tool_result.metadata.get("tool_error_code", "") or STOP_REASON_BLOCKED)
                     security_event = str(tool_result.metadata.get("security_event_type", ""))
@@ -553,7 +730,7 @@ class AgentLoop:
                     agent.record({"role": "assistant", "content": final, "created_at": now()})
                     self._finalize_run(
                         run_state,
-                        user_message,
+                        effective_user_message,
                         trigger=run_state.stop_reason,
                         run_started_at=run_started_at,
                     )
@@ -562,13 +739,19 @@ class AgentLoop:
 
             if kind == "needs_user_input":
                 final = str(payload).strip()
-                agent.emit_ui("needs_user_input", question=final)
+                input_request = agent.request_clarification(final)
+                agent.emit_ui(
+                    "needs_user_input",
+                    input_id=input_request["input_id"],
+                    input_kind="clarification",
+                    question=final,
+                )
                 agent.record({"role": "assistant", "content": final, "created_at": now()})
                 run_state.wait_for_user(final)
                 agent.task_state.mark_waiting(final)
                 self._finalize_run(
                     run_state,
-                    user_message,
+                    effective_user_message,
                     trigger=run_state.stop_reason,
                     run_started_at=run_started_at,
                 )
@@ -582,7 +765,7 @@ class AgentLoop:
                 agent.task_state.mark_blocked(final)
                 self._finalize_run(
                     run_state,
-                    user_message,
+                    effective_user_message,
                     trigger=run_state.stop_reason,
                     run_started_at=run_started_at,
                 )
@@ -617,7 +800,7 @@ class AgentLoop:
                     agent.record({"role": "assistant", "content": final, "created_at": now()})
                     self._finalize_run(
                         run_state,
-                        user_message,
+                        effective_user_message,
                         trigger=run_state.stop_reason,
                         run_started_at=run_started_at,
                     )
@@ -662,9 +845,9 @@ class AgentLoop:
             agent.record({"role": "assistant", "content": final, "created_at": now()})
             run_state.finish_success(final)
             agent.task_state.mark_completed(final)
-            agent.auto_capture_durable_memory(user_message)
-            agent.auto_deposit_skill(user_message, final, run_state)
-            self._finalize_run(run_state, user_message, trigger="run_finished", run_started_at=run_started_at)
+            agent.auto_capture_durable_memory(effective_user_message)
+            agent.auto_deposit_skill(effective_user_message, final, run_state)
+            self._finalize_run(run_state, effective_user_message, trigger="run_finished", run_started_at=run_started_at)
             return final
 
         # 达到限制时：
@@ -674,7 +857,7 @@ class AgentLoop:
         agent.record({"role": "assistant", "content": final, "created_at": now()})
         self._finalize_run(
             run_state,
-            user_message,
+            effective_user_message,
             trigger=run_state.stop_reason or "run_stopped",
             run_started_at=run_started_at,
         )

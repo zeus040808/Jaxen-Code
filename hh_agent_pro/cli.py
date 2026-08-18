@@ -311,7 +311,7 @@ def build_welcome(agent, model, host):
     return "\n".join(rows)
 
 
-def build_agent(args, event_sink=None):
+def build_agent(args, event_sink=None, machine_mode=False):
     """根据 CLI 参数装配出一个可运行的 Agent 实例。
 
     为什么存在：
@@ -357,6 +357,8 @@ def build_agent(args, event_sink=None):
             max_new_tokens=args.max_new_tokens,
             secret_env_names=configured_secret_names,
             event_sink=event_sink,
+            machine_mode=machine_mode,
+            episode_timeout_ms=getattr(args, "episode_timeout_ms", 180000),
             feature_flags={"skill_learning": not bool(getattr(args, "no_auto_skills", False))},
         )
     return HH(
@@ -368,6 +370,8 @@ def build_agent(args, event_sink=None):
         max_new_tokens=args.max_new_tokens,
         secret_env_names=configured_secret_names,
         event_sink=event_sink,
+        machine_mode=machine_mode,
+        episode_timeout_ms=getattr(args, "episode_timeout_ms", 180000),
         feature_flags={"skill_learning": not bool(getattr(args, "no_auto_skills", False))},
     )
 
@@ -419,6 +423,8 @@ def build_arg_parser():
     parser.add_argument("--max-steps", type=int, default=12, help="Maximum effective tool calls per request (default: 12).")
     #限制模型每次最多输出多少 token
     parser.add_argument("--max-new-tokens", type=int, default=2048, help="Maximum model output tokens per step.")
+    parser.add_argument("--episode-timeout-ms", type=int, default=180000, help="Wall-clock budget for the complete episode.")
+    parser.add_argument("--jsonl", action="store_true", help="Read versioned machine requests from stdin and emit JSONL events/turns.")
     parser.add_argument("--no-auto-skills", action="store_true", help="Disable automatic SKILL.md deposition after verified complex runs.")
     parser.add_argument("--temperature", type=float, default=0.2, help="Sampling temperature sent to Ollama.")
     parser.add_argument("--top-p", type=float, default=0.9, help="Top-p sampling value sent to Ollama.")
@@ -428,6 +434,10 @@ def build_arg_parser():
 def main(argv=None):
     # 读取参数（把用户输入的命令行参数解析成一个对象）
     args = build_arg_parser().parse_args(argv)
+    if args.jsonl:
+        from .jsonl_protocol import run_jsonl_stdio
+
+        return run_jsonl_stdio(args, build_agent)
     # 实现一个agent对象
     terminal = TerminalEventSink()
     agent = build_agent(args, event_sink=terminal)

@@ -72,6 +72,8 @@ class HH:
         feature_flags=None,
         allowed_tools=None,
         event_sink=None,
+        machine_mode=False,
+        episode_timeout_ms=180000,
     ):
         self.model_client = model_client
         self.workspace = workspace
@@ -94,6 +96,10 @@ class HH:
             self.feature_flags.update({str(key): bool(value) for key, value in feature_flags.items()})
         self.allowed_tools = self._normalize_allowed_tools(allowed_tools)
         self.event_sink = event_sink or NullEventSink()
+        self.machine_mode = bool(machine_mode)
+        self.episode_timeout_ms = int(episode_timeout_ms)
+        if self.episode_timeout_ms < 1:
+            raise ValueError("episode_timeout_ms must be positive")
 
         # 自动创建运行期管理模块
         self.run_store = run_store or RunStore(Path(workspace.repo_root) / ".hh" / "runs")
@@ -243,6 +249,12 @@ class HH:
         pending_output = self.session.setdefault("pending_output", {})
         if not isinstance(pending_output, dict):
             self.session["pending_output"] = {}
+        pending_input = self.session.setdefault("pending_input", {})
+        if not isinstance(pending_input, dict):
+            self.session["pending_input"] = {}
+        pending_action = self.session.setdefault("pending_action", {})
+        if not isinstance(pending_action, dict):
+            self.session["pending_action"] = {}
 
     def current_runtime_identity(self):
         return checkpointlib.current_runtime_identity(self)
@@ -633,10 +645,14 @@ class HH:
         return self.last_auto_memory
 
     # Runtime 对外的主入口
-    def ask(self, user_message):
+    def ask(self, user_message, responses=None, request_id=None):
         from .agent_loop import AgentLoop
         # 调用agent loop中的run
-        return AgentLoop(self).run(user_message)
+        return AgentLoop(self).run(
+            user_message,
+            responses=responses,
+            request_id=request_id,
+        )
 
     # 工具执行
     def execute_tool(self, name, args):
@@ -828,12 +844,140 @@ class HH:
             return True
         if self.approval_policy == "never":
             return False
+        if self.machine_mode:
+            fingerprint = self.tool_executor._call_fingerprint(name, args)
+            pending = dict(self.session.get("pending_action", {}) or {})
+            if pending and pending.get("fingerprint") != fingerprint:
+                return False
+            if not pending:
+                input_id = "input_approval_" + uuid.uuid4().hex[:10]
+                pending = {
+                    "kind": "approval",
+                    "input_id": input_id,
+                    "name": self.canonical_tool_name(name),
+                    # Session is the execution source of truth. Redaction is
+                    # applied only when this value leaves the runtime.
+                    "args": json.loads(json.dumps(args, ensure_ascii=False)),
+                    "fingerprint": fingerprint,
+                    "execution_state": "pending",
+                    "created_at": now(),
+                }
+                self.session["pending_action"] = pending
+                self.session["pending_input"] = {
+                    "kind": "approval",
+                    "input_id": input_id,
+                    "question": f"Approve {pending['name']} with the exact recorded arguments?",
+                }
+                self.session_path = self.session_store.save(self.session)
+            self.emit_ui(
+                "approval_requested",
+                input_id=pending["input_id"],
+                name=pending["name"],
+                args=self.redact_artifact(pending["args"]),
+            )
+            return None
         self.emit_ui("approval_requested", name=name, args=args)
         try:
             answer = input("Allow this action? [y/N] ")
         except EOFError:
             return False
         return answer.strip().lower() in {"y", "yes"}
+
+    def request_clarification(self, question):
+        input_id = "input_text_" + uuid.uuid4().hex[:10]
+        self.session["pending_input"] = {
+            "kind": "clarification",
+            "input_id": input_id,
+            "question": str(question),
+            "created_at": now(),
+        }
+        self.session_path = self.session_store.save(self.session)
+        return dict(self.session["pending_input"])
+
+    @staticmethod
+    def _response_value(response):
+        for key in ("value", "text", "decision"):
+            if key in response and str(response.get(key, "")).strip():
+                return str(response[key]).strip()
+        if "approved" in response:
+            return "approve" if bool(response["approved"]) else "deny"
+        return ""
+
+    def resolve_pending_input(self, responses=None, fallback_text=""):
+        """Resolve one persisted input request without trusting free-form approval."""
+
+        pending_input = dict(self.session.get("pending_input", {}) or {})
+        pending_action = dict(self.session.get("pending_action", {}) or {})
+        if not pending_input:
+            return {"status": "none", "text": str(fallback_text)}
+
+        responses = [item for item in (responses or []) if isinstance(item, dict)]
+        input_id = str(pending_input.get("input_id", ""))
+        response = next(
+            (
+                item
+                for item in responses
+                if str(item.get("inputId") or item.get("input_id") or "") == input_id
+            ),
+            None,
+        )
+        if pending_input.get("kind") == "clarification":
+            value = self._response_value(response or {}) or str(fallback_text).strip()
+            if not value:
+                return {"status": "waiting", "input": pending_input}
+            self.session["pending_input"] = {}
+            self.session_path = self.session_store.save(self.session)
+            return {"status": "clarified", "text": value, "input": pending_input}
+
+        if not response:
+            return {"status": "waiting", "input": pending_input}
+        decision = self._response_value(response).casefold()
+        if decision in {"deny", "denied", "reject", "rejected", "no", "false"}:
+            self.session["pending_action"] = {}
+            self.session["pending_input"] = {}
+            self.session_path = self.session_store.save(self.session)
+            return {"status": "denied", "action": pending_action}
+        if decision not in {"approve", "approved", "allow", "yes", "true"}:
+            return {"status": "waiting", "input": pending_input}
+
+        if pending_action.get("execution_state") != "pending":
+            return {"status": "invalid", "reason": "pending action is not executable"}
+        expected = str(pending_action.get("fingerprint", ""))
+        actual = self.tool_executor._call_fingerprint(
+            pending_action.get("name", ""), pending_action.get("args", {})
+        )
+        if not expected or expected != actual:
+            return {"status": "invalid", "reason": "pending action fingerprint mismatch"}
+
+        self.session["pending_action"]["execution_state"] = "executing"
+        self.session_path = self.session_store.save(self.session)
+        return {
+            "status": "approved",
+            "action": pending_action,
+            "expected_fingerprint": expected,
+        }
+
+    def execute_pending_action(self, action, expected_fingerprint):
+        result = self.tool_executor.execute_approved(
+            action["name"], action["args"], expected_fingerprint
+        )
+        redacted_content = self.redact_text(result.content)
+        if redacted_content != result.content:
+            from .tool_executor import ToolExecutionResult
+
+            result = ToolExecutionResult(
+                content=redacted_content,
+                metadata=dict(result.metadata),
+            )
+        self._last_tool_result_metadata = dict(result.metadata)
+        self.task_state.observe_tool(
+            action["name"], action["args"], result.content, result.metadata
+        )
+        self.session["task_state"] = self.task_state.to_dict()
+        self.session["pending_action"] = {}
+        self.session["pending_input"] = {}
+        self.session_path = self.session_store.save(self.session)
+        return result
 
     @staticmethod
     def parse(raw):

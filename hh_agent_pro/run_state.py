@@ -31,6 +31,7 @@ STOP_REASON_REPEATED_FAILED_CALL = "repeated_failed_call"
 STOP_REASON_INTERRUPTED = "interrupted"
 STOP_REASON_OUTPUT_TRUNCATED = "output_truncated"
 STOP_REASON_MODEL_PROTOCOL_ERROR = "model_protocol_error"
+STOP_REASON_EPISODE_TIMEOUT = "episode_timeout"
 
 
 def _timestamp():

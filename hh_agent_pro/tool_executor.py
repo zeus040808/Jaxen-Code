@@ -70,6 +70,15 @@ class ToolExecutor:
         result = self._execute(name, args)
         return self._observe_result(name, args, result)
 
+    def execute_approved(self, name, args, expected_fingerprint):
+        """Execute exactly one previously persisted approval request."""
+
+        name = self.agent.canonical_tool_name(name)
+        if self._call_fingerprint(name, args) != str(expected_fingerprint):
+            raise ValueError("approved action fingerprint mismatch")
+        result = self._execute(name, args, approval_granted=True)
+        return self._observe_result(name, args, result)
+
     def reset_run_state(self):
         self._failure_counts = {}
         self._unresolved_failure = None
@@ -127,7 +136,7 @@ class ToolExecutor:
     def _observe_result(self, name, args, result):
         metadata = dict(result.metadata or {})
         status = str(metadata.get("tool_status", ""))
-        if status == "ok":
+        if status in {"ok", "waiting", "denied"}:
             self._unresolved_failure = None
             return result
 
@@ -166,7 +175,7 @@ class ToolExecutor:
         }
         return result
 
-    def _execute(self, name, args):
+    def _execute(self, name, args, approval_granted=False):
         agent = self.agent
         name = agent.canonical_tool_name(name)
         args = args or {}
@@ -279,7 +288,29 @@ class ToolExecutor:
 
         # 检查风险工具调用是否被批准
         requires_approval = agent.tool_requires_approval(name, args)
-        if requires_approval and not agent.approve(name, args):
+        approval = True if approval_granted else agent.approve(name, args) if requires_approval else True
+        if requires_approval and approval is None:
+            pending = dict(agent.session.get("pending_input", {}) or {})
+            metadata = _metadata(
+                "waiting",
+                tool_error_code="approval_required",
+                security_event_type="approval_requested",
+                risk_level="high",
+                read_only=False,
+                retryable=False,
+                recommended_action="Wait for an explicit structured approval response.",
+            )
+            metadata.update(
+                {
+                    "effective_tool_step": False,
+                    "input_request": pending,
+                }
+            )
+            return ToolExecutionResult(
+                content=f"approval required before {name}; no workspace action was executed",
+                metadata=metadata,
+            )
+        if requires_approval and not approval:
             return ToolExecutionResult(
                 content=f"error: approval denied for {name}",
                 metadata=_metadata(
