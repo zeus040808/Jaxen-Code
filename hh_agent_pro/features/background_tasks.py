@@ -8,12 +8,6 @@ from collections.abc import Callable
 from ..workspace import clip
 
 
-SLOW_COMMAND_HINTS = (
-    "pytest", "test", "build", "install", "compile", "deploy",
-    "npm install", "pip install", "cargo build", "docker build",
-)
-
-
 class BackgroundTaskManager:
     def __init__(self):
         self._counter = 0
@@ -23,14 +17,13 @@ class BackgroundTaskManager:
 
     @staticmethod
     def should_run_background(name: str, args: dict) -> bool:
-        # An explicit value must override the slow-command heuristic. The
-        # background worker sets this to False so it executes exactly once.
-        if "background" in args:
-            return bool(args.get("background"))
-        if name != "run_shell":
-            return False
-        command = str(args.get("command", "")).lower()
-        return any(hint in command for hint in SLOW_COMMAND_HINTS)
+        # Verification commands must return their exit code to the current
+        # Agent Loop. Background execution is therefore explicit only.
+        return name == "run_shell" and bool(args.get("background", False))
+
+    def pending_count(self) -> int:
+        with self._lock:
+            return sum(1 for task in self._tasks.values() if task["status"] == "running")
 
     def start(self, command: str, runner: Callable[[], str]) -> str:
         with self._lock:

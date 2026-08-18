@@ -19,6 +19,7 @@ class FakeModelClient:
         self.outputs = list(outputs)
         self.prompts = []
         self.supports_prompt_cache = False
+        self.supports_native_tools = False
         self.last_completion_metadata = {}
 
     def complete(self, prompt, max_new_tokens, **kwargs):
@@ -38,6 +39,7 @@ class OllamaModelClient:
         self.top_p = top_p
         self.timeout = timeout
         self.supports_prompt_cache = False
+        self.supports_native_tools = False
         self.last_completion_metadata = {}
 
     def complete(self, prompt, max_new_tokens, **kwargs):
@@ -233,6 +235,7 @@ class OpenAICompatibleModelClient:
         # 当前只在明确支持 prompt cache 语义的后端上启用这条链路，
         # 避免对不支持的后端传一个“看起来统一、其实没意义”的伪参数。
         self.supports_prompt_cache = any(host in self.base_url for host in ("openai.com", "right.codes"))
+        self.supports_native_tools = False
         self.last_completion_metadata = {}
 
     def complete(self, prompt, max_new_tokens, prompt_cache_key=None, prompt_cache_retention=None):
@@ -366,27 +369,62 @@ class OpenAIChatCompatibleModelClient:
         self.timeout = timeout
         # 表示当前适配器不支持显式提示词缓存控制
         self.supports_prompt_cache = False
+        self.supports_native_tools = True
+        self.requires_reasoning_content_for_tool_calls = any(
+            marker in str(model).casefold()
+            for marker in ("deepseek-v4", "deepseek-reasoner")
+        )
         self.last_completion_metadata = {}
+        # DeepSeek thinking-mode tool calls carry protocol state that must be
+        # echoed with the assistant tool-call message on the next request.
+        # Keep it separate from completion metadata so private reasoning never
+        # leaks into trace/report payloads.
+        self.last_native_assistant_message = {}
 
-    # 对上层提供统一接口，对下层处理不同 API 格式
-    def complete(self, prompt, max_new_tokens, prompt_cache_key=None, prompt_cache_retention=None):
+    def complete(self, prompt, max_new_tokens, **kwargs):
+        return self.complete_stream(prompt, max_new_tokens, **kwargs)
+
+    # Chat Completions 的 delta 可能把 HH 的 <tool> 标签拆开，因此这里只流式
+    # 消费 provider 事件并展示状态，完整文本仍在收齐后交给 AgentLoop 解析。
+    def complete_stream(
+        self,
+        prompt,
+        max_new_tokens,
+        prompt_cache_key=None,
+        prompt_cache_retention=None,
+        event_callback=None,
+        tools=None,
+        system_prompt=None,
+        messages=None,
+    ):
         del prompt_cache_key, prompt_cache_retention
         self.last_completion_metadata = {}
+        self.last_native_assistant_message = {}
         # 构造请求体
+        request_messages = []
+        if system_prompt:
+            request_messages.append({"role": "system", "content": str(system_prompt)})
+        if messages:
+            request_messages.extend(list(messages))
+        else:
+            request_messages.append({"role": "user", "content": prompt})
         payload = {
             "model": self.model,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": request_messages,
             "max_tokens": max_new_tokens,
-            # 非流式输出
-            "stream": False,
+            "stream": True,
+            "stream_options": {"include_usage": True},
         }
+        if tools:
+            payload["tools"] = list(tools)
+            payload["tool_choice"] = "auto"
         if self.temperature is not None:
             payload["temperature"] = self.temperature
 
         # 请求头
         headers = {
             "Content-Type": "application/json",
-            "Accept": "application/json",
+            "Accept": "text/event-stream",
             "User-Agent": OPENAI_COMPATIBLE_USER_AGENT,
         }
         # 服务端通过它判断是否有 API 调用权限
@@ -400,12 +438,67 @@ class OpenAIChatCompatibleModelClient:
             headers=headers,
             method="POST",
         )
+        if event_callback:
+            event_callback({"type": "provider_status", "message": "DeepSeek turn started"})
         attempts = 3
         for attempt in range(attempts):
             try:
                 with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                    # 模型响应
-                    body_text = response.read().decode("utf-8")
+                    text_parts = []
+                    usage = {}
+                    finish_reason = ""
+                    reasoning_seen = False
+                    reasoning_parts = []
+                    tool_calls = {}
+                    for raw_line in response:
+                        line = raw_line.decode("utf-8", errors="replace").strip()
+                        if not line.startswith("data:"):
+                            continue
+                        payload_text = line[len("data:"):].strip()
+                        if not payload_text or payload_text == "[DONE]":
+                            continue
+                        try:
+                            event = json.loads(payload_text)
+                        except json.JSONDecodeError:
+                            continue
+                        if event.get("usage"):
+                            usage = event
+                        choices = event.get("choices") or []
+                        if not choices:
+                            continue
+                        choice = choices[0]
+                        if choice.get("finish_reason") is not None:
+                            finish_reason = str(choice["finish_reason"])
+                        delta = choice.get("delta") or {}
+                        for tool_delta in delta.get("tool_calls") or []:
+                            index = int(tool_delta.get("index", 0))
+                            call = tool_calls.setdefault(
+                                index,
+                                {"id": "", "name": "", "arguments": []},
+                            )
+                            if tool_delta.get("id"):
+                                call["id"] = str(tool_delta["id"])
+                            function = tool_delta.get("function") or {}
+                            if function.get("name"):
+                                call["name"] = str(function["name"])
+                            if function.get("arguments"):
+                                call["arguments"].append(str(function["arguments"]))
+                        reasoning = delta.get("reasoning_content")
+                        if isinstance(reasoning, str) and reasoning:
+                            reasoning_parts.append(reasoning)
+                            if not reasoning_seen:
+                                reasoning_seen = True
+                                if event_callback:
+                                    event_callback(
+                                        {
+                                            "type": "provider_status",
+                                            "message": "DeepSeek reasoning in progress",
+                                        }
+                                    )
+                        content = delta.get("content")
+                        if isinstance(content, str) and content:
+                            text_parts.append(content)
+                    body_text = "".join(text_parts)
                 break
             except urllib.error.HTTPError as exc:
                 body = exc.read().decode("utf-8", errors="replace")
@@ -428,24 +521,39 @@ class OpenAIChatCompatibleModelClient:
                     f"Model: {self.model}"
                 ) from exc
 
-        try:
-            # 解析模型结果
-            data = json.loads(body_text)
-        except json.JSONDecodeError as exc:
-            raise RuntimeError(
-                "OpenAI-chat-compatible error: backend returned non-JSON content that could not be parsed"
-            ) from exc
-        if data.get("error"):
-            raise RuntimeError(f"OpenAI-chat-compatible error: {data['error']}")
-        # data["choices"][0]["message"]["content"]
-        text = _extract_openai_text(data)
-        # 保存 token 用量
+        if event_callback:
+            event_callback({"type": "provider_status", "message": "DeepSeek turn completed"})
         self.last_completion_metadata = {
             "prompt_cache_supported": False,
-            **_extract_usage_cache_details(data),
+            "finish_reason": finish_reason,
+            "output_truncated": finish_reason == "length",
+            "max_output_tokens_requested": int(max_new_tokens),
+            **_extract_usage_cache_details(usage),
         }
-        if text:
-            return text
+        # A length-truncated native tool call often ends with incomplete JSON.
+        # Return control to AgentLoop before decoding it so the loop can recover
+        # from verified evidence instead of misreporting a generic model error.
+        if finish_reason == "length" and tool_calls:
+            return body_text
+        if tool_calls:
+            call = tool_calls[min(tool_calls)]
+            self.last_native_assistant_message = {
+                "tool_call_id": str(call.get("id", "")),
+                "content": body_text or None,
+                # DeepSeek requires the complete, unmodified value for a
+                # thinking-mode tool call. It is persisted only for protocol
+                # replay and is never emitted as a reasoning UI/trace event.
+                "reasoning_content": "".join(reasoning_parts),
+            }
+            try:
+                arguments = json.loads("".join(call["arguments"]) or "{}")
+            except json.JSONDecodeError as exc:
+                raise RuntimeError("DeepSeek returned malformed native tool arguments") from exc
+            return "<tool>" + json.dumps(
+                {"name": call["name"], "args": arguments}, ensure_ascii=False
+            ) + "</tool>"
+        if body_text:
+            return body_text
         raise RuntimeError("OpenAI-chat-compatible error: could not extract text from response")
 
 
@@ -466,6 +574,7 @@ class AnthropicCompatibleModelClient:
         self.temperature = temperature
         self.timeout = timeout
         self.supports_prompt_cache = False
+        self.supports_native_tools = False
         self.last_completion_metadata = {}
 
     def complete(self, prompt, max_new_tokens, prompt_cache_key=None, prompt_cache_retention=None):

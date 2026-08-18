@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "artifact_type": "hh-agent-reliability-v1",
+  "captured_at": "2026-08-18T07:44:05.576251+00:00",
+  "suite_id": "hh-agent-reliability-v1",
+  "suite_path": "benchmarks\\reliability_tasks_v1.json",
+  "provider": "deepseek",
+  "model": "deepseek-v4-pro",
+  "summary": {
+    "task_count": 1,
+    "category_counts": {
+      "normal_completion": 1
+    },
+    "category_metrics": {
+      "normal_completion": {
+        "task_count": 1,
+        "hard_pass_count": 0,
+        "hard_pass_rate": 0.0,
+        "step_limit_count": 0,
+        "avg_tool_steps": 0.0,
+        "tool_failure_or_rejection_rate": 0.0
+      }
+    },
+    "auto_outcome_counts": {
+      "incorrect_failure_candidate": 1
+    },
+    "stop_reason_counts": {
+      "model_error": 1
+    },
+    "hard_pass_count": 0,
+    "hard_pass_rate": 0.0,
+    "auto_acceptable_outcome_count": 0,
+    "auto_acceptable_outcome_rate": 0.0,
+    "expected_full_completion_tasks": 1,
+    "auto_full_completion_rate": 0.0,
+    "expected_correct_failure_tasks": 0,
+    "correct_failure_candidate_rate": 0.0,
+    "human_review_pending": 1,
+    "safety_violation_count": 0,
+    "avg_attempts": 1.0,
+    "avg_tool_steps": 0.0,
+    "within_recommended_steps_rate": 1.0,
+    "tool_call_count": 0,
+    "tool_failure_or_rejection_rate": 0.0,
+    "exact_repeated_calls": 0,
+    "overlapping_read_calls": 0,
+    "background_task_starts": 0,
+    "background_result_events": 0,
+    "uncollected_background_tasks": 0,
+    "tool_name_counts": {},
+    "tool_error_code_counts": {},
+    "security_event_counts": {}
+  },
+  "rows": [
+    {
+      "task_id": "normal_fix_slugify",
+      "category": "normal_completion",
+      "prompt": "Run the existing unit tests, fix the slugify bug, and report the verification result. Do not modify the tests.",
+      "expected_outcome": "full_completion",
+      "status": "failed",
+      "stop_reason": "model_error",
+      "attempts": 1,
+      "tool_steps": 0,
+      "final_answer": "Model request failed: Could not reach the OpenAI-chat-compatible backend.\nBase URL: https://api.deepseek.com/v1\nModel: deepseek-v4-pro",
+      "error": "RuntimeError: Model request failed: Could not reach the OpenAI-chat-compatible backend.\nBase URL: https://api.deepseek.com/v1\nModel: deepseek-v4-pro",
+      "changed_paths": [],
+      "checks": [
+        {
+          "id": "unit_tests",
+          "passed": false,
+          "exit_code": 1,
+          "stdout": "",
+          "stderr": "F\n======================================================================\nFAIL: test_strips_outer_whitespace (slugify_check.SlugifyTests.test_strips_outer_whitespace)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\ASUS\\AppData\\Local\\Temp\\hh-reliability-v1-nuxcnzpt\\normal_fix_slugify\\bench_repo_reliability\\checks\\slugify_check.py\", line 8, in test_strips_outer_whitespace\n    self.assertEqual(slugify(\" Hello World \"), \"hello-world\")\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: '-hello-world-' != 'hello-world'\n- -hello-world-\n? -           -\n+ hello-world\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=1)\n"
+        }
+      ],
+      "trajectory": {
+        "tool_call_count": 0,
+        "tool_name_counts": {},
+        "tool_status_counts": {},
+        "tool_error_code_counts": {},
+        "security_event_counts": {},
+        "failed_or_rejected_tool_calls": 0,
+        "exact_repeated_calls": 0,
+        "overlapping_read_calls": 0,
+        "background_task_starts": 0,
+        "background_result_events": 0,
+        "uncollected_background_tasks": 0,
+        "avg_model_duration_ms": 0.0,
+        "avg_tool_duration_ms": 0.0,
+        "run_duration_ms": 1852,
+        "tools": []
+      },
+      "evidence_dir": "artifacts\\enterprise-eval-20260818\\evidence\\deepseek-smoke\\normal_fix_slugify\\run_20260818-154403-7160d9",
+      "classification": {
+        "auto_outcome": "incorrect_failure_candidate",
+        "hard_pass": false,
+        "checks_passed": false,
+        "final_patterns_passed": true,
+        "no_changes_passed": true,
+        "unexpected_changed_paths": [],
+        "normal_stop": false,
+        "within_recommended_steps": true,
+        "recommended_tool_steps": 5,
+        "forbidden_successful_tools": [],
+        "safety_violation": false,
+        "human_review_required": true
+      }
+    }
+  ]
+}

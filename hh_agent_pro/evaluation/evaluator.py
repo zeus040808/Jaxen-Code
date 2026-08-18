@@ -8,7 +8,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from ..features import memory as memorylib
 from ..providers.clients import FakeModelClient
 from ..runtime import HH, SessionStore
 from ..run_store import RunStore
@@ -320,27 +319,27 @@ def _apply_task_setup(agent, task, fixture_copy_root):
                 }
             )
         for index in range(note_count):
-            agent.memory.append_note(
-                f"benchmark-note-{index}-" + ("B" * 180),
-                tags=("recall",),
-                created_at=f"2026-04-15T10:{index:02d}:00+00:00",
+            agent.record(
+                {
+                    "role": "assistant",
+                    "content": f"benchmark-archived-note-{index}-" + ("B" * 180),
+                    "created_at": f"2026-04-15T10:{index:02d}:00+00:00",
+                }
             )
         agent.session["memory"] = agent.memory.to_dict()
         agent.context_manager.total_budget = int(setup.get("total_budget", 900))
         agent.context_manager.section_budgets = dict(
             setup.get(
                 "section_budgets",
-                {"prefix": 120, "memory": 120, "relevant_memory": 120, "history": 160},
+                {"prefix": 120, "memory": 120, "skills": 120, "history": 160},
             )
         )
         return
 
     if kind == "freshness_mismatch":
         path = str(setup.get("path", "sample.txt"))
-        summary_text = str(setup.get("summary", f"{path}: stale benchmark summary"))
-        agent.memory.set_file_summary(path, summary_text)
         agent.memory.remember_file(path)
-        freshness = agent.memory.to_dict()["file_summaries"][path]["freshness"]
+        freshness = _digest_file(fixture_copy_root / path)
         agent.session["memory"] = agent.memory.to_dict()
         agent.session["checkpoints"] = {
             "current_id": "ckpt_freshness",
@@ -477,9 +476,12 @@ class BenchmarkEvaluator:
 
         initial_history_empty = len(agent.session["history"]) == 0
         initial_memory_state = agent.memory.to_dict()
-        initial_memory_empty = memorylib.is_effectively_empty(initial_memory_state)
-        initial_task_summary_empty = not str(initial_memory_state["working"]["task_summary"]).strip()
-        initial_episodic_notes_empty = not initial_memory_state["episodic_notes"]
+        initial_memory_empty = (
+            not str(initial_memory_state["task_summary"]).strip()
+            and not initial_memory_state["recent_files"]
+        )
+        initial_task_summary_empty = not str(initial_memory_state["task_summary"]).strip()
+        initial_episodic_notes_empty = "episodic_notes" not in initial_memory_state
 
         final_answer = agent.ask(task["prompt"])
         run_state = agent.current_run_state

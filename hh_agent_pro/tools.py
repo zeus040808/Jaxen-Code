@@ -4,26 +4,35 @@
 如何做参数校验，以及最终如何执行，都是在这里定义的。
 """
 
+import json
+import locale
+import os
+import re
 import shutil
 import subprocess
 import textwrap
 from functools import partial
 
-from .workspace import IGNORED_PATH_NAMES
+from .workspace import IGNORED_PATH_NAMES, clip
 #
 # schema       参数说明
 # risky        是否需要危险操作审批
 # description  告诉模型这个工具做什么
 BASE_TOOL_SPECS = {
     "list_files": {
-        "schema": {"path": "str='.'"},
+        "schema": {"path": "str='.'", "recursive": "bool=False", "max_depth": "int=3"},
         "risky": False,
-        "description": "List files in the workspace.",
+        "description": "List workspace files. Use this instead of shell dir/ls.",
     },
     "read_file": {
         "schema": {"path": "str", "start": "int=1", "end": "int=200"},
         "risky": False,
-        "description": "Read a UTF-8 file by line range.",
+        "description": "Read one UTF-8 workspace file. Use this instead of shell type/cat/Get-Content.",
+    },
+    "read_files": {
+        "schema": {"paths": "list[str]", "start": "int=1", "end": "int=300"},
+        "risky": False,
+        "description": "Read up to 8 UTF-8 workspace files in one call for comparison or synthesis.",
     },
     "search": {
         "schema": {"pattern": "str", "path": "str='.'"},
@@ -33,7 +42,12 @@ BASE_TOOL_SPECS = {
     "run_shell": {
         "schema": {"command": "str", "timeout": "int=20", "background": "bool=False"},
         "risky": True,
-        "description": "Run a shell command in the repo root.",
+        "description": "Run a repo-root shell command. Use only when no dedicated file/search tool fits; approval is conditional on mutation risk.",
+    },
+    "runtime_info": {
+        "schema": {},
+        "risky": False,
+        "description": "Show redacted provider, model, OS, shell, cwd, and repo root without reading secret config files.",
     },
     "write_file": {
         "schema": {"path": "str", "content": "str"},
@@ -55,9 +69,14 @@ DELEGATE_TOOL_SPEC = {
 
 TASK_TOOL_SPECS = {
     "create_task": {
-        "schema": {"subject": "str", "description": "str=''", "blocked_by": "list[str]=[]"},
+        "schema": {
+            "subject": "str",
+            "description": "str=''",
+            "blocked_by": "list[str]=[]",
+            "acceptance_criteria": "list[str]=[]",
+        },
         "risky": False,
-        "description": "Create a durable project task with optional dependencies.",
+        "description": "Create a durable subtask with dependencies and explicit acceptance criteria.",
     },
     "list_tasks": {
         "schema": {},
@@ -70,9 +89,29 @@ TASK_TOOL_SPECS = {
         "description": "Claim a pending durable task when dependencies are complete.",
     },
     "complete_task": {
-        "schema": {"task_id": "str"},
+        "schema": {"task_id": "str", "evidence": "list[str]=[]"},
         "risky": False,
-        "description": "Complete an in-progress durable task and show newly unblocked work.",
+        "description": "Complete an in-progress task with evidence for its acceptance criteria.",
+    },
+    "fail_task": {
+        "schema": {"task_id": "str", "reason": "str", "evidence": "list[str]=[]"},
+        "risky": False,
+        "description": "Mark a task failed with a concrete reason and optional evidence.",
+    },
+    "block_task": {
+        "schema": {"task_id": "str", "reason": "str"},
+        "risky": False,
+        "description": "Mark a task blocked by missing information, permission, or dependency.",
+    },
+    "record_evidence": {
+        "schema": {
+            "claim": "str",
+            "evidence": "str",
+            "verified": "bool=True",
+            "task_id": "str=''",
+        },
+        "risky": False,
+        "description": "Record evidence for a verified or still-unverified conclusion.",
     },
 }
 
@@ -94,25 +133,226 @@ CRON_TOOL_SPECS = {
     },
 }
 
+MEMORY_TOOL_SPECS = {
+    "memory_list": {
+        "schema": {"namespace": "str=''"},
+        "risky": False,
+        "description": "List structured durable memories visible in the current workspace, including ids and provenance.",
+    },
+    "memory_update": {
+        "schema": {
+            "action": "str=add|replace|remove|batch",
+            "namespace": "str=memory|user",
+            "scope": "str=workspace|project|global_user",
+            "kind": "str",
+            "content": "str=''",
+            "match": "str=''",
+            "provenance": "str",
+            "confidence": "float",
+            "operations": "list[object]=[]",
+        },
+        "risky": True,
+        "description": "Atomically add, correct, forget, or batch-edit curated durable memory. Changes apply to prompts next session.",
+    },
+    "session_search": {
+        "schema": {
+            "query": "str",
+            "limit": "int=5",
+            "include_tools": "bool=False",
+            "session_id": "str=''",
+        },
+        "risky": False,
+        "description": "Search archived sessions and return source-addressable historical evidence.",
+    },
+    "session_read": {
+        "schema": {
+            "session_id": "str",
+            "start": "int=0",
+            "limit": "int=20",
+            "around_message_id": "int=0",
+            "include_tools": "bool=True",
+        },
+        "risky": False,
+        "description": "Read a chronological window from an archived session, optionally around a search-result message id.",
+    },
+}
+
+SKILL_TOOL_SPECS = {
+    "skills_list": {
+        "schema": {},
+        "risky": False,
+        "description": "List available procedural skills by name and description; skill bodies are not loaded.",
+    },
+    "skill_view": {
+        "schema": {"name": "str"},
+        "risky": False,
+        "description": "Load one matching SKILL.md on demand before following its procedure.",
+    },
+    "skill_manage": {
+        "schema": {
+            "action": "str=create|patch|delete",
+            "name": "str",
+            "description": "str=''",
+            "content": "str=''",
+            "old_text": "str=''",
+            "new_text": "str=''",
+        },
+        "risky": True,
+        "description": "Create, patch, or delete a reusable procedural skill. Store procedures here, not facts or task progress.",
+    },
+}
+
 
 def legal_tool_names():
-    return set(BASE_TOOL_SPECS) | set(TASK_TOOL_SPECS) | set(CRON_TOOL_SPECS) | {"delegate"}
+    return set(BASE_TOOL_SPECS) | set(TASK_TOOL_SPECS) | set(CRON_TOOL_SPECS) | set(MEMORY_TOOL_SPECS) | set(SKILL_TOOL_SPECS) | {"delegate"}
 
 # 模型格式出错时给出示范
 TOOL_EXAMPLES = {
-    "list_files": '<tool>{"name":"list_files","args":{"path":"."}}</tool>',
+    "list_files": '<tool>{"name":"list_files","args":{"path":".","recursive":false}}</tool>',
     "read_file": '<tool>{"name":"read_file","args":{"path":"README.md","start":1,"end":80}}</tool>',
+    "read_files": '<tool>{"name":"read_files","args":{"paths":["a.py","b.py"],"start":1,"end":300}}</tool>',
     "search": '<tool>{"name":"search","args":{"pattern":"binary_search","path":"."}}</tool>',
     "run_shell": '<tool>{"name":"run_shell","args":{"command":"uv run --with pytest python -m pytest -q","timeout":20}}</tool>',
     "run_shell_background": '<tool>{"name":"run_shell","args":{"command":"pytest -q","timeout":120,"background":true}}</tool>',
+    "runtime_info": '<tool>{"name":"runtime_info","args":{}}</tool>',
     "write_file": '<tool name="write_file" path="binary_search.py"><content>def binary_search(nums, target):\n    return -1\n</content></tool>',
     "patch_file": '<tool name="patch_file" path="binary_search.py"><old_text>return -1</old_text><new_text>return mid</new_text></tool>',
     "delegate": '<tool>{"name":"delegate","args":{"task":"inspect README.md","max_steps":3}}</tool>',
-    "create_task": '<tool>{"name":"create_task","args":{"subject":"Add tests","description":"Cover parser edge cases"}}</tool>',
+    "create_task": '<tool>{"name":"create_task","args":{"subject":"Add tests","description":"Cover parser edge cases","acceptance_criteria":["pytest passes"]}}</tool>',
     "claim_task": '<tool>{"name":"claim_task","args":{"task_id":"task_123_aaaa","owner":"main-agent"}}</tool>',
-    "complete_task": '<tool>{"name":"complete_task","args":{"task_id":"task_123_aaaa"}}</tool>',
+    "complete_task": '<tool>{"name":"complete_task","args":{"task_id":"task_123_aaaa","evidence":["pytest: 12 passed"]}}</tool>',
+    "fail_task": '<tool>{"name":"fail_task","args":{"task_id":"task_123_aaaa","reason":"required dependency is unavailable"}}</tool>',
+    "block_task": '<tool>{"name":"block_task","args":{"task_id":"task_123_aaaa","reason":"waiting for the target file path"}}</tool>',
+    "record_evidence": '<tool>{"name":"record_evidence","args":{"claim":"tests pass","evidence":"pytest: 12 passed","verified":true}}</tool>',
     "schedule_cron": '<tool>{"name":"schedule_cron","args":{"cron":"0 9 * * *","prompt":"Review open project tasks"}}</tool>',
+    "memory_list": '<tool>{"name":"memory_list","args":{"namespace":"memory"}}</tool>',
+    "memory_update": '<tool>{"name":"memory_update","args":{"action":"replace","namespace":"memory","match":"old fact","content":"corrected fact","provenance":"user_correction","confidence":1.0}}</tool>',
+    "session_search": '<tool>{"name":"session_search","args":{"query":"database migration","limit":5,"include_tools":false}}</tool>',
+    "session_read": '<tool>{"name":"session_read","args":{"session_id":"20260812-example","around_message_id":42,"limit":12,"include_tools":true}}</tool>',
+    "skills_list": '<tool>{"name":"skills_list","args":{}}</tool>',
+    "skill_view": '<tool>{"name":"skill_view","args":{"name":"release-checklist"}}</tool>',
+    "skill_manage": '<tool>{"name":"skill_manage","args":{"action":"create","name":"release-checklist","description":"Verify and publish a release","content":"# Release checklist\\n\\n## Procedure\\n1. Run tests."}}</tool>',
 }
+
+
+TOOL_ALIASES = {
+    "list_dir": "list_files",
+    "read_multiple_files": "read_files",
+    "get_runtime_info": "runtime_info",
+}
+
+
+def canonical_tool_name(name):
+    name = str(name or "").strip()
+    return TOOL_ALIASES.get(name, name)
+
+
+def _schema_field(spec):
+    text = str(spec)
+    kind, _, qualifier = text.partition("=")
+    kind = kind.strip()
+    schema = {"type": "string"}
+    if kind == "int":
+        schema = {"type": "integer"}
+    elif kind == "float":
+        schema = {"type": "number"}
+    elif kind == "bool":
+        schema = {"type": "boolean"}
+    elif kind == "list[str]":
+        schema = {"type": "array", "items": {"type": "string"}}
+    elif kind == "list[object]":
+        schema = {"type": "array", "items": {"type": "object"}}
+    if "|" in qualifier:
+        schema["enum"] = qualifier.split("|")
+    optional = bool(qualifier) and "|" not in qualifier
+    return schema, optional
+
+
+def provider_tool_schemas(tools):
+    """Translate HH's small readable schemas into provider function schemas."""
+    result = []
+    for name, tool in tools.items():
+        properties = {}
+        required = []
+        for field, spec in tool["schema"].items():
+            field_schema, optional = _schema_field(spec)
+            properties[field] = field_schema
+            if not optional:
+                required.append(field)
+        parameters = {
+            "type": "object",
+            "properties": properties,
+            "additionalProperties": False,
+        }
+        if required:
+            parameters["required"] = required
+        result.append(
+            {
+                "type": "function",
+                "function": {
+                    "name": name,
+                    "description": tool["description"],
+                    "parameters": parameters,
+                },
+            }
+        )
+    return result
+
+
+_READ_ONLY_COMMANDS = re.compile(
+    r"(?i)^\s*(cd(?:\s|$)|dir(?:\s|$)|type(?:\s|$)|where(?:\s|$)|"
+    r"git\s+(status|log|diff|show)(?:\s|$)|rg(?:\s|$)|"
+    r"get-childitem(?:\s|$)|get-content(?:\s|$)|select-string(?:\s|$)|"
+    r"pwd(?:\s|$)|ls(?:\s|$)|cat(?:\s|$))"
+)
+_MUTATING_COMMAND_WORDS = re.compile(
+    r"(?i)\b(del|erase|rmdir|move|copy|ren|rename|mkdir|set-content|"
+    r"add-content|remove-item|move-item|copy-item|new-item|git\s+(add|commit|push|"
+    r"checkout|switch|reset|clean|merge|rebase)|pip\s+install|npm\s+install)\b"
+)
+
+
+def shell_command_is_read_only(command):
+    command = str(command or "").strip()
+    if (
+        not command
+        or _MUTATING_COMMAND_WORDS.search(command)
+        or re.search(r"(?i)(^|&&|(?<!&)\&(?!&)|;|\|)\s*(rd|md)(?:\s|$)", command)
+        or any(token in command for token in (">", ">>"))
+    ):
+        return False
+    # Every chained segment must be an explicitly known inspection command.
+    segments = [part.strip() for part in re.split(r"&&|(?<!&)\&(?!&)|;|\|", command) if part.strip()]
+    return bool(segments) and all(_READ_ONLY_COMMANDS.match(part) for part in segments)
+
+
+def tool_requires_approval(name, args):
+    name = canonical_tool_name(name)
+    if name == "run_shell":
+        return not shell_command_is_read_only((args or {}).get("command", ""))
+    if name == "delegate":
+        return bool(DELEGATE_TOOL_SPEC["risky"])
+    for specs in (BASE_TOOL_SPECS, TASK_TOOL_SPECS, CRON_TOOL_SPECS, MEMORY_TOOL_SPECS, SKILL_TOOL_SPECS):
+        if name in specs:
+            return bool(specs[name]["risky"])
+    return True
+
+
+def _decode_output(value):
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    data = bytes(value)
+    encodings = ["utf-8-sig", locale.getpreferredencoding(False)]
+    if os.name == "nt":
+        encodings.extend(["mbcs", "gb18030"])
+    for encoding in dict.fromkeys(encodings):
+        try:
+            return data.decode(encoding, errors="strict")
+        except (LookupError, UnicodeDecodeError):
+            continue
+    return data.decode("utf-8", errors="replace")
 
 # 把说明和执行函数绑在一起
 def build_tool_registry(context):
@@ -132,6 +372,14 @@ def build_tool_registry(context):
             name: {**spec, "run": partial(_TOOL_RUNNERS[name], context)}
             for name, spec in CRON_TOOL_SPECS.items()
         })
+        tools.update({
+            name: {**spec, "run": partial(_TOOL_RUNNERS[name], context)}
+            for name, spec in MEMORY_TOOL_SPECS.items()
+        })
+        tools.update({
+            name: {**spec, "run": partial(_TOOL_RUNNERS[name], context)}
+            for name, spec in SKILL_TOOL_SPECS.items()
+        })
     # 子 agent 是刻意做成受限能力的：一旦深度耗尽，
     # 就连 delegate 这个工具都不再暴露给模型。
     if context.depth < context.max_depth:
@@ -145,11 +393,15 @@ def tool_example(name):
 # 执行前的参数与资源校验
 def validate_tool(context, name, args):
     args = args or {}
+    name = canonical_tool_name(name)
 
     if name == "list_files":
         path = context.path(args.get("path", "."))
         if not path.is_dir():
             raise ValueError("path is not a directory")
+        max_depth = int(args.get("max_depth", 3))
+        if max_depth < 1 or max_depth > 8:
+            raise ValueError("max_depth must be in [1, 8]")
         return
 
     if name == "read_file":
@@ -160,6 +412,21 @@ def validate_tool(context, name, args):
         end = int(args.get("end", 200))
         if start < 1 or end < start:
             raise ValueError("invalid line range")
+        return
+
+    if name == "read_files":
+        paths = args.get("paths")
+        if not isinstance(paths, list) or not paths or len(paths) > 8:
+            raise ValueError("paths must contain between 1 and 8 file paths")
+        if len({str(path) for path in paths}) != len(paths):
+            raise ValueError("paths must not contain duplicates")
+        for raw_path in paths:
+            if not str(raw_path).strip() or not context.path(raw_path).is_file():
+                raise ValueError(f"path is not a file: {raw_path}")
+        start = int(args.get("start", 1))
+        end = int(args.get("end", 300))
+        if start < 1 or end < start or end - start + 1 > 500:
+            raise ValueError("line range must be valid and no larger than 500 lines")
         return
 
     if name == "search":
@@ -178,6 +445,9 @@ def validate_tool(context, name, args):
             raise ValueError("timeout must be in [1, 120]")
         return
 
+    if name == "runtime_info":
+        return
+
     if name == "create_task":
         if not str(args.get("subject", "")).strip():
             raise ValueError("subject must not be empty")
@@ -186,6 +456,9 @@ def validate_tool(context, name, args):
             return
         if not isinstance(blocked_by, list):
             raise ValueError("blocked_by must be a list")
+        criteria = args.get("acceptance_criteria", [])
+        if criteria is not None and not isinstance(criteria, list):
+            raise ValueError("acceptance_criteria must be a list")
         return
 
     if name == "list_tasks":
@@ -199,6 +472,31 @@ def validate_tool(context, name, args):
     if name == "complete_task":
         if not str(args.get("task_id", "")).strip():
             raise ValueError("task_id must not be empty")
+        if not isinstance(args.get("evidence", []), list):
+            raise ValueError("evidence must be a list")
+        return
+
+    if name == "fail_task":
+        if not str(args.get("task_id", "")).strip():
+            raise ValueError("task_id must not be empty")
+        if not str(args.get("reason", "")).strip():
+            raise ValueError("reason must not be empty")
+        if not isinstance(args.get("evidence", []), list):
+            raise ValueError("evidence must be a list")
+        return
+
+    if name == "block_task":
+        if not str(args.get("task_id", "")).strip():
+            raise ValueError("task_id must not be empty")
+        if not str(args.get("reason", "")).strip():
+            raise ValueError("reason must not be empty")
+        return
+
+    if name == "record_evidence":
+        if not str(args.get("claim", "")).strip():
+            raise ValueError("claim must not be empty")
+        if not str(args.get("evidence", "")).strip():
+            raise ValueError("evidence must not be empty")
         return
 
     if name == "schedule_cron":
@@ -214,6 +512,70 @@ def validate_tool(context, name, args):
     if name == "cancel_cron":
         if not str(args.get("job_id", "")).strip():
             raise ValueError("job_id must not be empty")
+        return
+
+    if name == "memory_list":
+        namespace = str(args.get("namespace", "")).strip()
+        if namespace and namespace not in {"memory", "user"}:
+            raise ValueError("namespace must be memory, user, or empty")
+        return
+
+    if name == "memory_update":
+        action = str(args.get("action", "")).strip().lower()
+        if action not in {"add", "replace", "remove", "batch"}:
+            raise ValueError("action must be add, replace, remove, or batch")
+        if action == "batch":
+            operations = args.get("operations")
+            if not isinstance(operations, list) or not operations:
+                raise ValueError("operations must be a non-empty list")
+            return
+        if action in {"replace", "remove"} and not str(args.get("match", "")).strip():
+            raise ValueError("match must not be empty for replace/remove")
+        if action in {"add", "replace"} and not str(args.get("content", "")).strip():
+            raise ValueError("content must not be empty for add/replace")
+        return
+
+    if name == "session_search":
+        if not str(args.get("query", "")).strip():
+            raise ValueError("query must not be empty")
+        limit = int(args.get("limit", 5))
+        if limit < 1 or limit > 20:
+            raise ValueError("limit must be in [1, 20]")
+        return
+
+    if name == "session_read":
+        if not str(args.get("session_id", "")).strip():
+            raise ValueError("session_id must not be empty")
+        start = int(args.get("start", 0))
+        limit = int(args.get("limit", 20))
+        around_message_id = int(args.get("around_message_id", 0))
+        if start < 0 or around_message_id < 0:
+            raise ValueError("start and around_message_id must not be negative")
+        if limit < 1 or limit > 50:
+            raise ValueError("limit must be in [1, 50]")
+        return
+
+    if name == "skills_list":
+        return
+
+    if name == "skill_view":
+        if not str(args.get("name", "")).strip():
+            raise ValueError("name must not be empty")
+        return
+
+    if name == "skill_manage":
+        action = str(args.get("action", "")).strip().lower()
+        if action not in {"create", "patch", "delete"}:
+            raise ValueError("action must be create, patch, or delete")
+        if not str(args.get("name", "")).strip():
+            raise ValueError("name must not be empty")
+        if action == "create" and (
+            not str(args.get("description", "")).strip()
+            or not str(args.get("content", "")).strip()
+        ):
+            raise ValueError("create requires description and content")
+        if action == "patch" and not str(args.get("old_text", "")):
+            raise ValueError("patch requires old_text")
         return
 
     if name == "write_file":
@@ -255,10 +617,18 @@ def tool_list_files(context, args):
     path = context.path(args.get("path", "."))
     if not path.is_dir():
         raise ValueError("path is not a directory")
-    entries = [
-        item for item in sorted(path.iterdir(), key=lambda item: (item.is_file(), item.name.lower()))
-        if item.name not in IGNORED_PATH_NAMES
-    ]
+    recursive = bool(args.get("recursive", False))
+    max_depth = int(args.get("max_depth", 3))
+    candidates = path.rglob("*") if recursive else path.iterdir()
+    entries = []
+    for item in candidates:
+        relative_to_path = item.relative_to(path)
+        if any(part in IGNORED_PATH_NAMES for part in relative_to_path.parts):
+            continue
+        if recursive and len(relative_to_path.parts) > max_depth:
+            continue
+        entries.append(item)
+    entries.sort(key=lambda item: (item.is_file(), str(item.relative_to(path)).lower()))
     lines = []
     for entry in entries[:200]:
         kind = "[D]" if entry.is_dir() else "[F]"
@@ -279,6 +649,26 @@ def tool_read_file(context, args):
     return f"# {path.relative_to(context.root)}\n{body}"
 
 
+def tool_read_files(context, args):
+    start = int(args.get("start", 1))
+    end = int(args.get("end", 300))
+    sections = []
+    per_file_budget = max(800, 11000 // len(args["paths"]))
+    for raw_path in args["paths"]:
+        sections.append(clip(
+            tool_read_file(context, {"path": raw_path, "start": start, "end": end}),
+            per_file_budget,
+        ))
+    return "\n\n".join(sections)
+
+
+def tool_runtime_info(context, args):
+    del args
+    info = context.runtime_info()
+    keys = ("provider", "model", "platform", "shell", "cwd", "repo_root", "approval_policy", "read_only")
+    return "\n".join(f"{key}: {info.get(key, '')}" for key in keys)
+
+
 def tool_search(context, args):
     pattern = str(args.get("pattern", "")).strip()
     if not pattern:
@@ -291,9 +681,11 @@ def tool_search(context, args):
             ["rg", "-n", "--smart-case", "--max-count", "200", pattern, str(path)],
             cwd=context.root,
             capture_output=True,
-            text=True,
+            text=False,
         )
-        return result.stdout.strip() or result.stderr.strip() or "(no matches)"
+        stdout = _decode_output(result.stdout).strip()
+        stderr = _decode_output(result.stderr).strip()
+        return stdout or stderr or "(no matches)"
 
     matches = []
     files = [path] if path.is_file() else [
@@ -328,19 +720,21 @@ def tool_run_shell(context, args):
         cwd=context.root,   # 默认工作路径
         shell=True,
         capture_output=True,
-        text=True,
+        text=False,
         timeout=timeout,
         # 这里传入的是过滤后的环境变量，而不是直接继承整个父 shell 环境，
         # 目的是减少敏感信息被意外带进命令执行环境的风险。
         env=context.shell_env(),
     )
+    stdout = _decode_output(result.stdout).strip()
+    stderr = _decode_output(result.stderr).strip()
     return textwrap.dedent(
         f"""\
         exit_code: {result.returncode}
         stdout:
-        {result.stdout.strip() or "(empty)"}
+        {stdout or "(empty)"}
         stderr:
-        {result.stderr.strip() or "(empty)"}
+        {stderr or "(empty)"}
         """
     ).strip()
 
@@ -384,6 +778,7 @@ def tool_create_task(context, args):
         str(args["subject"]),
         str(args.get("description", "")),
         list(args.get("blocked_by") or []),
+        list(args.get("acceptance_criteria") or []),
     )
     return f"created {task.id}: {task.subject}"
 
@@ -397,7 +792,33 @@ def tool_claim_task(context, args):
 
 
 def tool_complete_task(context, args):
-    return context.task_store.complete(str(args["task_id"]))
+    return context.task_store.complete(str(args["task_id"]), list(args.get("evidence") or []))
+
+
+def tool_fail_task(context, args):
+    return context.task_store.fail(
+        str(args["task_id"]),
+        str(args["reason"]),
+        list(args.get("evidence") or []),
+    )
+
+
+def tool_block_task(context, args):
+    return context.task_store.block(str(args["task_id"]), str(args["reason"]))
+
+
+def tool_record_evidence(context, args):
+    task_id = str(args.get("task_id", "")).strip()
+    evidence = str(args["evidence"])
+    verified = bool(args.get("verified", True))
+    if task_id and verified:
+        context.task_store.add_evidence(task_id, evidence)
+    return context.task_state.record_claim(
+        claim=str(args["claim"]),
+        evidence=evidence,
+        verified=verified,
+        task_id=task_id,
+    )
 
 
 def tool_schedule_cron(context, args):
@@ -419,19 +840,104 @@ def tool_list_crons(context, args):
 def tool_cancel_cron(context, args):
     return context.cron_scheduler.cancel(str(args["job_id"]))
 
+
+def tool_memory_list(context, args):
+    entries = context.curated_memory.entries(namespace=str(args.get("namespace", "")).strip() or None)
+    if not entries:
+        return "(no curated durable memories)"
+    return "\n".join(
+        f"[{entry.id}] namespace={entry.namespace} scope={entry.scope} kind={entry.kind} "
+        f"provenance={entry.provenance} confidence={entry.confidence:.2f} version={entry.version}\n"
+        f"{entry.content}"
+        for entry in entries
+    )
+
+
+def tool_memory_update(context, args):
+    action = str(args.get("action", "")).strip().lower()
+    if action == "batch":
+        operations = [dict(operation) for operation in args.get("operations", [])]
+    else:
+        operations = [{key: value for key, value in args.items() if key != "operations"}]
+    for operation in operations:
+        operation.setdefault("source_session_id", context.session_id)
+    results = context.curated_memory.apply_batch(operations)
+    return (
+        json.dumps(results, ensure_ascii=False, sort_keys=True)
+        + "\nPersisted atomically. The frozen prompt snapshot is unchanged; this becomes visible next session."
+    )
+
+
+def tool_session_search(context, args):
+    results = context.session_archive.search(
+        str(args["query"]),
+        limit=int(args.get("limit", 5)),
+        include_tools=bool(args.get("include_tools", False)),
+        session_id=str(args.get("session_id", "")).strip(),
+    )
+    return context.session_archive.render_results(results)
+
+
+def tool_session_read(context, args):
+    results = context.session_archive.read(
+        str(args["session_id"]),
+        start=int(args.get("start", 0)),
+        limit=int(args.get("limit", 20)),
+        around_message_id=int(args.get("around_message_id", 0)),
+        include_tools=bool(args.get("include_tools", True)),
+    )
+    return context.session_archive.render_results(results)
+
+
+def tool_skills_list(context, args):
+    return context.skill_store.render_index()
+
+
+def tool_skill_view(context, args):
+    return context.skill_store.read(str(args["name"]))
+
+
+def tool_skill_manage(context, args):
+    action = str(args["action"]).strip().lower()
+    name = str(args["name"]).strip()
+    if action == "create":
+        path = context.skill_store.create(
+            name,
+            str(args["description"]),
+            str(args["content"]),
+        )
+        return f"created skill: {name}\npath: {path}\nIt becomes visible in prompt indexes next session."
+    if action == "patch":
+        path = context.skill_store.patch(name, str(args["old_text"]), str(args.get("new_text", "")))
+        return f"patched skill: {name}\npath: {path}\nThe frozen index is unchanged until next session."
+    path = context.skill_store.delete(name)
+    return f"deleted skill: {name}\npath: {path}"
+
 # 工具分发表
 _TOOL_RUNNERS = {
     "list_files": tool_list_files,
     "read_file": tool_read_file,
+    "read_files": tool_read_files,
     "search": tool_search,
     "run_shell": tool_run_shell,
+    "runtime_info": tool_runtime_info,
     "write_file": tool_write_file,
     "patch_file": tool_patch_file,
     "create_task": tool_create_task,
     "list_tasks": tool_list_tasks,
     "claim_task": tool_claim_task,
     "complete_task": tool_complete_task,
+    "fail_task": tool_fail_task,
+    "block_task": tool_block_task,
+    "record_evidence": tool_record_evidence,
     "schedule_cron": tool_schedule_cron,
     "list_crons": tool_list_crons,
     "cancel_cron": tool_cancel_cron,
+    "memory_list": tool_memory_list,
+    "memory_update": tool_memory_update,
+    "session_search": tool_session_search,
+    "session_read": tool_session_read,
+    "skills_list": tool_skills_list,
+    "skill_view": tool_skill_view,
+    "skill_manage": tool_skill_manage,
 }

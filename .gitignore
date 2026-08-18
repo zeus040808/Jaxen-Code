@@ -31,3 +31,7 @@ Thumbs.db
 .tmp/
 .transcripts/
 
+# Evaluation run artifacts (keep summaries and human-review files in Git)
+.niceeval/
+artifacts/reliability-runs/
+artifacts/enterprise-eval-*/evidence/

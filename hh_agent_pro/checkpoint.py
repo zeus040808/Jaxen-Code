@@ -145,6 +145,12 @@ def render_checkpoint_text(agent):
     lines.append(f"- Key files: {', '.join(key_files) or '-'}")
     if checkpoint.get("completed"):
         lines.append("- Completed: " + " | ".join(str(item) for item in checkpoint.get("completed", [])))
+    if checkpoint.get("verified_claims"):
+        lines.append("- Verified claims: " + " | ".join(str(item) for item in checkpoint.get("verified_claims", [])))
+    if checkpoint.get("open_questions"):
+        lines.append("- Open questions: " + " | ".join(str(item) for item in checkpoint.get("open_questions", [])))
+    if checkpoint.get("evidence"):
+        lines.append("- Evidence: " + " | ".join(str(item) for item in checkpoint.get("evidence", [])))
     if checkpoint.get("excluded"):
         lines.append("- Excluded: " + " | ".join(str(item) for item in checkpoint.get("excluded", [])))
     if agent.resume_state.get("stale_paths"):
@@ -182,6 +188,25 @@ def create_checkpoint(agent, run_state, user_message, trigger):
         freshness[path] = file_freshness
         key_files.append({"path": path, "freshness": file_freshness})
 
+    task_progress = agent.task_state.to_dict() if hasattr(agent, "task_state") else {}
+    completed = agent.task_state.completed_summaries() if hasattr(agent, "task_state") else []
+    if run_state.status == "completed" and run_state.final_answer:
+        completed.append(clip(run_state.final_answer, 500))
+    current_blocker = agent.task_state.blocker_summary() if hasattr(agent, "task_state") else ""
+    if not current_blocker and str(run_state.stop_reason or "") not in ("", "final_answer_returned"):
+        current_blocker = str(run_state.stop_reason)
+    next_step = str(task_progress.get("next_action", "")).strip() or infer_next_step(run_state)
+    verified_claims = [
+        clip(str(item.get("claim", "")), 300)
+        for item in task_progress.get("claims", [])
+        if item.get("verified") and str(item.get("claim", "")).strip()
+    ][-8:]
+    recent_evidence = [
+        clip(str(item.get("summary", "")), 300)
+        for item in task_progress.get("evidence", [])
+        if str(item.get("summary", "")).strip()
+    ][-8:]
+
     checkpoint = {
         "checkpoint_id": checkpoint_id,
         # 指向上一个检查点，用于形成历史链
@@ -190,11 +215,16 @@ def create_checkpoint(agent, run_state, user_message, trigger):
         "schema_version": CHECKPOINT_SCHEMA_VERSION,
         "created_at": now(),
 
-        "current_goal": clip(str(user_message), 500),
-        "completed": [clip(run_state.final_answer, 500)] if run_state.status == "completed" and run_state.final_answer else [],
+        "current_goal": clip(str(task_progress.get("goal") or user_message), 500),
+        "task_state_id": str(task_progress.get("task_id", "")),
+        "task_status": str(task_progress.get("status", "")),
+        "completed": completed,
         "excluded": [],
-        "current_blocker": "" if str(run_state.stop_reason or "") in ("", "final_answer_returned") else str(run_state.stop_reason),
-        "next_step": infer_next_step(run_state),
+        "current_blocker": current_blocker,
+        "next_step": next_step,
+        "verified_claims": verified_claims,
+        "open_questions": list(task_progress.get("open_questions", []))[-8:],
+        "evidence": recent_evidence,
 
         "key_files": key_files,
         "freshness": freshness,

@@ -1,0 +1,2 @@
+﻿task_id,category,expected_outcome,auto_outcome,hard_pass,attempts,tool_steps,changed_paths,evidence_dir,final_answer,review_status,human_outcome_label,task_completion_0_2,evidence_quality_0_2,trajectory_quality_0_2,failure_handling_0_2,final_answer_consistency_0_2,reviewer_notes
+normal_fix_slugify,normal_completion,full_completion,incorrect_failure_candidate,False,7,6,[],artifacts\reliability-runs\deepseek-smoke\normal_fix_slugify\run_20260805-094928-0f3ff1,Stopped after reaching the tool step limit without a final answer.,pending,,,,,,,

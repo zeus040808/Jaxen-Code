@@ -1,4 +1,5 @@
 ﻿import json
+import hashlib
 import tempfile
 from contextlib import contextmanager
 from datetime import datetime
@@ -177,7 +178,7 @@ def measure_feature_ablation_metrics(agent, user_message):
     variants = {
         "full": {},
         "no_context_reduction": {"context_reduction": False},
-        "no_memory": {"memory": False, "relevant_memory": False},
+        "no_memory": {"memory": False},
     }
     results = {}
     for name, updates in variants.items():
@@ -187,7 +188,7 @@ def measure_feature_ablation_metrics(agent, user_message):
             "prompt_chars": int(metadata.get("prompt_chars", 0)),
             "memory_chars": int(metadata.get("sections", {}).get("memory", {}).get("rendered_chars", 0)),
             "history_chars": int(metadata.get("sections", {}).get("history", {}).get("rendered_chars", 0)),
-            "relevant_selected_count": int(metadata.get("relevant_memory", {}).get("selected_count", 0)),
+            "skill_index_count": int(metadata.get("skills", {}).get("available_count", 0)),
             "budget_reduction_count": len(metadata.get("budget_reductions", [])),
             "current_request_preserved": prompt.endswith(f"Current user request:\n{user_message}"),
         }
@@ -207,11 +208,6 @@ def build_stress_agent_metrics():
             approval_policy="auto",
         )
         for index in range(12):
-            agent.memory.append_note(
-                f"stress-note-{index}-" + ("A" * 180),
-                tags=("recall",),
-                created_at=f"2026-04-08T10:{index:02d}:00+00:00",
-            )
             agent.record(
                 {
                     "role": "user" if index % 2 == 0 else "assistant",
@@ -243,12 +239,9 @@ class _MemoryExperimentModelClient(FakeModelClient):
         if self.phase == "question":
             prompt_lower = prompt.lower()
             memory_view = ""
-            if "memory:" in prompt_lower and "\n\nrelevant memory:" in prompt_lower:
-                memory_view = prompt_lower.split("memory:", 1)[1].split("\n\nrelevant memory:", 1)[0]
-            relevant_view = ""
-            if "relevant memory:" in prompt_lower and "\n\ntranscript:" in prompt_lower:
-                relevant_view = prompt_lower.split("relevant memory:", 1)[1].split("\n\ntranscript:", 1)[0]
-            if self.expected_fact in memory_view or self.expected_fact in relevant_view:
+            if "curated durable memory" in prompt_lower and "\n\ntask progress:" in prompt_lower:
+                memory_view = prompt_lower.split("curated durable memory", 1)[1].split("\n\ntask progress:", 1)[0]
+            if self.expected_fact in memory_view:
                 return f"<final>{self.expected_fact.capitalize()}.</final>"
             self.phase = "question_after_read"
             self.followup_reads += 1
@@ -271,20 +264,22 @@ def _build_memory_experiment_agent(workspace_root, expected_fact, filename):
 
 
 def _set_irrelevant_memory(agent):
-    state = agent.memory.to_dict()
-    state["episodic_notes"] = [
+    agent.curated_memory_snapshot = "Curated durable memory (benchmark noise):\n- team mascot is blue"
+
+
+def _inject_curated_fact(agent, fact):
+    agent.curated_memory.apply(
         {
-            "text": "team mascot is blue",
-            "tags": ["unrelated"],
-            "source": "other.txt",
-            "created_at": "2026-04-08T10:00:00+00:00",
-            "note_index": 0,
+            "action": "add",
+            "namespace": "memory",
+            "scope": "workspace",
+            "kind": "fact",
+            "content": str(fact),
+            "provenance": "verified_tool",
+            "confidence": 1.0,
         }
-    ]
-    state["notes"] = ["team mascot is blue"]
-    state["file_summaries"] = {}
-    agent.memory.state = state
-    agent.session["memory"] = agent.memory.to_dict()
+    )
+    agent.curated_memory_snapshot = agent.curated_memory.render_snapshot()
 
 
 def _run_memory_variant(mode):
@@ -294,10 +289,10 @@ def _run_memory_variant(mode):
         (workspace_root / "facts.txt").write_text("deploy key is red\n", encoding="utf-8")
         agent = _build_memory_experiment_agent(workspace_root, "deploy key is red", "facts.txt")
         assert agent.ask("Read facts.txt and remember the key fact.") == "Done."
+        _inject_curated_fact(agent, "deploy key is red")
 
         if mode == "memory_off":
             agent.feature_flags["memory"] = False
-            agent.feature_flags["relevant_memory"] = False
         elif mode == "memory_irrelevant":
             _set_irrelevant_memory(agent)
 
@@ -368,20 +363,7 @@ def _followup_prompt(task):
 
 
 def _set_irrelevant_memory_for_task(agent):
-    state = agent.memory.to_dict()
-    state["episodic_notes"] = [
-        {
-            "text": "the team mascot is blue",
-            "tags": ["unrelated"],
-            "source": "other.txt",
-            "created_at": "2026-04-08T10:00:00+00:00",
-            "note_index": 0,
-        }
-    ]
-    state["notes"] = ["the team mascot is blue"]
-    state["file_summaries"] = {}
-    agent.memory.state = state
-    agent.session["memory"] = agent.memory.to_dict()
+    _set_irrelevant_memory(agent)
 
 
 def _run_memory_task_variant(task, variant):
@@ -391,9 +373,9 @@ def _run_memory_task_variant(task, variant):
         _write_memory_task_files(workspace_root, task)
         agent = _build_memory_experiment_agent(workspace_root, task["fact"], task["filename"])
         assert agent.ask(_bootstrap_prompt(task)) == "Done."
+        _inject_curated_fact(agent, task["fact"])
         if variant == "memory_off":
             agent.feature_flags["memory"] = False
-            agent.feature_flags["relevant_memory"] = False
         elif variant == "memory_irrelevant":
             _set_irrelevant_memory_for_task(agent)
         result = agent.ask(_followup_prompt(task))
@@ -465,10 +447,12 @@ def run_context_stress_matrix(repetitions=5):
                             approval_policy="auto",
                         )
                         for index in range(note_count):
-                            agent.memory.append_note(
-                                f"matrix-note-{index}-" + ("A" * 180),
-                                tags=("recall",),
-                                created_at=f"2026-04-08T10:{index:02d}:00+00:00",
+                            agent.record(
+                                {
+                                    "role": "assistant",
+                                    "content": f"matrix-archived-note-{index}-" + ("A" * 180),
+                                    "created_at": f"2026-04-08T10:{index:02d}:00+00:00",
+                                }
                             )
                         for index in range(history_count):
                             agent.record(
@@ -629,9 +613,9 @@ SECURITY_SCENARIOS = [
 ]
 
 SECURITY_EXPECTATIONS = {
-    "path_escape_read": ("invalid_arguments", "path_escape"),
-    "symlink_escape": ("invalid_arguments", "path_escape"),
-    "search_escape": ("invalid_arguments", "path_escape"),
+    "path_escape_read": ("path_escape", "path_escape"),
+    "symlink_escape": ("path_escape", "path_escape"),
+    "search_escape": ("path_escape", "path_escape"),
     "approval_denied_shell": ("approval_denied", "approval_denied"),
     "read_only_write": ("approval_denied", "read_only_block"),
     "repeated_identical_call": ("repeated_identical_call", ""),
@@ -940,9 +924,9 @@ def run_real_memory_experiment(provider="gpt", repetitions=1):
                     _write_memory_task_files(workspace_root, task)
                     agent = _build_real_agent(workspace_root, provider)
                     agent.ask(f"Read {task['filename']} and remember the exact line. After you know it, reply with Done only.")
+                    _inject_curated_fact(agent, task["fact"])
                     if variant == "memory_off":
                         agent.feature_flags["memory"] = False
-                        agent.feature_flags["relevant_memory"] = False
                     elif variant == "memory_irrelevant":
                         _set_irrelevant_memory_for_task(agent)
                     _inject_memory_noise(agent)
@@ -1014,7 +998,7 @@ def run_real_context_experiment(provider="gpt", repetitions=1):
                             agent = _build_real_agent(workspace_root, provider)
                             for index in range(note_count):
                                 note_text = f"target token is {token}" if index == 0 else f"decoy token is DECOY-{index}"
-                                agent.memory.append_note(note_text, tags=("token",), created_at=f"2026-04-09T10:{index:02d}:00+00:00")
+                                _inject_curated_fact(agent, note_text)
                             for index in range(history_count):
                                 agent.record(
                                     {
@@ -1475,15 +1459,13 @@ def _apply_recovery_setup(agent, task, workspace_root):
         return
 
     if setup in {"partial_stale_single", "partial_stale_multi"}:
-        agent.memory.set_file_summary("sample.txt", "sample.txt: cached benchmark summary")
         agent.memory.remember_file("sample.txt")
-        sample_freshness = agent.memory.to_dict()["file_summaries"]["sample.txt"]["freshness"]
+        sample_freshness = hashlib.sha256((agent.root / "sample.txt").read_bytes()).hexdigest()
         key_files = [{"path": "sample.txt", "freshness": sample_freshness}]
         freshness = {"sample.txt": sample_freshness}
         if setup == "partial_stale_multi":
-            agent.memory.set_file_summary("notes.txt", "notes.txt: cached note summary")
             agent.memory.remember_file("notes.txt")
-            notes_freshness = agent.memory.to_dict()["file_summaries"]["notes.txt"]["freshness"]
+            notes_freshness = hashlib.sha256((agent.root / "notes.txt").read_bytes()).hexdigest()
             key_files.append({"path": "notes.txt", "freshness": notes_freshness})
             freshness["notes.txt"] = notes_freshness
         agent.session["memory"] = agent.memory.to_dict()

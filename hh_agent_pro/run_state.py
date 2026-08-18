@@ -13,6 +13,7 @@ STATUS_RUNNING = "running"
 STATUS_COMPLETED = "completed"
 STATUS_STOPPED = "stopped"
 STATUS_FAILED = "failed"
+STATUS_WAITING = "waiting_for_user"
 
 # 停止原因
 STOP_REASON_FINAL_ANSWER_RETURNED = "final_answer_returned"
@@ -24,6 +25,12 @@ STOP_REASON_APPROVAL_DENIED = "approval_denied"
 STOP_REASON_DELEGATE_FAILED = "delegate_failed"
 STOP_REASON_PERSISTENCE_ERROR = "persistence_error"
 STOP_REASON_RESUME_LOAD_ERROR = "resume_load_error"
+STOP_REASON_NEEDS_USER_INPUT = "needs_user_input"
+STOP_REASON_BLOCKED = "blocked"
+STOP_REASON_REPEATED_FAILED_CALL = "repeated_failed_call"
+STOP_REASON_INTERRUPTED = "interrupted"
+STOP_REASON_OUTPUT_TRUNCATED = "output_truncated"
+STOP_REASON_MODEL_PROTOCOL_ERROR = "model_protocol_error"
 
 
 def _timestamp():
@@ -44,6 +51,7 @@ class RunState:
     last_tool: str = ""   # 最近一次申请执行的工具名
     stop_reason: str = ""
     final_answer: str = ""
+    partial_answer: str = ""
     checkpoint_id: str = ""
     resume_status: str = ""
     created_at: str = field(default_factory=_timestamp)
@@ -69,6 +77,7 @@ class RunState:
             last_tool=str(data.get("last_tool", "")),
             stop_reason=str(data.get("stop_reason", "")),
             final_answer=str(data.get("final_answer", "")),
+            partial_answer=str(data.get("partial_answer", "")),
             checkpoint_id=str(data.get("checkpoint_id", "")),
             resume_status=str(data.get("resume_status", "")),
             created_at=str(data.get("created_at", "")) or _timestamp(),
@@ -110,12 +119,40 @@ class RunState:
     def stop_model_error(self, final_answer=""):
         return self.stop(STOP_REASON_MODEL_ERROR, status=STATUS_FAILED, final_answer=final_answer)
 
+    def stop_interrupted(self, final_answer="Interrupted by user."):
+        return self.stop(STOP_REASON_INTERRUPTED, status=STATUS_STOPPED, final_answer=final_answer)
+
+    def stop_output_truncated(self, partial_answer="", final_answer=""):
+        self.partial_answer = str(partial_answer)
+        return self.stop(
+            STOP_REASON_OUTPUT_TRUNCATED,
+            status=STATUS_STOPPED,
+            final_answer=final_answer,
+        )
+
+    def stop_model_protocol_error(self, final_answer=""):
+        return self.stop(
+            STOP_REASON_MODEL_PROTOCOL_ERROR,
+            status=STATUS_STOPPED,
+            final_answer=final_answer,
+        )
+
     def finish_success(self, final_answer):
         self.status = STATUS_COMPLETED
         self.stop_reason = STOP_REASON_FINAL_ANSWER_RETURNED
         self.final_answer = str(final_answer)
         self.finished_at = _timestamp()
         return self.touch()
+
+    def wait_for_user(self, final_answer):
+        return self.stop(
+            STOP_REASON_NEEDS_USER_INPUT,
+            status=STATUS_WAITING,
+            final_answer=final_answer,
+        )
+
+    def finish_blocked(self, final_answer, stop_reason=STOP_REASON_BLOCKED):
+        return self.stop(stop_reason, status=STATUS_STOPPED, final_answer=final_answer)
 
     # 将json格式转为可读的text
     def to_dict(self):
@@ -129,6 +166,7 @@ class RunState:
             "last_tool": self.last_tool,
             "stop_reason": self.stop_reason,
             "final_answer": self.final_answer,
+            "partial_answer": self.partial_answer,
             "checkpoint_id": self.checkpoint_id,
             "resume_status": self.resume_status,
             "created_at": self.created_at,

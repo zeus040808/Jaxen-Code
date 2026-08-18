@@ -11,31 +11,53 @@ from dataclasses import dataclass
 
 # 默认总预算
 # section是上下文分区设计
-DEFAULT_TOTAL_BUDGET = 12000
+DEFAULT_TOTAL_BUDGET = 24000
 
 # 不同内容划分空间
 DEFAULT_SECTION_BUDGETS = {
-    "prefix": 3600,
-    "memory": 1600,
-    "relevant_memory": 1200,
-    "history": 5200,
+    "prefix": 5200,
+    "working_memory": 850,
+    "durable_memory": 500,
+    "task_state": 950,
+    "evidence": 5200,
+    "skills": 1200,
+    "history": 7200,
 }
 
 # 最低预算
 DEFAULT_SECTION_FLOORS = {
-    "prefix": 1200,
-    "memory": 400,
-    "relevant_memory": 300,
+    "prefix": 5000,
+    "working_memory": 180,
+    "durable_memory": 150,
+    "task_state": 120,
+    "evidence": 1800,
+    "skills": 220,
     "history": 1500,
 }
 # 当 prompt 超预算时，会优先压缩这些 section。
 # 超预算时的牺牲顺序
-DEFAULT_REDUCTION_ORDER = ("relevant_memory", "history", "memory", "prefix")
+DEFAULT_REDUCTION_ORDER = (
+    "skills",
+    "durable_memory",
+    "working_memory",
+    "history",
+    "task_state",
+    "evidence",
+    "prefix",
+)
 
 # 既是处理顺序，也是最终拼接顺序
-SECTION_ORDER = ("prefix", "memory", "relevant_memory", "history", "current_request")
+SECTION_ORDER = (
+    "prefix",
+    "working_memory",
+    "durable_memory",
+    "task_state",
+    "evidence",
+    "skills",
+    "history",
+    "current_request",
+)
 CURRENT_REQUEST_SECTION = "current_request"
-RELEVANT_MEMORY_LIMIT = 3
 
 # 把文本限制在指定字符数以内
 def _tail_clip(text, limit):
@@ -83,11 +105,23 @@ class ContextManager:
         self.section_budgets = dict(DEFAULT_SECTION_BUDGETS)
         # 如果用户传参，则更新
         if section_budgets:
-            self.section_budgets.update({str(key): int(value) for key, value in section_budgets.items()})
+            provided = {str(key): int(value) for key, value in section_budgets.items()}
+            # 旧调用者可继续传 memory 总预算；V2 按固定比例分给三个明确职责。
+            if "memory" in provided:
+                memory_budget = provided.pop("memory")
+                self.section_budgets.update(
+                    {
+                        "working_memory": int(memory_budget * 0.4),
+                        "durable_memory": int(memory_budget * 0.375),
+                        "task_state": memory_budget - int(memory_budget * 0.4) - int(memory_budget * 0.375),
+                    }
+                )
+            self.section_budgets.update(provided)
         self._section_floor_overrides = {str(key): int(value) for key, value in (section_floors or {}).items()}
         self.section_floors = self._compute_section_floors()
         # 牺牲顺序
         self.reduction_order = tuple(reduction_order or DEFAULT_REDUCTION_ORDER)
+        self._last_rendered = {}
 
     def build(self, user_message):
         """按预算组装一轮完整 prompt。
@@ -115,21 +149,36 @@ class ContextManager:
         self.section_floors = self._compute_section_floors()
 
         memory_enabled = True
-        relevant_memory_enabled = True
         context_reduction_enabled = True
         # 可以独立关闭memory、相关记忆检索、上下文压缩
         if hasattr(self.agent, "feature_enabled"):
             memory_enabled = self.agent.feature_enabled("memory")
-            relevant_memory_enabled = self.agent.feature_enabled("relevant_memory")
             context_reduction_enabled = self.agent.feature_enabled("context_reduction")
 
         # 收集基础内容，只收集原材料，还没有生成 history，也没有裁剪
         section_texts = {
             # getattr：获取对象的某个属性，如果属性不存在，则返回默认值
             "prefix": str(getattr(self.agent, "prefix", "")),
-            "memory": "Memory:\n- disabled" if not memory_enabled else str(self.agent.memory_text()),
+            "working_memory": (
+                "Working memory:\n- disabled"
+                if not memory_enabled
+                else str(self.agent.working_memory_text())
+            ),
+            "durable_memory": (
+                "Curated durable memory:\n- disabled"
+                if not memory_enabled
+                else str(self.agent.durable_memory_text())
+            ),
+            # Task state 是执行控制状态，不随 memory feature flag 一起消失。
+            "task_state": self._task_and_run_state_text(),
+            "evidence": str(self.agent.evidence_text()),
+            "skills": (
+                "Available skills:\n- disabled"
+                if not getattr(self.agent, "feature_enabled", lambda name: False)("skills")
+                else str(self.agent.skills_text())
+            ),
             "history": "",
-            CURRENT_REQUEST_SECTION: f"Current user request:\n{user_message}",
+            CURRENT_REQUEST_SECTION: self._current_request_text(user_message),
         }
 
         # 恢复检查点，则附加到 prefix
@@ -141,10 +190,9 @@ class ContextManager:
             # so section clipping cannot discard it from the tail.
             section_texts["prefix"] = checkpoint_text + "\n\n" + section_texts["prefix"]
 
-        # 根据当前请求，从记忆系统中最多选择三条相关笔记
+        # Skill 正文不做自动召回：这里始终只注入目录，模型匹配后用
+        # skill_view 显式加载正文，避免把全部流程塞进每一轮 prompt。
         selected_notes = []
-        if memory_enabled and relevant_memory_enabled and hasattr(self.agent, "memory") and hasattr(self.agent.memory, "retrieval_candidates"):
-            selected_notes = self.agent.memory.retrieval_candidates(user_message, limit=RELEVANT_MEMORY_LIMIT)
 
         # 未开启上下文裁剪（用于测试）
         if not context_reduction_enabled:
@@ -159,6 +207,7 @@ class ContextManager:
                 user_message=user_message,
                 section_texts=section_texts,
             )
+            self._last_rendered = rendered
             return prompt, metadata
 
         budgets = dict(self.section_budgets)
@@ -183,7 +232,7 @@ class ContextManager:
 
         # 如果 prompt 超预算，就按固定顺序不断压缩。
         # 这里的顺序体现了平台偏好：
-        # 先牺牲 relevant_memory，再牺牲 history，然后才动 memory 和 prefix。
+        # 先压缩 Skill 目录，再压缩 history，最后才动关键执行状态。
         # 最新用户请求永远不裁剪，因为那是本轮最重要的输入。
 
         # 整份 prompt 的全局兜底裁切
@@ -230,34 +279,185 @@ class ContextManager:
             user_message=user_message,
             section_texts=section_texts,
         )
+        self._last_rendered = rendered
         return prompt, metadata
+
+    def provider_request(self, user_message):
+        """Return role-correct Chat Completions input for native-tool providers.
+
+        ``build()`` remains the compatibility representation used by text-only
+        providers, trace metadata and tests.  Native providers receive the same
+        selected context, but rules live in ``system`` and recent tool exchanges
+        retain their assistant/tool roles.
+        """
+
+        rendered = self._last_rendered
+        if not rendered:
+            self.build(user_message)
+            rendered = self._last_rendered
+        system_prompt = rendered["prefix"].rendered
+        context_names = (
+            "working_memory",
+            "durable_memory",
+            "task_state",
+            "evidence",
+            "skills",
+        )
+        context = "\n\n".join(rendered[name].rendered for name in context_names)
+        if bool(getattr(self.agent, "output_recovery_active", False)):
+            draft = _tail_clip(getattr(self.agent, "output_recovery_draft", ""), 6000)
+            context += (
+                "\n\nRuntime output recovery (authoritative): the previous model response "
+                "reached its output-token limit. Return only the missing continuation as a final answer. "
+                "Do not repeat the draft and do not request more tools."
+            )
+            if draft:
+                context += "\nPartial draft to continue exactly:\n" + draft
+        correction = str(getattr(self.agent, "model_output_correction", "") or "").strip()
+        if correction:
+            context += "\n\nRuntime format correction (authoritative): " + correction
+        if bool(getattr(self.agent, "final_only_mode", False)):
+            context += (
+                "\n\nRuntime directive (authoritative): tools are disabled for this decision. "
+                "Return final, needs_user_input, or blocked using existing evidence."
+            )
+        messages = [{"role": "user", "content": "Current task context:\n" + context}]
+        messages.extend(self._native_history_messages())
+        if not messages[1:]:
+            messages.append({"role": "user", "content": str(user_message)})
+        return {"system_prompt": system_prompt, "messages": messages}
+
+    def _native_history_messages(self):
+        """Convert recent Session items to valid role-aware chat messages."""
+
+        history = list(getattr(self.agent, "session", {}).get("history", []))[-10:]
+        messages = []
+        known_tool_calls = set()
+        for item in history:
+            role = str(item.get("role", ""))
+            if role == "assistant" and item.get("tool_call"):
+                call = item["tool_call"]
+                call_id = str(call.get("id", ""))
+                if not call_id:
+                    continue
+                reasoning_content = str(item.get("reasoning_content", "") or "")
+                if (
+                    bool(
+                        getattr(
+                            self.agent.model_client,
+                            "requires_reasoning_content_for_tool_calls",
+                            False,
+                        )
+                    )
+                    and not reasoning_content
+                ):
+                    # Sessions written before thinking-mode protocol support
+                    # cannot reconstruct discarded reasoning. Do not replay an
+                    # invalid assistant tool call: its following tool result is
+                    # safely converted to a legacy user observation below.
+                    continue
+                known_tool_calls.add(call_id)
+                assistant_message = {
+                    "role": "assistant",
+                    "content": str(item.get("content", "")).strip() or None,
+                    "tool_calls": [
+                        {
+                            "id": call_id,
+                            "type": "function",
+                            "function": {
+                                "name": str(call.get("name", "")),
+                                "arguments": json.dumps(
+                                    call.get("args", {}), ensure_ascii=False, sort_keys=True
+                                ),
+                            },
+                        }
+                    ],
+                }
+                if reasoning_content:
+                    # Never summarize or clip this field: DeepSeek thinking
+                    # mode requires the exact value beside the tool call.
+                    assistant_message["reasoning_content"] = reasoning_content
+                messages.append(assistant_message)
+                continue
+            if role == "tool":
+                call_id = str(item.get("tool_call_id", ""))
+                if call_id and call_id in known_tool_calls:
+                    messages.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": call_id,
+                            "content": _tail_clip(item.get("content", ""), 2600),
+                        }
+                    )
+                else:
+                    messages.append(
+                        {
+                            "role": "user",
+                            "content": (
+                                f"Legacy tool observation [{item.get('name', '')}]:\n"
+                                + _tail_clip(item.get("content", ""), 900)
+                            ),
+                        }
+                    )
+                continue
+            if role in {"user", "assistant"}:
+                content = str(item.get("content", "")).strip()
+                if content:
+                    messages.append({"role": role, "content": _tail_clip(content, 1600)})
+        return self._budget_native_messages(messages, budget=7200)
+
+    @staticmethod
+    def _budget_native_messages(messages, budget):
+        """Keep recent native messages within budget without splitting tool pairs."""
+
+        units = []
+        index = 0
+        while index < len(messages):
+            message = messages[index]
+            if (
+                message.get("role") == "assistant"
+                and message.get("tool_calls")
+                and index + 1 < len(messages)
+                and messages[index + 1].get("role") == "tool"
+            ):
+                units.append([message, messages[index + 1]])
+                index += 2
+                continue
+            units.append([message])
+            index += 1
+
+        selected = []
+        used = 0
+        for unit in reversed(units):
+            size = len(json.dumps(unit, ensure_ascii=False, sort_keys=True))
+            if selected and used + size > int(budget):
+                break
+            if size > int(budget) and not selected:
+                # Per-message clipping normally prevents this; keep a compact
+                # newest observation as a deterministic final fallback.
+                compact = []
+                for message in unit:
+                    item = dict(message)
+                    if isinstance(item.get("content"), str):
+                        item["content"] = _tail_clip(item["content"], max(80, int(budget) // len(unit)))
+                    compact.append(item)
+                unit = compact
+                size = len(json.dumps(unit, ensure_ascii=False, sort_keys=True))
+            selected = unit + selected
+            used += size
+        return selected
 
     # 关闭压缩
     def _render_sections_without_reduction(self, section_texts, selected_notes=None):
-        selected_notes = selected_notes or []
-        relevant_lines = ["Relevant memory:"]
-        if selected_notes:
-            relevant_lines.extend(f"- {note['text']}" for note in selected_notes)
-        else:
-            relevant_lines.append("- none")
-        relevant_raw = "\n".join(relevant_lines)
         history = list(getattr(self.agent, "session", {}).get("history", []))
         history_raw = self._raw_history_text(history)
         return {
             "prefix": SectionRender(raw=section_texts["prefix"], budget=len(section_texts["prefix"]), rendered=section_texts["prefix"], details={}),
-            "memory": SectionRender(raw=section_texts["memory"], budget=len(section_texts["memory"]), rendered=section_texts["memory"], details={}),
-            "relevant_memory": SectionRender(
-                raw=relevant_raw,
-                budget=len(relevant_raw),
-                rendered=relevant_raw,
-                details={
-                    "selected_notes": [note["text"] for note in selected_notes],
-                    "rendered_notes": [note["text"] for note in selected_notes],
-                    "selected_count": len(selected_notes),
-                    "rendered_count": len(selected_notes),
-                    "note_budget": 0,
-                },
-            ),
+            "working_memory": SectionRender(raw=section_texts["working_memory"], budget=len(section_texts["working_memory"]), rendered=section_texts["working_memory"], details={}),
+            "durable_memory": SectionRender(raw=section_texts["durable_memory"], budget=len(section_texts["durable_memory"]), rendered=section_texts["durable_memory"], details={}),
+            "task_state": SectionRender(raw=section_texts["task_state"], budget=len(section_texts["task_state"]), rendered=section_texts["task_state"], details={}),
+            "evidence": SectionRender(raw=section_texts["evidence"], budget=len(section_texts["evidence"]), rendered=section_texts["evidence"], details={}),
+            "skills": SectionRender(raw=section_texts["skills"], budget=len(section_texts["skills"]), rendered=section_texts["skills"], details={}),
             "history": SectionRender(raw=history_raw, budget=len(history_raw), rendered=history_raw, details={"rendered_entries": []}),
             CURRENT_REQUEST_SECTION: SectionRender(
                 raw=section_texts[CURRENT_REQUEST_SECTION],
@@ -269,12 +469,35 @@ class ContextManager:
 
     # 设置最低预算为1/4
     def _compute_section_floors(self):
+        self._normalize_legacy_memory_budget()
         floors = {
             section: max(20, int(budget) // 4)
             for section, budget in self.section_budgets.items()
         }
         floors.update(self._section_floor_overrides)
+        # Everything before the workspace marker is an execution contract:
+        # identity, rules and the complete tool catalog. It must never vanish.
+        marker = "\n\nWorkspace snapshot (compressible):\n"
+        prefix = str(getattr(self.agent, "prefix", ""))
+        if marker in prefix:
+            floors["prefix"] = max(floors.get("prefix", 0), prefix.index(marker) + len(marker))
         return floors
+
+    def _normalize_legacy_memory_budget(self):
+        """兼容测试/配置在构造后直接写入 section_budgets['memory']。"""
+
+        if "memory" not in self.section_budgets:
+            return
+        memory_budget = int(self.section_budgets.pop("memory"))
+        working = int(memory_budget * 0.4)
+        durable = int(memory_budget * 0.375)
+        self.section_budgets.update(
+            {
+                "working_memory": working,
+                "durable_memory": durable,
+                "task_state": memory_budget - working - durable,
+            }
+        )
 
     # 裁切prompt
     def _render_sections(self, section_texts, budgets, selected_notes=None):
@@ -285,72 +508,39 @@ class ContextManager:
             if section == CURRENT_REQUEST_SECTION:
                 raw = section_texts[section]
                 rendered[section] = SectionRender(raw=raw, budget=0, rendered=raw, details={})
-            # 多条笔记的集合，需要平均分配空间
-            elif section == "relevant_memory":
-                rendered[section] = self._render_relevant_memory(selected_notes or [], int(budget or 0))
+            elif section == "evidence":
+                raw = section_texts[section]
+                ledger = getattr(self.agent, "source_evidence", None)
+                rendered_text = ledger.render(int(budget or 0)) if ledger is not None else _tail_clip(raw, int(budget or 0))
+                rendered[section] = SectionRender(
+                    raw=raw,
+                    budget=int(budget or 0),
+                    rendered=rendered_text,
+                    details={},
+                )
             # 历史最复杂，需要去重、摘要和最近优先
             elif section == "history":
                 rendered[section] = self._render_history_section(int(budget or 0))
             else:
                 raw = section_texts[section]
-                rendered_text = _tail_clip(raw, int(budget)) if budget is not None else raw
+                if section == "prefix":
+                    rendered_text = self._render_prefix(raw, int(budget))
+                else:
+                    rendered_text = _tail_clip(raw, int(budget)) if budget is not None else raw
                 rendered[section] = SectionRender(raw=raw, budget=int(budget) if budget is not None else 0, rendered=rendered_text, details={})
         return rendered
 
-    def _render_relevant_memory(self, selected_notes, budget):
-        header = "Relevant memory:"
-        note_texts = [str(note.get("text", "")) for note in selected_notes if str(note.get("text", "")).strip()]
-        raw_lines = [header] + [f"- {text}" for text in note_texts]
-        raw = "\n".join(raw_lines) if note_texts else "\n".join([header, "- none"])
-        if not note_texts:
-            rendered = raw
-            return SectionRender(
-                raw=raw,
-                budget=budget,
-                rendered=rendered,
-                details={
-                    "selected_notes": [],
-                    "rendered_notes": [],
-                    "selected_count": 0,
-                    "rendered_count": 0,
-                    "note_budget": 0,
-                },
-            )
-
-        # 先计算每条笔记额度
-        per_note_budget = self._per_note_budget(budget, len(note_texts), header)
-        rendered_notes = []
-        while True:
-            # 让每条 note 平分这一段的预算，避免一条超长笔记把其他笔记都挤掉。
-            rendered_notes = [_tail_clip(text, per_note_budget) for text in note_texts]
-            rendered = "\n".join([header] + [f"- {text}" for text in rendered_notes])
-            if len(rendered) <= budget or per_note_budget <= 1:
-                break
-            per_note_budget -= 1
-
-        if len(rendered) > budget and budget > 0:
-            rendered = _tail_clip(raw, budget)
-            rendered_notes = [rendered]
-
-        return SectionRender(
-            raw=raw,
-            budget=budget,
-            rendered=rendered,
-            details={
-                "selected_notes": note_texts,
-                "rendered_notes": rendered_notes,
-                "selected_count": len(note_texts),
-                "rendered_count": len(rendered_notes),
-                "note_budget": per_note_budget,
-            },
-        )
-
-    def _per_note_budget(self, budget, note_count, header):
-        if note_count <= 0:
-            return 0
-        overhead = len(header) + 3 * note_count
-        usable = max(0, budget - overhead)
-        return max(1, usable // note_count)
+    @staticmethod
+    def _render_prefix(raw, budget):
+        marker = "\n\nWorkspace snapshot (compressible):\n"
+        if marker not in raw:
+            return _tail_clip(raw, budget)
+        critical, workspace = raw.split(marker, 1)
+        protected = critical + marker
+        if budget <= len(protected):
+            # Prefer a bounded overflow over silently deleting tool contracts.
+            return protected
+        return protected + _tail_clip(workspace, budget - len(protected))
 
     # 历史的分层裁切
     def _render_history_section(self, budget):
@@ -372,7 +562,8 @@ class ContextManager:
                 },
             )
 
-        # 优先保留最近的历史，因为下一步决策通常最依赖刚刚发生的工具结果。
+        # 原始 transcript 只是短期上下文；代码事实由 Evidence Ledger 保底。
+        # 因此只完整保留极少量最近消息，避免两个大 read 结果互相挤出。
         recent_window = 6
         recent_start = max(0, len(history) - recent_window)
         history_entries, history_details = self._compressed_history_entries(history, recent_start)
@@ -432,7 +623,12 @@ class ContextManager:
         for index, item in enumerate(history):
             recent = index >= recent_start
             if recent:
-                line_limit = 900
+                if item.get("role") == "tool":
+                    line_limit = 2600
+                elif item.get("role") == "assistant" and item.get("tool_call"):
+                    line_limit = 500
+                else:
+                    line_limit = 1200
                 entries.append(
                     {
                         "recent": True,
@@ -441,17 +637,25 @@ class ContextManager:
                 )
                 continue
 
-            if item["role"] == "tool" and item["name"] == "read_file":
-                path = str(item["args"].get("path", "")).strip()
-                if path in seen_older_reads:
-                    details["collapsed_duplicate_reads"] += 1
-                    continue
-                seen_older_reads.add(path)
-                summary = self._reusable_file_summary(path)
-                if summary:
-                    entries.append({"recent": False, "lines": [f"{path} -> {summary}"]})
+            if item["role"] == "tool" and item["name"] in {"read_file", "read_files"}:
+                paths = (
+                    [str(item["args"].get("path", "")).strip()]
+                    if item["name"] == "read_file"
+                    else [str(path).strip() for path in item["args"].get("paths", [])]
+                )
+                summaries = []
+                for path in paths:
+                    if not path or path in seen_older_reads:
+                        details["collapsed_duplicate_reads"] += int(bool(path))
+                        continue
+                    seen_older_reads.add(path)
+                    summary = self._reusable_file_summary(path)
+                    if summary:
+                        summaries.append(f"{path} -> {summary}")
+                if summaries:
+                    entries.append({"recent": False, "lines": summaries})
                     details["older_entries_count"] += 1
-                    details["reused_file_summary_count"] += 1
+                    details["reused_file_summary_count"] += len(summaries)
                     continue
 
             if item["role"] == "tool":
@@ -466,14 +670,10 @@ class ContextManager:
         return entries, details
 
     def _reusable_file_summary(self, path):
-        memory = getattr(self.agent, "memory", None)
-        if memory is None or not hasattr(memory, "to_dict"):
-            return ""
-        snapshot = memory.to_dict()
-        summary = snapshot.get("file_summaries", {}).get(str(path), {})
-        if not summary:
-            return ""
-        return str(summary.get("summary", "")).strip()
+        evidence = getattr(self.agent, "source_evidence", None)
+        if evidence is not None and hasattr(evidence, "file_summary"):
+            return evidence.file_summary(path)
+        return ""
 
     def _summarize_old_tool_item(self, item):
         if item["name"] == "run_shell":
@@ -500,6 +700,12 @@ class ContextManager:
             prefix = f"[tool:{item['name']}] {json.dumps(item['args'], sort_keys=True)}"
             content = _tail_clip(item["content"], max(20, line_limit))
             return [prefix, content]
+        if item.get("role") == "assistant" and item.get("tool_call"):
+            call = item["tool_call"]
+            return [
+                f"[assistant/tool_call:{call.get('name', '')}] "
+                + json.dumps(call.get("args", {}), ensure_ascii=False, sort_keys=True)
+            ]
         return [f"[{item['role']}] {_tail_clip(item['content'], line_limit)}"]
 
     # 最终的拼接函数
@@ -508,8 +714,11 @@ class ContextManager:
         return "\n\n".join(
             [
                 rendered["prefix"].rendered,
-                rendered["memory"].rendered,
-                rendered["relevant_memory"].rendered,
+                rendered["working_memory"].rendered,
+                rendered["durable_memory"].rendered,
+                rendered["task_state"].rendered,
+                rendered["evidence"].rendered,
+                rendered["skills"].rendered,
                 rendered["history"].rendered,
                 rendered[CURRENT_REQUEST_SECTION].rendered,
             ]
@@ -528,6 +737,13 @@ class ContextManager:
             "budget_chars": None,
             "rendered_chars": len(rendered[CURRENT_REQUEST_SECTION].rendered),
         }
+        # 兼容旧评估口径：memory 是三个独立 section 的聚合视图，不再是实际 section。
+        memory_sections = ("working_memory", "durable_memory", "task_state")
+        section_metadata["memory"] = {
+            "raw_chars": sum(section_metadata[name]["raw_chars"] for name in memory_sections),
+            "budget_chars": sum(section_metadata[name]["budget_chars"] for name in memory_sections),
+            "rendered_chars": sum(section_metadata[name]["rendered_chars"] for name in memory_sections),
+        }
         return {
             "prompt_chars": len(prompt),
             "prompt_budget_chars": self.total_budget,
@@ -540,19 +756,10 @@ class ContextManager:
             "sections": section_metadata,
             "budget_reductions": reduction_log,
             "reduction_order": list(self.reduction_order),
-            "relevant_memory": {
-                "limit": RELEVANT_MEMORY_LIMIT,
-                "selected_count": len(selected_notes),
-                "selected_notes": [note["text"] for note in selected_notes],
-                "selected_sources": [str(note.get("source", "")).strip() for note in selected_notes],
-                "selected_kinds": [str(note.get("kind", "episodic")).strip() or "episodic" for note in selected_notes],
-                "selected_durable_count": sum(
-                    1 for note in selected_notes if (str(note.get("kind", "episodic")).strip() or "episodic") == "durable"
-                ),
-                "raw_chars": rendered["relevant_memory"].raw_chars,
-                "rendered_chars": rendered["relevant_memory"].rendered_chars,
-                "rendered_notes": list(rendered["relevant_memory"].details.get("rendered_notes", [])),
-                "rendered_count": int(rendered["relevant_memory"].details.get("rendered_count", 0)),
+            "skills": {
+                "raw_chars": rendered["skills"].raw_chars,
+                "rendered_chars": rendered["skills"].rendered_chars,
+                "available_count": len(getattr(getattr(self.agent, "skill_store", None), "list", lambda: [])()),
             },
             "history": {
                 "raw_chars": rendered["history"].raw_chars,
@@ -562,6 +769,11 @@ class ContextManager:
                 "reused_file_summary_count": int(rendered["history"].details.get("reused_file_summary_count", 0)),
                 "summarized_tool_count": int(rendered["history"].details.get("summarized_tool_count", 0)),
             },
+            "evidence": {
+                "raw_chars": rendered["evidence"].raw_chars,
+                "rendered_chars": rendered["evidence"].rendered_chars,
+                "file_count": len(getattr(getattr(self.agent, "source_evidence", None), "to_dict", lambda: {"files": {}})().get("files", {})),
+            },
             "current_request": {
                 "text": user_message,
                 "raw_chars": len(user_message),
@@ -569,3 +781,49 @@ class ContextManager:
                 "section_chars": len(rendered[CURRENT_REQUEST_SECTION].rendered),
             },
         }
+
+    def _current_request_text(self, user_message):
+        lines = ["Current user request:", str(user_message)]
+        if bool(getattr(self.agent, "output_recovery_active", False)):
+            lines.extend(
+                [
+                    "",
+                    "Runtime output recovery (authoritative):",
+                    "- The previous response reached its output-token limit.",
+                    "- Return only the missing continuation; do not repeat the draft or call tools.",
+                    "- Partial draft:",
+                    _tail_clip(getattr(self.agent, "output_recovery_draft", ""), 6000),
+                ]
+            )
+        correction = str(getattr(self.agent, "model_output_correction", "") or "").strip()
+        if correction:
+            lines.extend(["", "Runtime format correction (authoritative):", correction])
+        if bool(getattr(self.agent, "final_only_mode", False)):
+            lines.extend(
+                [
+                    "",
+                    "Runtime directive (authoritative):",
+                    "- Tool execution is disabled for this decision.",
+                    "- Use the verified evidence already supplied.",
+                    "- Return exactly one <final>, <needs_user_input>, or <blocked> response now.",
+                ]
+            )
+        return "\n".join(lines)
+
+    def _task_and_run_state_text(self):
+        lines = [str(self.agent.task_state_text())]
+        run_state = getattr(self.agent, "current_run_state", None)
+        if run_state is None:
+            return "\n".join(lines)
+        max_steps = int(getattr(self.agent, "max_steps", 0))
+        max_attempts = max(max_steps * 3, max_steps + 4)
+        lines.extend(
+            [
+                "Run progress (control data, not source evidence):",
+                f"- decisions: {int(run_state.attempts)}/{max_attempts}",
+                f"- effective_tools: {int(run_state.tool_steps)}/{max_steps}",
+                f"- last_tool: {run_state.last_tool or '-'}",
+                f"- final_only: {bool(getattr(self.agent, 'final_only_mode', False))}",
+            ]
+        )
+        return "\n".join(lines)

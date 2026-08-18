@@ -1,6 +1,6 @@
 {
   "artifact_type": "memory-ablation-v2",
-  "captured_at": "2026-07-23T03:16:34.863746Z",
+  "captured_at": "2026-08-05T09:38:34.491073Z",
   "category_counts": {
     "edit_dependency": 4,
     "fact_lookup": 4,

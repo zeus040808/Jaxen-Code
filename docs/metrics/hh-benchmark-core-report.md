@@ -12,10 +12,10 @@
 - 配置数：12
 - 重复次数：5
 - 总样本数：60
-- avg_full_prompt_chars：6173.67
-- avg_raw_prompt_chars：7675.33
-- avg_prompt_compression_ratio：16.30%
-- max_prompt_compression_ratio：32.16%
+- avg_full_prompt_chars：6362.67
+- avg_raw_prompt_chars：9541.33
+- avg_prompt_compression_ratio：31.89%
+- max_prompt_compression_ratio：41.09%
 - current_request_preserved_rate：100.00%
 
 ## Working Memory Ablation

@@ -3,7 +3,7 @@
     "source": "benchmarks\\coding_tasks.json",
     "task_count": 14
   },
-  "captured_at": "2026-07-23T11:12:19+0800",
+  "captured_at": "2026-08-05T17:33:25+0800",
   "failure_category_counts": {},
   "reproducibility": {
     "decoding": {
@@ -43,13 +43,20 @@
       "prompt": "Replace the placeholder README introduction with the locked benchmark introduction.",
       "report": {
         "attempts": 2,
-        "checkpoint_id": "ckpt_44544a11",
+        "checkpoint_id": "ckpt_0f140545",
         "durable_promotions": [],
         "durable_rejections": [],
         "durable_superseded": [],
         "final_answer": "Done.",
         "prompt_metadata": {
-          "budget_reductions": [],
+          "budget_reductions": [
+            {
+              "after_chars": 3600,
+              "before_chars": 4263,
+              "reason": "section_budget",
+              "section": "prefix"
+            }
+          ],
           "current_request": {
             "raw_chars": 83,
             "rendered_chars": 83,
@@ -59,20 +66,20 @@
           "history": {
             "collapsed_duplicate_reads": 0,
             "older_entries_count": 0,
-            "raw_chars": 277,
-            "rendered_chars": 277,
+            "raw_chars": 441,
+            "rendered_chars": 441,
             "reused_file_summary_count": 0,
             "summarized_tool_count": 0
           },
-          "history_chars": 265,
-          "memory_chars": 185,
+          "history_chars": 429,
+          "memory_chars": 533,
           "prefix_changed": true,
-          "prefix_chars": 2666,
-          "prefix_hash": "e16765783450ad4e8df68949cb676a410bedb48f04e02d2cd85f10a21f1bfa5f",
+          "prefix_chars": 3855,
+          "prefix_hash": "4fc8ddcc9fff29ffdea2a4899edf9533dd9e840b86f5d85e24b29e884a89841d",
           "prompt_budget_chars": 12000,
-          "prompt_cache_key": "e16765783450ad4e8df68949cb676a410bedb48f04e02d2cd85f10a21f1bfa5f",
+          "prompt_cache_key": "4fc8ddcc9fff29ffdea2a4899edf9533dd9e840b86f5d85e24b29e884a89841d",
           "prompt_cache_supported": false,
-          "prompt_chars": 3626,
+          "prompt_chars": 4710,
           "prompt_over_budget": false,
           "recent_commits": 0,
           "reduction_order": [
@@ -126,18 +133,18 @@
             },
             "history": {
               "budget_chars": 5200,
-              "raw_chars": 277,
-              "rendered_chars": 277
+              "raw_chars": 441,
+              "rendered_chars": 441
             },
             "memory": {
               "budget_chars": 1600,
-              "raw_chars": 185,
-              "rendered_chars": 185
+              "raw_chars": 533,
+              "rendered_chars": 533
             },
             "prefix": {
               "budget_chars": 3600,
-              "raw_chars": 3028,
-              "rendered_chars": 3028
+              "raw_chars": 4263,
+              "rendered_chars": 3600
             },
             "relevant_memory": {
               "budget_chars": 1200,
@@ -152,7 +159,7 @@
           "workspace_changed": true,
           "workspace_chars": 595,
           "workspace_docs": 1,
-          "workspace_fingerprint": "9b6e2604fe6a36bba2e8651ea1deb35e73372d071e72bba21a0da74de3c596e5"
+          "workspace_fingerprint": "7a18f5ccdfad7fbca5ae64e5cc93271ebfc88d6a0c04ce8d35e5a18ceb9032a3"
         },
         "redacted_env": {
           "secret_env_count": 3,
@@ -162,49 +169,84 @@
             "XF_API_KEY"
           ]
         },
-        "request_id": "req_20260723-111206-abba3b",
+        "request_id": "req_20260805-173313-6bea08",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111206-6f7d13",
+        "run_id": "run_20260805-173313-38571f",
         "run_state": {
           "attempts": 2,
-          "checkpoint_id": "ckpt_44544a11",
-          "created_at": "2026-07-23T11:12:06+08:00",
+          "checkpoint_id": "ckpt_0f140545",
+          "created_at": "2026-08-05T17:33:13+08:00",
           "final_answer": "Done.",
-          "finished_at": "2026-07-23T11:12:07+08:00",
+          "finished_at": "2026-08-05T17:33:13+08:00",
           "last_tool": "patch_file",
-          "request_id": "req_20260723-111206-abba3b",
+          "request_id": "req_20260805-173313-6bea08",
           "resume_status": "no-checkpoint",
-          "run_id": "run_20260723-111206-6f7d13",
+          "run_id": "run_20260805-173313-38571f",
           "status": "completed",
           "stop_reason": "final_answer_returned",
           "tool_steps": 1,
-          "updated_at": "2026-07-23T11:12:07+08:00",
+          "updated_at": "2026-08-05T17:33:13+08:00",
           "user_request": "Replace the placeholder README introduction with the locked benchmark introduction."
         },
         "status": "completed",
         "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-08-05T09:33:13.424701+00:00",
+          "evidence": [
+            {
+              "affected_paths": [
+                "README.md"
+              ],
+              "created_at": "2026-08-05T09:33:13.662580+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "patched README.md",
+              "tool": "patch_file"
+            },
+            {
+              "created_at": "2026-08-05T09:33:13.942073+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [],
+          "goal": "Replace the placeholder README introduction with the locked benchmark introduction.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20260805-173313-38571f"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_2d917907d4",
+          "updated_at": "2026-08-05T09:33:13.942079+00:00"
+        },
         "tool_steps": 1
       },
-      "report_relpath": "readme_intro_locked\\bench_repo_readme\\.hh\\runs\\run_20260723-111206-6f7d13\\report.json",
-      "run_dir_relpath": "readme_intro_locked\\bench_repo_readme\\.hh\\runs\\run_20260723-111206-6f7d13",
-      "run_id": "run_20260723-111206-6f7d13",
+      "report_relpath": "readme_intro_locked\\bench_repo_readme\\.hh\\runs\\run_20260805-173313-38571f\\report.json",
+      "run_dir_relpath": "readme_intro_locked\\bench_repo_readme\\.hh\\runs\\run_20260805-173313-38571f",
+      "run_id": "run_20260805-173313-38571f",
       "run_state": {
         "attempts": 2,
-        "checkpoint_id": "ckpt_44544a11",
-        "created_at": "2026-07-23T11:12:06+08:00",
+        "checkpoint_id": "ckpt_0f140545",
+        "created_at": "2026-08-05T17:33:13+08:00",
         "final_answer": "Done.",
-        "finished_at": "2026-07-23T11:12:07+08:00",
+        "finished_at": "2026-08-05T17:33:13+08:00",
         "last_tool": "patch_file",
-        "request_id": "req_20260723-111206-abba3b",
+        "request_id": "req_20260805-173313-6bea08",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111206-6f7d13",
+        "run_id": "run_20260805-173313-38571f",
         "status": "completed",
         "stop_reason": "final_answer_returned",
         "tool_steps": 1,
-        "updated_at": "2026-07-23T11:12:07+08:00",
+        "updated_at": "2026-08-05T17:33:13+08:00",
         "user_request": "Replace the placeholder README introduction with the locked benchmark introduction."
       },
-      "run_state_relpath": "readme_intro_locked\\bench_repo_readme\\.hh\\runs\\run_20260723-111206-6f7d13\\run_state.json",
+      "run_state_relpath": "readme_intro_locked\\bench_repo_readme\\.hh\\runs\\run_20260805-173313-38571f\\run_state.json",
       "status": "pass",
       "step_budget": 1,
       "stop_reason": "final_answer_returned",
@@ -241,13 +283,20 @@
       "prompt": "Update the README repository note to document the fixed schema and baseline.",
       "report": {
         "attempts": 2,
-        "checkpoint_id": "ckpt_2dc08fe3",
+        "checkpoint_id": "ckpt_dae7af19",
         "durable_promotions": [],
         "durable_rejections": [],
         "durable_superseded": [],
         "final_answer": "Done.",
         "prompt_metadata": {
-          "budget_reductions": [],
+          "budget_reductions": [
+            {
+              "after_chars": 3600,
+              "before_chars": 4254,
+              "reason": "section_budget",
+              "section": "prefix"
+            }
+          ],
           "current_request": {
             "raw_chars": 76,
             "rendered_chars": 76,
@@ -257,20 +306,20 @@
           "history": {
             "collapsed_duplicate_reads": 0,
             "older_entries_count": 0,
-            "raw_chars": 265,
-            "rendered_chars": 265,
+            "raw_chars": 429,
+            "rendered_chars": 429,
             "reused_file_summary_count": 0,
             "summarized_tool_count": 0
           },
-          "history_chars": 253,
-          "memory_chars": 178,
+          "history_chars": 417,
+          "memory_chars": 519,
           "prefix_changed": true,
-          "prefix_chars": 2671,
-          "prefix_hash": "fcb1c710ce381e99b5aca71ead93be9d2f03a4631d93dd089da3240b29c3d1f1",
+          "prefix_chars": 3860,
+          "prefix_hash": "a346175d8ec7df0fe7d040c04e87c4ab7a1cd0177cd7ec97e910f568153762d3",
           "prompt_budget_chars": 12000,
-          "prompt_cache_key": "fcb1c710ce381e99b5aca71ead93be9d2f03a4631d93dd089da3240b29c3d1f1",
+          "prompt_cache_key": "a346175d8ec7df0fe7d040c04e87c4ab7a1cd0177cd7ec97e910f568153762d3",
           "prompt_cache_supported": false,
-          "prompt_chars": 3591,
+          "prompt_chars": 4677,
           "prompt_over_budget": false,
           "recent_commits": 0,
           "reduction_order": [
@@ -324,18 +373,18 @@
             },
             "history": {
               "budget_chars": 5200,
-              "raw_chars": 265,
-              "rendered_chars": 265
+              "raw_chars": 429,
+              "rendered_chars": 429
             },
             "memory": {
               "budget_chars": 1600,
-              "raw_chars": 178,
-              "rendered_chars": 178
+              "raw_chars": 519,
+              "rendered_chars": 519
             },
             "prefix": {
               "budget_chars": 3600,
-              "raw_chars": 3019,
-              "rendered_chars": 3019
+              "raw_chars": 4254,
+              "rendered_chars": 3600
             },
             "relevant_memory": {
               "budget_chars": 1200,
@@ -350,7 +399,7 @@
           "workspace_changed": true,
           "workspace_chars": 600,
           "workspace_docs": 1,
-          "workspace_fingerprint": "9fe5ea88dfedff1a25cab6ddaa3b23f8fed6ef49aecbd5b33e97af9023829047"
+          "workspace_fingerprint": "ae4460bc8dbd67eee62389752409ade280caa9d1d52f7606765c62638aa8ddac"
         },
         "redacted_env": {
           "secret_env_count": 3,
@@ -360,49 +409,84 @@
             "XF_API_KEY"
           ]
         },
-        "request_id": "req_20260723-111207-28bf43",
+        "request_id": "req_20260805-173314-d4efa7",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111207-d473c2",
+        "run_id": "run_20260805-173314-80dcaf",
         "run_state": {
           "attempts": 2,
-          "checkpoint_id": "ckpt_2dc08fe3",
-          "created_at": "2026-07-23T11:12:07+08:00",
+          "checkpoint_id": "ckpt_dae7af19",
+          "created_at": "2026-08-05T17:33:14+08:00",
           "final_answer": "Done.",
-          "finished_at": "2026-07-23T11:12:08+08:00",
+          "finished_at": "2026-08-05T17:33:14+08:00",
           "last_tool": "patch_file",
-          "request_id": "req_20260723-111207-28bf43",
+          "request_id": "req_20260805-173314-d4efa7",
           "resume_status": "no-checkpoint",
-          "run_id": "run_20260723-111207-d473c2",
+          "run_id": "run_20260805-173314-80dcaf",
           "status": "completed",
           "stop_reason": "final_answer_returned",
           "tool_steps": 1,
-          "updated_at": "2026-07-23T11:12:08+08:00",
+          "updated_at": "2026-08-05T17:33:14+08:00",
           "user_request": "Update the README repository note to document the fixed schema and baseline."
         },
         "status": "completed",
         "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-08-05T09:33:14.284770+00:00",
+          "evidence": [
+            {
+              "affected_paths": [
+                "README.md"
+              ],
+              "created_at": "2026-08-05T09:33:14.580574+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "patched README.md",
+              "tool": "patch_file"
+            },
+            {
+              "created_at": "2026-08-05T09:33:14.958872+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [],
+          "goal": "Update the README repository note to document the fixed schema and baseline.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20260805-173314-80dcaf"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_406e95f8a4",
+          "updated_at": "2026-08-05T09:33:14.958878+00:00"
+        },
         "tool_steps": 1
       },
-      "report_relpath": "readme_schema_note\\bench_repo_readme\\.hh\\runs\\run_20260723-111207-d473c2\\report.json",
-      "run_dir_relpath": "readme_schema_note\\bench_repo_readme\\.hh\\runs\\run_20260723-111207-d473c2",
-      "run_id": "run_20260723-111207-d473c2",
+      "report_relpath": "readme_schema_note\\bench_repo_readme\\.hh\\runs\\run_20260805-173314-80dcaf\\report.json",
+      "run_dir_relpath": "readme_schema_note\\bench_repo_readme\\.hh\\runs\\run_20260805-173314-80dcaf",
+      "run_id": "run_20260805-173314-80dcaf",
       "run_state": {
         "attempts": 2,
-        "checkpoint_id": "ckpt_2dc08fe3",
-        "created_at": "2026-07-23T11:12:07+08:00",
+        "checkpoint_id": "ckpt_dae7af19",
+        "created_at": "2026-08-05T17:33:14+08:00",
         "final_answer": "Done.",
-        "finished_at": "2026-07-23T11:12:08+08:00",
+        "finished_at": "2026-08-05T17:33:14+08:00",
         "last_tool": "patch_file",
-        "request_id": "req_20260723-111207-28bf43",
+        "request_id": "req_20260805-173314-d4efa7",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111207-d473c2",
+        "run_id": "run_20260805-173314-80dcaf",
         "status": "completed",
         "stop_reason": "final_answer_returned",
         "tool_steps": 1,
-        "updated_at": "2026-07-23T11:12:08+08:00",
+        "updated_at": "2026-08-05T17:33:14+08:00",
         "user_request": "Update the README repository note to document the fixed schema and baseline."
       },
-      "run_state_relpath": "readme_schema_note\\bench_repo_readme\\.hh\\runs\\run_20260723-111207-d473c2\\run_state.json",
+      "run_state_relpath": "readme_schema_note\\bench_repo_readme\\.hh\\runs\\run_20260805-173314-80dcaf\\run_state.json",
       "status": "pass",
       "step_budget": 1,
       "stop_reason": "final_answer_returned",
@@ -439,13 +523,20 @@
       "prompt": "Update the README file-layout note to document deterministic ordering.",
       "report": {
         "attempts": 2,
-        "checkpoint_id": "ckpt_12e53bbe",
+        "checkpoint_id": "ckpt_1067c2b3",
         "durable_promotions": [],
         "durable_rejections": [],
         "durable_superseded": [],
         "final_answer": "Done.",
         "prompt_metadata": {
-          "budget_reductions": [],
+          "budget_reductions": [
+            {
+              "after_chars": 3600,
+              "before_chars": 4252,
+              "reason": "section_budget",
+              "section": "prefix"
+            }
+          ],
           "current_request": {
             "raw_chars": 70,
             "rendered_chars": 70,
@@ -455,20 +546,20 @@
           "history": {
             "collapsed_duplicate_reads": 0,
             "older_entries_count": 0,
-            "raw_chars": 279,
-            "rendered_chars": 279,
+            "raw_chars": 443,
+            "rendered_chars": 443,
             "reused_file_summary_count": 0,
             "summarized_tool_count": 0
           },
-          "history_chars": 267,
-          "memory_chars": 172,
+          "history_chars": 431,
+          "memory_chars": 507,
           "prefix_changed": true,
-          "prefix_chars": 2681,
-          "prefix_hash": "91f0d55666becbdfc04cb5d0f2f74a99eef37350f721f2c87c17f698452a012d",
+          "prefix_chars": 3870,
+          "prefix_hash": "fc5b58e6fcfdda07e7950bd5b5c8863d86103ba0e1e6448a70f1ded08182501a",
           "prompt_budget_chars": 12000,
-          "prompt_cache_key": "91f0d55666becbdfc04cb5d0f2f74a99eef37350f721f2c87c17f698452a012d",
+          "prompt_cache_key": "fc5b58e6fcfdda07e7950bd5b5c8863d86103ba0e1e6448a70f1ded08182501a",
           "prompt_cache_supported": false,
-          "prompt_chars": 3591,
+          "prompt_chars": 4673,
           "prompt_over_budget": false,
           "recent_commits": 0,
           "reduction_order": [
@@ -522,18 +613,18 @@
             },
             "history": {
               "budget_chars": 5200,
-              "raw_chars": 279,
-              "rendered_chars": 279
+              "raw_chars": 443,
+              "rendered_chars": 443
             },
             "memory": {
               "budget_chars": 1600,
-              "raw_chars": 172,
-              "rendered_chars": 172
+              "raw_chars": 507,
+              "rendered_chars": 507
             },
             "prefix": {
               "budget_chars": 3600,
-              "raw_chars": 3017,
-              "rendered_chars": 3017
+              "raw_chars": 4252,
+              "rendered_chars": 3600
             },
             "relevant_memory": {
               "budget_chars": 1200,
@@ -548,7 +639,7 @@
           "workspace_changed": true,
           "workspace_chars": 610,
           "workspace_docs": 1,
-          "workspace_fingerprint": "837aec7a6a9df326ae8f5085c27c0b173dcbdcd15c8f7a84ce00eee9cceb7b85"
+          "workspace_fingerprint": "89d33be3d6f1939d6ea013d0605c19b42aae51c08a3b5be5fd8365582e17070f"
         },
         "redacted_env": {
           "secret_env_count": 3,
@@ -558,49 +649,84 @@
             "XF_API_KEY"
           ]
         },
-        "request_id": "req_20260723-111208-9348e4",
+        "request_id": "req_20260805-173315-b5f38b",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111208-dbe06a",
+        "run_id": "run_20260805-173315-2a356a",
         "run_state": {
           "attempts": 2,
-          "checkpoint_id": "ckpt_12e53bbe",
-          "created_at": "2026-07-23T11:12:08+08:00",
+          "checkpoint_id": "ckpt_1067c2b3",
+          "created_at": "2026-08-05T17:33:15+08:00",
           "final_answer": "Done.",
-          "finished_at": "2026-07-23T11:12:09+08:00",
+          "finished_at": "2026-08-05T17:33:16+08:00",
           "last_tool": "patch_file",
-          "request_id": "req_20260723-111208-9348e4",
+          "request_id": "req_20260805-173315-b5f38b",
           "resume_status": "no-checkpoint",
-          "run_id": "run_20260723-111208-dbe06a",
+          "run_id": "run_20260805-173315-2a356a",
           "status": "completed",
           "stop_reason": "final_answer_returned",
           "tool_steps": 1,
-          "updated_at": "2026-07-23T11:12:09+08:00",
+          "updated_at": "2026-08-05T17:33:16+08:00",
           "user_request": "Update the README file-layout note to document deterministic ordering."
         },
         "status": "completed",
         "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-08-05T09:33:15.357910+00:00",
+          "evidence": [
+            {
+              "affected_paths": [
+                "README.md"
+              ],
+              "created_at": "2026-08-05T09:33:15.710595+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "patched README.md",
+              "tool": "patch_file"
+            },
+            {
+              "created_at": "2026-08-05T09:33:16.105822+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [],
+          "goal": "Update the README file-layout note to document deterministic ordering.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20260805-173315-2a356a"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_16482f9c3b",
+          "updated_at": "2026-08-05T09:33:16.105832+00:00"
+        },
         "tool_steps": 1
       },
-      "report_relpath": "readme_ordering_note\\bench_repo_readme\\.hh\\runs\\run_20260723-111208-dbe06a\\report.json",
-      "run_dir_relpath": "readme_ordering_note\\bench_repo_readme\\.hh\\runs\\run_20260723-111208-dbe06a",
-      "run_id": "run_20260723-111208-dbe06a",
+      "report_relpath": "readme_ordering_note\\bench_repo_readme\\.hh\\runs\\run_20260805-173315-2a356a\\report.json",
+      "run_dir_relpath": "readme_ordering_note\\bench_repo_readme\\.hh\\runs\\run_20260805-173315-2a356a",
+      "run_id": "run_20260805-173315-2a356a",
       "run_state": {
         "attempts": 2,
-        "checkpoint_id": "ckpt_12e53bbe",
-        "created_at": "2026-07-23T11:12:08+08:00",
+        "checkpoint_id": "ckpt_1067c2b3",
+        "created_at": "2026-08-05T17:33:15+08:00",
         "final_answer": "Done.",
-        "finished_at": "2026-07-23T11:12:09+08:00",
+        "finished_at": "2026-08-05T17:33:16+08:00",
         "last_tool": "patch_file",
-        "request_id": "req_20260723-111208-9348e4",
+        "request_id": "req_20260805-173315-b5f38b",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111208-dbe06a",
+        "run_id": "run_20260805-173315-2a356a",
         "status": "completed",
         "stop_reason": "final_answer_returned",
         "tool_steps": 1,
-        "updated_at": "2026-07-23T11:12:09+08:00",
+        "updated_at": "2026-08-05T17:33:16+08:00",
         "user_request": "Update the README file-layout note to document deterministic ordering."
       },
-      "run_state_relpath": "readme_ordering_note\\bench_repo_readme\\.hh\\runs\\run_20260723-111208-dbe06a\\run_state.json",
+      "run_state_relpath": "readme_ordering_note\\bench_repo_readme\\.hh\\runs\\run_20260805-173315-2a356a\\run_state.json",
       "status": "pass",
       "step_budget": 1,
       "stop_reason": "final_answer_returned",
@@ -637,13 +763,20 @@
       "prompt": "Change the beta token in sample.txt to beta-locked.",
       "report": {
         "attempts": 2,
-        "checkpoint_id": "ckpt_eda6e42d",
+        "checkpoint_id": "ckpt_321ea58f",
         "durable_promotions": [],
         "durable_rejections": [],
         "durable_superseded": [],
         "final_answer": "Done.",
         "prompt_metadata": {
-          "budget_reductions": [],
+          "budget_reductions": [
+            {
+              "after_chars": 3600,
+              "before_chars": 4122,
+              "reason": "section_budget",
+              "section": "prefix"
+            }
+          ],
           "current_request": {
             "raw_chars": 51,
             "rendered_chars": 51,
@@ -653,20 +786,20 @@
           "history": {
             "collapsed_duplicate_reads": 0,
             "older_entries_count": 0,
-            "raw_chars": 177,
-            "rendered_chars": 177,
+            "raw_chars": 341,
+            "rendered_chars": 341,
             "reused_file_summary_count": 0,
             "summarized_tool_count": 0
           },
-          "history_chars": 165,
-          "memory_chars": 154,
+          "history_chars": 329,
+          "memory_chars": 471,
           "prefix_changed": false,
-          "prefix_chars": 2595,
-          "prefix_hash": "e0031db708bee0114face6a89b086eaadb4f68e0a3eb1b0628ffe28e4af1364f",
+          "prefix_chars": 3784,
+          "prefix_hash": "f7892f7f6b082985adbeb0c3edcb282ca45083da34c1a15f4dc32fb601c3eadd",
           "prompt_budget_chars": 12000,
-          "prompt_cache_key": "e0031db708bee0114face6a89b086eaadb4f68e0a3eb1b0628ffe28e4af1364f",
+          "prompt_cache_key": "f7892f7f6b082985adbeb0c3edcb282ca45083da34c1a15f4dc32fb601c3eadd",
           "prompt_cache_supported": false,
-          "prompt_chars": 3321,
+          "prompt_chars": 4516,
           "prompt_over_budget": false,
           "recent_commits": 0,
           "reduction_order": [
@@ -718,18 +851,18 @@
             },
             "history": {
               "budget_chars": 5200,
-              "raw_chars": 177,
-              "rendered_chars": 177
+              "raw_chars": 341,
+              "rendered_chars": 341
             },
             "memory": {
               "budget_chars": 1600,
-              "raw_chars": 154,
-              "rendered_chars": 154
+              "raw_chars": 471,
+              "rendered_chars": 471
             },
             "prefix": {
               "budget_chars": 3600,
-              "raw_chars": 2886,
-              "rendered_chars": 2886
+              "raw_chars": 4122,
+              "rendered_chars": 3600
             },
             "relevant_memory": {
               "budget_chars": 1200,
@@ -744,7 +877,7 @@
           "workspace_changed": false,
           "workspace_chars": 524,
           "workspace_docs": 1,
-          "workspace_fingerprint": "ce2eec43900ebdee42fea4cbbd9e787b602811cb2b99a8b1c0cd1c596f5d21f6"
+          "workspace_fingerprint": "8807ccab0f25f55c08e88791ac4d91a4d46fdf04d7cafa161742c1182db57ae4"
         },
         "redacted_env": {
           "secret_env_count": 3,
@@ -754,49 +887,84 @@
             "XF_API_KEY"
           ]
         },
-        "request_id": "req_20260723-111210-878a6b",
+        "request_id": "req_20260805-173316-d12985",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111210-c93c47",
+        "run_id": "run_20260805-173316-926ebe",
         "run_state": {
           "attempts": 2,
-          "checkpoint_id": "ckpt_eda6e42d",
-          "created_at": "2026-07-23T11:12:10+08:00",
+          "checkpoint_id": "ckpt_321ea58f",
+          "created_at": "2026-08-05T17:33:16+08:00",
           "final_answer": "Done.",
-          "finished_at": "2026-07-23T11:12:11+08:00",
+          "finished_at": "2026-08-05T17:33:17+08:00",
           "last_tool": "patch_file",
-          "request_id": "req_20260723-111210-878a6b",
+          "request_id": "req_20260805-173316-d12985",
           "resume_status": "no-checkpoint",
-          "run_id": "run_20260723-111210-c93c47",
+          "run_id": "run_20260805-173316-926ebe",
           "status": "completed",
           "stop_reason": "final_answer_returned",
           "tool_steps": 1,
-          "updated_at": "2026-07-23T11:12:11+08:00",
+          "updated_at": "2026-08-05T17:33:17+08:00",
           "user_request": "Change the beta token in sample.txt to beta-locked."
         },
         "status": "completed",
         "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-08-05T09:33:16.532944+00:00",
+          "evidence": [
+            {
+              "affected_paths": [
+                "sample.txt"
+              ],
+              "created_at": "2026-08-05T09:33:16.793037+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "patched sample.txt",
+              "tool": "patch_file"
+            },
+            {
+              "created_at": "2026-08-05T09:33:17.046152+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [],
+          "goal": "Change the beta token in sample.txt to beta-locked.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20260805-173316-926ebe"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_f388f9e72a",
+          "updated_at": "2026-08-05T09:33:17.046159+00:00"
+        },
         "tool_steps": 1
       },
-      "report_relpath": "sample_beta_locked\\bench_repo_patch\\.hh\\runs\\run_20260723-111210-c93c47\\report.json",
-      "run_dir_relpath": "sample_beta_locked\\bench_repo_patch\\.hh\\runs\\run_20260723-111210-c93c47",
-      "run_id": "run_20260723-111210-c93c47",
+      "report_relpath": "sample_beta_locked\\bench_repo_patch\\.hh\\runs\\run_20260805-173316-926ebe\\report.json",
+      "run_dir_relpath": "sample_beta_locked\\bench_repo_patch\\.hh\\runs\\run_20260805-173316-926ebe",
+      "run_id": "run_20260805-173316-926ebe",
       "run_state": {
         "attempts": 2,
-        "checkpoint_id": "ckpt_eda6e42d",
-        "created_at": "2026-07-23T11:12:10+08:00",
+        "checkpoint_id": "ckpt_321ea58f",
+        "created_at": "2026-08-05T17:33:16+08:00",
         "final_answer": "Done.",
-        "finished_at": "2026-07-23T11:12:11+08:00",
+        "finished_at": "2026-08-05T17:33:17+08:00",
         "last_tool": "patch_file",
-        "request_id": "req_20260723-111210-878a6b",
+        "request_id": "req_20260805-173316-d12985",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111210-c93c47",
+        "run_id": "run_20260805-173316-926ebe",
         "status": "completed",
         "stop_reason": "final_answer_returned",
         "tool_steps": 1,
-        "updated_at": "2026-07-23T11:12:11+08:00",
+        "updated_at": "2026-08-05T17:33:17+08:00",
         "user_request": "Change the beta token in sample.txt to beta-locked."
       },
-      "run_state_relpath": "sample_beta_locked\\bench_repo_patch\\.hh\\runs\\run_20260723-111210-c93c47\\run_state.json",
+      "run_state_relpath": "sample_beta_locked\\bench_repo_patch\\.hh\\runs\\run_20260805-173316-926ebe\\run_state.json",
       "status": "pass",
       "step_budget": 1,
       "stop_reason": "final_answer_returned",
@@ -833,13 +1001,20 @@
       "prompt": "Change the gamma token in sample.txt to gamma-locked.",
       "report": {
         "attempts": 2,
-        "checkpoint_id": "ckpt_81af61c7",
+        "checkpoint_id": "ckpt_60995b0c",
         "durable_promotions": [],
         "durable_rejections": [],
         "durable_superseded": [],
         "final_answer": "Done.",
         "prompt_metadata": {
-          "budget_reductions": [],
+          "budget_reductions": [
+            {
+              "after_chars": 3600,
+              "before_chars": 4128,
+              "reason": "section_budget",
+              "section": "prefix"
+            }
+          ],
           "current_request": {
             "raw_chars": 53,
             "rendered_chars": 53,
@@ -849,20 +1024,20 @@
           "history": {
             "collapsed_duplicate_reads": 0,
             "older_entries_count": 0,
-            "raw_chars": 181,
-            "rendered_chars": 181,
+            "raw_chars": 345,
+            "rendered_chars": 345,
             "reused_file_summary_count": 0,
             "summarized_tool_count": 0
           },
-          "history_chars": 169,
-          "memory_chars": 156,
+          "history_chars": 333,
+          "memory_chars": 475,
           "prefix_changed": false,
-          "prefix_chars": 2597,
-          "prefix_hash": "b82b5a86199876a6a016e8cfa321ff16f25caeeec06fa02dbc767d6bb53060a3",
+          "prefix_chars": 3786,
+          "prefix_hash": "5ec504995803f240006816ce62a69d7907244e4c1e32657fd6386e863eed3cfb",
           "prompt_budget_chars": 12000,
-          "prompt_cache_key": "b82b5a86199876a6a016e8cfa321ff16f25caeeec06fa02dbc767d6bb53060a3",
+          "prompt_cache_key": "5ec504995803f240006816ce62a69d7907244e4c1e32657fd6386e863eed3cfb",
           "prompt_cache_supported": false,
-          "prompt_chars": 3335,
+          "prompt_chars": 4526,
           "prompt_over_budget": false,
           "recent_commits": 0,
           "reduction_order": [
@@ -914,18 +1089,18 @@
             },
             "history": {
               "budget_chars": 5200,
-              "raw_chars": 181,
-              "rendered_chars": 181
+              "raw_chars": 345,
+              "rendered_chars": 345
             },
             "memory": {
               "budget_chars": 1600,
-              "raw_chars": 156,
-              "rendered_chars": 156
+              "raw_chars": 475,
+              "rendered_chars": 475
             },
             "prefix": {
               "budget_chars": 3600,
-              "raw_chars": 2892,
-              "rendered_chars": 2892
+              "raw_chars": 4128,
+              "rendered_chars": 3600
             },
             "relevant_memory": {
               "budget_chars": 1200,
@@ -940,7 +1115,7 @@
           "workspace_changed": false,
           "workspace_chars": 526,
           "workspace_docs": 1,
-          "workspace_fingerprint": "709e44c1497033612faed1a187913cd26c5fa21d24d187f2c5b08a00822010be"
+          "workspace_fingerprint": "e0c6ce9e52f7cd063458d5adcae373b9a35bd3fb10e37daf187c7996e6ea851d"
         },
         "redacted_env": {
           "secret_env_count": 3,
@@ -950,49 +1125,84 @@
             "XF_API_KEY"
           ]
         },
-        "request_id": "req_20260723-111211-0fec7a",
+        "request_id": "req_20260805-173317-891ec5",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111211-982349",
+        "run_id": "run_20260805-173317-4ab207",
         "run_state": {
           "attempts": 2,
-          "checkpoint_id": "ckpt_81af61c7",
-          "created_at": "2026-07-23T11:12:11+08:00",
+          "checkpoint_id": "ckpt_60995b0c",
+          "created_at": "2026-08-05T17:33:17+08:00",
           "final_answer": "Done.",
-          "finished_at": "2026-07-23T11:12:12+08:00",
+          "finished_at": "2026-08-05T17:33:17+08:00",
           "last_tool": "patch_file",
-          "request_id": "req_20260723-111211-0fec7a",
+          "request_id": "req_20260805-173317-891ec5",
           "resume_status": "no-checkpoint",
-          "run_id": "run_20260723-111211-982349",
+          "run_id": "run_20260805-173317-4ab207",
           "status": "completed",
           "stop_reason": "final_answer_returned",
           "tool_steps": 1,
-          "updated_at": "2026-07-23T11:12:12+08:00",
+          "updated_at": "2026-08-05T17:33:17+08:00",
           "user_request": "Change the gamma token in sample.txt to gamma-locked."
         },
         "status": "completed",
         "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-08-05T09:33:17.360190+00:00",
+          "evidence": [
+            {
+              "affected_paths": [
+                "sample.txt"
+              ],
+              "created_at": "2026-08-05T09:33:17.613324+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "patched sample.txt",
+              "tool": "patch_file"
+            },
+            {
+              "created_at": "2026-08-05T09:33:17.854748+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [],
+          "goal": "Change the gamma token in sample.txt to gamma-locked.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20260805-173317-4ab207"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_6104c80a0f",
+          "updated_at": "2026-08-05T09:33:17.854755+00:00"
+        },
         "tool_steps": 1
       },
-      "report_relpath": "sample_gamma_locked\\bench_repo_patch\\.hh\\runs\\run_20260723-111211-982349\\report.json",
-      "run_dir_relpath": "sample_gamma_locked\\bench_repo_patch\\.hh\\runs\\run_20260723-111211-982349",
-      "run_id": "run_20260723-111211-982349",
+      "report_relpath": "sample_gamma_locked\\bench_repo_patch\\.hh\\runs\\run_20260805-173317-4ab207\\report.json",
+      "run_dir_relpath": "sample_gamma_locked\\bench_repo_patch\\.hh\\runs\\run_20260805-173317-4ab207",
+      "run_id": "run_20260805-173317-4ab207",
       "run_state": {
         "attempts": 2,
-        "checkpoint_id": "ckpt_81af61c7",
-        "created_at": "2026-07-23T11:12:11+08:00",
+        "checkpoint_id": "ckpt_60995b0c",
+        "created_at": "2026-08-05T17:33:17+08:00",
         "final_answer": "Done.",
-        "finished_at": "2026-07-23T11:12:12+08:00",
+        "finished_at": "2026-08-05T17:33:17+08:00",
         "last_tool": "patch_file",
-        "request_id": "req_20260723-111211-0fec7a",
+        "request_id": "req_20260805-173317-891ec5",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111211-982349",
+        "run_id": "run_20260805-173317-4ab207",
         "status": "completed",
         "stop_reason": "final_answer_returned",
         "tool_steps": 1,
-        "updated_at": "2026-07-23T11:12:12+08:00",
+        "updated_at": "2026-08-05T17:33:17+08:00",
         "user_request": "Change the gamma token in sample.txt to gamma-locked."
       },
-      "run_state_relpath": "sample_gamma_locked\\bench_repo_patch\\.hh\\runs\\run_20260723-111211-982349\\run_state.json",
+      "run_state_relpath": "sample_gamma_locked\\bench_repo_patch\\.hh\\runs\\run_20260805-173317-4ab207\\run_state.json",
       "status": "pass",
       "step_budget": 1,
       "stop_reason": "final_answer_returned",
@@ -1029,13 +1239,20 @@
       "prompt": "Replace the placeholder token in sample.txt with delta.",
       "report": {
         "attempts": 2,
-        "checkpoint_id": "ckpt_481a9dca",
+        "checkpoint_id": "ckpt_82c4494e",
         "durable_promotions": [],
         "durable_rejections": [],
         "durable_superseded": [],
         "final_answer": "Done.",
         "prompt_metadata": {
-          "budget_reductions": [],
+          "budget_reductions": [
+            {
+              "after_chars": 3600,
+              "before_chars": 4142,
+              "reason": "section_budget",
+              "section": "prefix"
+            }
+          ],
           "current_request": {
             "raw_chars": 55,
             "rendered_chars": 55,
@@ -1045,20 +1262,20 @@
           "history": {
             "collapsed_duplicate_reads": 0,
             "older_entries_count": 0,
-            "raw_chars": 182,
-            "rendered_chars": 182,
+            "raw_chars": 346,
+            "rendered_chars": 346,
             "reused_file_summary_count": 0,
             "summarized_tool_count": 0
           },
-          "history_chars": 170,
-          "memory_chars": 158,
+          "history_chars": 334,
+          "memory_chars": 479,
           "prefix_changed": false,
-          "prefix_chars": 2607,
-          "prefix_hash": "c4a9989b6900b0c35d19aa04d74308178f2bda31414e70b9e5914b68f2cb6a08",
+          "prefix_chars": 3796,
+          "prefix_hash": "fdbea5def838069842d7ba79242559fb6fbeec4ad4c145f1eaa3fd000fc1779f",
           "prompt_budget_chars": 12000,
-          "prompt_cache_key": "c4a9989b6900b0c35d19aa04d74308178f2bda31414e70b9e5914b68f2cb6a08",
+          "prompt_cache_key": "fdbea5def838069842d7ba79242559fb6fbeec4ad4c145f1eaa3fd000fc1779f",
           "prompt_cache_supported": false,
-          "prompt_chars": 3354,
+          "prompt_chars": 4533,
           "prompt_over_budget": false,
           "recent_commits": 0,
           "reduction_order": [
@@ -1110,18 +1327,18 @@
             },
             "history": {
               "budget_chars": 5200,
-              "raw_chars": 182,
-              "rendered_chars": 182
+              "raw_chars": 346,
+              "rendered_chars": 346
             },
             "memory": {
               "budget_chars": 1600,
-              "raw_chars": 158,
-              "rendered_chars": 158
+              "raw_chars": 479,
+              "rendered_chars": 479
             },
             "prefix": {
               "budget_chars": 3600,
-              "raw_chars": 2906,
-              "rendered_chars": 2906
+              "raw_chars": 4142,
+              "rendered_chars": 3600
             },
             "relevant_memory": {
               "budget_chars": 1200,
@@ -1136,7 +1353,7 @@
           "workspace_changed": false,
           "workspace_chars": 536,
           "workspace_docs": 1,
-          "workspace_fingerprint": "6f01fff38e492dad3cd997df720fecc04079dd7d1075a7b77cbea2cb7262c38e"
+          "workspace_fingerprint": "45c2ac3021afd5bb2ec39a0b6a5de528a1c4dc635f57ac78982e16bfaf7ac210"
         },
         "redacted_env": {
           "secret_env_count": 3,
@@ -1146,49 +1363,84 @@
             "XF_API_KEY"
           ]
         },
-        "request_id": "req_20260723-111212-97de8f",
+        "request_id": "req_20260805-173318-393249",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111212-cc16d4",
+        "run_id": "run_20260805-173318-62e772",
         "run_state": {
           "attempts": 2,
-          "checkpoint_id": "ckpt_481a9dca",
-          "created_at": "2026-07-23T11:12:12+08:00",
+          "checkpoint_id": "ckpt_82c4494e",
+          "created_at": "2026-08-05T17:33:18+08:00",
           "final_answer": "Done.",
-          "finished_at": "2026-07-23T11:12:12+08:00",
+          "finished_at": "2026-08-05T17:33:18+08:00",
           "last_tool": "patch_file",
-          "request_id": "req_20260723-111212-97de8f",
+          "request_id": "req_20260805-173318-393249",
           "resume_status": "no-checkpoint",
-          "run_id": "run_20260723-111212-cc16d4",
+          "run_id": "run_20260805-173318-62e772",
           "status": "completed",
           "stop_reason": "final_answer_returned",
           "tool_steps": 1,
-          "updated_at": "2026-07-23T11:12:12+08:00",
+          "updated_at": "2026-08-05T17:33:18+08:00",
           "user_request": "Replace the placeholder token in sample.txt with delta."
         },
         "status": "completed",
         "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-08-05T09:33:18.161039+00:00",
+          "evidence": [
+            {
+              "affected_paths": [
+                "sample.txt"
+              ],
+              "created_at": "2026-08-05T09:33:18.418480+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "patched sample.txt",
+              "tool": "patch_file"
+            },
+            {
+              "created_at": "2026-08-05T09:33:18.696266+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [],
+          "goal": "Replace the placeholder token in sample.txt with delta.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20260805-173318-62e772"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_04d10a1d8b",
+          "updated_at": "2026-08-05T09:33:18.696275+00:00"
+        },
         "tool_steps": 1
       },
-      "report_relpath": "sample_placeholder_delta\\bench_repo_patch\\.hh\\runs\\run_20260723-111212-cc16d4\\report.json",
-      "run_dir_relpath": "sample_placeholder_delta\\bench_repo_patch\\.hh\\runs\\run_20260723-111212-cc16d4",
-      "run_id": "run_20260723-111212-cc16d4",
+      "report_relpath": "sample_placeholder_delta\\bench_repo_patch\\.hh\\runs\\run_20260805-173318-62e772\\report.json",
+      "run_dir_relpath": "sample_placeholder_delta\\bench_repo_patch\\.hh\\runs\\run_20260805-173318-62e772",
+      "run_id": "run_20260805-173318-62e772",
       "run_state": {
         "attempts": 2,
-        "checkpoint_id": "ckpt_481a9dca",
-        "created_at": "2026-07-23T11:12:12+08:00",
+        "checkpoint_id": "ckpt_82c4494e",
+        "created_at": "2026-08-05T17:33:18+08:00",
         "final_answer": "Done.",
-        "finished_at": "2026-07-23T11:12:12+08:00",
+        "finished_at": "2026-08-05T17:33:18+08:00",
         "last_tool": "patch_file",
-        "request_id": "req_20260723-111212-97de8f",
+        "request_id": "req_20260805-173318-393249",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111212-cc16d4",
+        "run_id": "run_20260805-173318-62e772",
         "status": "completed",
         "stop_reason": "final_answer_returned",
         "tool_steps": 1,
-        "updated_at": "2026-07-23T11:12:12+08:00",
+        "updated_at": "2026-08-05T17:33:18+08:00",
         "user_request": "Replace the placeholder token in sample.txt with delta."
       },
-      "run_state_relpath": "sample_placeholder_delta\\bench_repo_patch\\.hh\\runs\\run_20260723-111212-cc16d4\\run_state.json",
+      "run_state_relpath": "sample_placeholder_delta\\bench_repo_patch\\.hh\\runs\\run_20260805-173318-62e772\\run_state.json",
       "status": "pass",
       "step_budget": 1,
       "stop_reason": "final_answer_returned",
@@ -1225,13 +1477,20 @@
       "prompt": "Recover from one malformed patch request and update the README introduction.",
       "report": {
         "attempts": 3,
-        "checkpoint_id": "ckpt_caf39591",
+        "checkpoint_id": "ckpt_87779354",
         "durable_promotions": [],
         "durable_rejections": [],
         "durable_superseded": [],
         "final_answer": "Done.",
         "prompt_metadata": {
-          "budget_reductions": [],
+          "budget_reductions": [
+            {
+              "after_chars": 3600,
+              "before_chars": 4444,
+              "reason": "section_budget",
+              "section": "prefix"
+            }
+          ],
           "current_request": {
             "raw_chars": 76,
             "rendered_chars": 76,
@@ -1241,20 +1500,20 @@
           "history": {
             "collapsed_duplicate_reads": 0,
             "older_entries_count": 0,
-            "raw_chars": 553,
-            "rendered_chars": 553,
+            "raw_chars": 968,
+            "rendered_chars": 968,
             "reused_file_summary_count": 0,
             "summarized_tool_count": 0
           },
-          "history_chars": 541,
-          "memory_chars": 178,
+          "history_chars": 956,
+          "memory_chars": 713,
           "prefix_changed": true,
-          "prefix_chars": 2675,
-          "prefix_hash": "09e503bc4fa7cd9c00ddda1faaac7b787854c42a52cf20e9be1a735590fa1fd2",
+          "prefix_chars": 3864,
+          "prefix_hash": "efe5bb735aa4e04709a7712b47c9d4402901fb5f020b3718bb39d2c810005091",
           "prompt_budget_chars": 12000,
-          "prompt_cache_key": "09e503bc4fa7cd9c00ddda1faaac7b787854c42a52cf20e9be1a735590fa1fd2",
+          "prompt_cache_key": "efe5bb735aa4e04709a7712b47c9d4402901fb5f020b3718bb39d2c810005091",
           "prompt_cache_supported": false,
-          "prompt_chars": 3883,
+          "prompt_chars": 5410,
           "prompt_over_budget": false,
           "recent_commits": 0,
           "reduction_order": [
@@ -1308,18 +1567,18 @@
             },
             "history": {
               "budget_chars": 5200,
-              "raw_chars": 553,
-              "rendered_chars": 553
+              "raw_chars": 968,
+              "rendered_chars": 968
             },
             "memory": {
               "budget_chars": 1600,
-              "raw_chars": 178,
-              "rendered_chars": 178
+              "raw_chars": 713,
+              "rendered_chars": 713
             },
             "prefix": {
               "budget_chars": 3600,
-              "raw_chars": 3023,
-              "rendered_chars": 3023
+              "raw_chars": 4444,
+              "rendered_chars": 3600
             },
             "relevant_memory": {
               "budget_chars": 1200,
@@ -1334,7 +1593,7 @@
           "workspace_changed": true,
           "workspace_chars": 604,
           "workspace_docs": 1,
-          "workspace_fingerprint": "d3645e227c5d53ecd2631289f7a692610e3feb14fde2a633b7db069414183c23"
+          "workspace_fingerprint": "64cbcfd455a5718b60d8c81aa0cabd991e0cf2a41d9527ce5e771a158242bf58"
         },
         "redacted_env": {
           "secret_env_count": 3,
@@ -1344,49 +1603,105 @@
             "XF_API_KEY"
           ]
         },
-        "request_id": "req_20260723-111213-03bd6c",
+        "request_id": "req_20260805-173319-8e98f7",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111213-ce02bd",
+        "run_id": "run_20260805-173319-d826a4",
         "run_state": {
           "attempts": 3,
-          "checkpoint_id": "ckpt_caf39591",
-          "created_at": "2026-07-23T11:12:13+08:00",
+          "checkpoint_id": "ckpt_87779354",
+          "created_at": "2026-08-05T17:33:19+08:00",
           "final_answer": "Done.",
-          "finished_at": "2026-07-23T11:12:13+08:00",
+          "finished_at": "2026-08-05T17:33:19+08:00",
           "last_tool": "patch_file",
-          "request_id": "req_20260723-111213-03bd6c",
+          "request_id": "req_20260805-173319-8e98f7",
           "resume_status": "no-checkpoint",
-          "run_id": "run_20260723-111213-ce02bd",
+          "run_id": "run_20260805-173319-d826a4",
           "status": "completed",
           "stop_reason": "final_answer_returned",
           "tool_steps": 2,
-          "updated_at": "2026-07-23T11:12:13+08:00",
+          "updated_at": "2026-08-05T17:33:19+08:00",
           "user_request": "Recover from one malformed patch request and update the README introduction."
         },
         "status": "completed",
         "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-08-05T09:33:19.057796+00:00",
+          "evidence": [
+            {
+              "affected_paths": [],
+              "created_at": "2026-08-05T09:33:19.283116+00:00",
+              "error_code": "invalid_arguments",
+              "kind": "tool",
+              "status": "rejected",
+              "summary": "error: invalid arguments for patch_file: missing new_text\nexample: <tool name=\"patch_file\" path=\"binary_search.py\"><old_text>return -1</old_text><new_text>return mid</new_text></tool>",
+              "tool": "patch_file"
+            },
+            {
+              "affected_paths": [
+                "README.md"
+              ],
+              "created_at": "2026-08-05T09:33:19.573405+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "patched README.md",
+              "tool": "patch_file"
+            },
+            {
+              "created_at": "2026-08-05T09:33:19.838408+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [
+            {
+              "created_at": "2026-08-05T09:33:19.283124+00:00",
+              "error_code": "invalid_arguments",
+              "fingerprint": "d4b2544104e63338c71b534f092270a3f581f522212012c43fc2c8267112ddd3",
+              "resolution": "followed by successful patch_file",
+              "resolved": true,
+              "resolved_at": "2026-08-05T09:33:19.573418+00:00",
+              "retryable": true,
+              "summary": "error: invalid arguments for patch_file: missing new_text\nexample: <tool name=\"patch_file\" path=\"binary_search.py\"><old_text>return -1</old_text><new_text>return mid</new_text></tool>",
+              "tool": "patch_file"
+            }
+          ],
+          "goal": "Recover from one malformed patch request and update the README introduction.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20260805-173319-d826a4"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_9b235070ae",
+          "updated_at": "2026-08-05T09:33:19.838413+00:00"
+        },
         "tool_steps": 2
       },
-      "report_relpath": "invalid_patch_recovery\\bench_repo_readme\\.hh\\runs\\run_20260723-111213-ce02bd\\report.json",
-      "run_dir_relpath": "invalid_patch_recovery\\bench_repo_readme\\.hh\\runs\\run_20260723-111213-ce02bd",
-      "run_id": "run_20260723-111213-ce02bd",
+      "report_relpath": "invalid_patch_recovery\\bench_repo_readme\\.hh\\runs\\run_20260805-173319-d826a4\\report.json",
+      "run_dir_relpath": "invalid_patch_recovery\\bench_repo_readme\\.hh\\runs\\run_20260805-173319-d826a4",
+      "run_id": "run_20260805-173319-d826a4",
       "run_state": {
         "attempts": 3,
-        "checkpoint_id": "ckpt_caf39591",
-        "created_at": "2026-07-23T11:12:13+08:00",
+        "checkpoint_id": "ckpt_87779354",
+        "created_at": "2026-08-05T17:33:19+08:00",
         "final_answer": "Done.",
-        "finished_at": "2026-07-23T11:12:13+08:00",
+        "finished_at": "2026-08-05T17:33:19+08:00",
         "last_tool": "patch_file",
-        "request_id": "req_20260723-111213-03bd6c",
+        "request_id": "req_20260805-173319-8e98f7",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111213-ce02bd",
+        "run_id": "run_20260805-173319-d826a4",
         "status": "completed",
         "stop_reason": "final_answer_returned",
         "tool_steps": 2,
-        "updated_at": "2026-07-23T11:12:13+08:00",
+        "updated_at": "2026-08-05T17:33:19+08:00",
         "user_request": "Recover from one malformed patch request and update the README introduction."
       },
-      "run_state_relpath": "invalid_patch_recovery\\bench_repo_readme\\.hh\\runs\\run_20260723-111213-ce02bd\\run_state.json",
+      "run_state_relpath": "invalid_patch_recovery\\bench_repo_readme\\.hh\\runs\\run_20260805-173319-d826a4\\run_state.json",
       "status": "pass",
       "step_budget": 2,
       "stop_reason": "final_answer_returned",
@@ -1424,13 +1739,20 @@
       "prompt": "Reject an out-of-workspace read and then apply the safe sample.txt update.",
       "report": {
         "attempts": 3,
-        "checkpoint_id": "ckpt_8299a584",
+        "checkpoint_id": "ckpt_5f1e51ca",
         "durable_promotions": [],
         "durable_rejections": [],
         "durable_superseded": [],
         "final_answer": "Done.",
         "prompt_metadata": {
-          "budget_reductions": [],
+          "budget_reductions": [
+            {
+              "after_chars": 3600,
+              "before_chars": 4434,
+              "reason": "section_budget",
+              "section": "prefix"
+            }
+          ],
           "current_request": {
             "raw_chars": 74,
             "rendered_chars": 74,
@@ -1440,20 +1762,20 @@
           "history": {
             "collapsed_duplicate_reads": 0,
             "older_entries_count": 0,
-            "raw_chars": 438,
-            "rendered_chars": 438,
+            "raw_chars": 883,
+            "rendered_chars": 883,
             "reused_file_summary_count": 0,
             "summarized_tool_count": 0
           },
-          "history_chars": 426,
-          "memory_chars": 177,
+          "history_chars": 871,
+          "memory_chars": 713,
           "prefix_changed": false,
-          "prefix_chars": 2690,
-          "prefix_hash": "fa7317437a878efe741bad92afbbf5e0f8a6404061fe63fba5b53c450c29c8b7",
+          "prefix_chars": 3879,
+          "prefix_hash": "0f35e944f829720281664681c7da68f9b65375aa4d235f222f17825985808df3",
           "prompt_budget_chars": 12000,
-          "prompt_cache_key": "fa7317437a878efe741bad92afbbf5e0f8a6404061fe63fba5b53c450c29c8b7",
+          "prompt_cache_key": "0f35e944f829720281664681c7da68f9b65375aa4d235f222f17825985808df3",
           "prompt_cache_supported": false,
-          "prompt_chars": 3769,
+          "prompt_chars": 5323,
           "prompt_over_budget": false,
           "recent_commits": 0,
           "reduction_order": [
@@ -1505,18 +1827,18 @@
             },
             "history": {
               "budget_chars": 5200,
-              "raw_chars": 438,
-              "rendered_chars": 438
+              "raw_chars": 883,
+              "rendered_chars": 883
             },
             "memory": {
               "budget_chars": 1600,
-              "raw_chars": 177,
-              "rendered_chars": 177
+              "raw_chars": 713,
+              "rendered_chars": 713
             },
             "prefix": {
               "budget_chars": 3600,
-              "raw_chars": 3027,
-              "rendered_chars": 3027
+              "raw_chars": 4434,
+              "rendered_chars": 3600
             },
             "relevant_memory": {
               "budget_chars": 1200,
@@ -1531,7 +1853,7 @@
           "workspace_changed": false,
           "workspace_chars": 528,
           "workspace_docs": 1,
-          "workspace_fingerprint": "24048f8b3356f5bf40051baecd27afa03f5822fd15fe4a8429734a020c34550c"
+          "workspace_fingerprint": "ae0c040620bb067710badc417347dcfe5bb032d69294968180a8bfc5b6dca934"
         },
         "redacted_env": {
           "secret_env_count": 3,
@@ -1541,49 +1863,103 @@
             "XF_API_KEY"
           ]
         },
-        "request_id": "req_20260723-111214-1e7349",
+        "request_id": "req_20260805-173320-50010b",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111214-70dca6",
+        "run_id": "run_20260805-173320-c67d4e",
         "run_state": {
           "attempts": 3,
-          "checkpoint_id": "ckpt_8299a584",
-          "created_at": "2026-07-23T11:12:14+08:00",
+          "checkpoint_id": "ckpt_5f1e51ca",
+          "created_at": "2026-08-05T17:33:20+08:00",
           "final_answer": "Done.",
-          "finished_at": "2026-07-23T11:12:14+08:00",
+          "finished_at": "2026-08-05T17:33:20+08:00",
           "last_tool": "patch_file",
-          "request_id": "req_20260723-111214-1e7349",
+          "request_id": "req_20260805-173320-50010b",
           "resume_status": "no-checkpoint",
-          "run_id": "run_20260723-111214-70dca6",
+          "run_id": "run_20260805-173320-c67d4e",
           "status": "completed",
           "stop_reason": "final_answer_returned",
           "tool_steps": 2,
-          "updated_at": "2026-07-23T11:12:14+08:00",
+          "updated_at": "2026-08-05T17:33:20+08:00",
           "user_request": "Reject an out-of-workspace read and then apply the safe sample.txt update."
         },
         "status": "completed",
         "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-08-05T09:33:20.169678+00:00",
+          "evidence": [
+            {
+              "affected_paths": [],
+              "created_at": "2026-08-05T09:33:20.433657+00:00",
+              "error_code": "path_escape",
+              "kind": "tool",
+              "status": "rejected",
+              "summary": "error: invalid arguments for read_file: path escapes workspace: ../outside.txt\nexample: <tool>{\"name\":\"read_file\",\"args\":{\"path\":\"README.md\",\"start\":1,\"end\":80}}</tool>",
+              "tool": "read_file"
+            },
+            {
+              "affected_paths": [
+                "sample.txt"
+              ],
+              "created_at": "2026-08-05T09:33:20.700403+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "patched sample.txt",
+              "tool": "patch_file"
+            },
+            {
+              "created_at": "2026-08-05T09:33:20.946546+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [
+            {
+              "created_at": "2026-08-05T09:33:20.433666+00:00",
+              "error_code": "path_escape",
+              "fingerprint": "3ae1fba273cacbc3f407242e51d129123cd271ec589fe93aad0240257cafab94",
+              "resolved": false,
+              "retryable": false,
+              "summary": "error: invalid arguments for read_file: path escapes workspace: ../outside.txt\nexample: <tool>{\"name\":\"read_file\",\"args\":{\"path\":\"README.md\",\"start\":1,\"end\":80}}</tool>",
+              "tool": "read_file"
+            }
+          ],
+          "goal": "Reject an out-of-workspace read and then apply the safe sample.txt update.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20260805-173320-c67d4e"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_cf1ee3a416",
+          "updated_at": "2026-08-05T09:33:20.946550+00:00"
+        },
         "tool_steps": 2
       },
-      "report_relpath": "path_escape_recovery\\bench_repo_patch\\.hh\\runs\\run_20260723-111214-70dca6\\report.json",
-      "run_dir_relpath": "path_escape_recovery\\bench_repo_patch\\.hh\\runs\\run_20260723-111214-70dca6",
-      "run_id": "run_20260723-111214-70dca6",
+      "report_relpath": "path_escape_recovery\\bench_repo_patch\\.hh\\runs\\run_20260805-173320-c67d4e\\report.json",
+      "run_dir_relpath": "path_escape_recovery\\bench_repo_patch\\.hh\\runs\\run_20260805-173320-c67d4e",
+      "run_id": "run_20260805-173320-c67d4e",
       "run_state": {
         "attempts": 3,
-        "checkpoint_id": "ckpt_8299a584",
-        "created_at": "2026-07-23T11:12:14+08:00",
+        "checkpoint_id": "ckpt_5f1e51ca",
+        "created_at": "2026-08-05T17:33:20+08:00",
         "final_answer": "Done.",
-        "finished_at": "2026-07-23T11:12:14+08:00",
+        "finished_at": "2026-08-05T17:33:20+08:00",
         "last_tool": "patch_file",
-        "request_id": "req_20260723-111214-1e7349",
+        "request_id": "req_20260805-173320-50010b",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111214-70dca6",
+        "run_id": "run_20260805-173320-c67d4e",
         "status": "completed",
         "stop_reason": "final_answer_returned",
         "tool_steps": 2,
-        "updated_at": "2026-07-23T11:12:14+08:00",
+        "updated_at": "2026-08-05T17:33:20+08:00",
         "user_request": "Reject an out-of-workspace read and then apply the safe sample.txt update."
       },
-      "run_state_relpath": "path_escape_recovery\\bench_repo_patch\\.hh\\runs\\run_20260723-111214-70dca6\\run_state.json",
+      "run_state_relpath": "path_escape_recovery\\bench_repo_patch\\.hh\\runs\\run_20260805-173320-c67d4e\\run_state.json",
       "status": "pass",
       "step_budget": 2,
       "stop_reason": "final_answer_returned",
@@ -1621,13 +1997,20 @@
       "prompt": "Recover from repeated identical reads and complete the requested sample.txt edit.",
       "report": {
         "attempts": 5,
-        "checkpoint_id": "ckpt_f5abb820",
+        "checkpoint_id": "ckpt_7d4ff6b1",
         "durable_promotions": [],
         "durable_rejections": [],
         "durable_superseded": [],
         "final_answer": "Done.",
         "prompt_metadata": {
-          "budget_reductions": [],
+          "budget_reductions": [
+            {
+              "after_chars": 3600,
+              "before_chars": 4519,
+              "reason": "section_budget",
+              "section": "prefix"
+            }
+          ],
           "current_request": {
             "raw_chars": 81,
             "rendered_chars": 81,
@@ -1637,20 +2020,20 @@
           "history": {
             "collapsed_duplicate_reads": 0,
             "older_entries_count": 0,
-            "raw_chars": 635,
-            "rendered_chars": 635,
+            "raw_chars": 1389,
+            "rendered_chars": 1389,
             "reused_file_summary_count": 0,
             "summarized_tool_count": 0
           },
-          "history_chars": 623,
-          "memory_chars": 184,
+          "history_chars": 1377,
+          "memory_chars": 793,
           "prefix_changed": false,
-          "prefix_chars": 2694,
-          "prefix_hash": "b212e48a8cb26a6564751e76f0e5d424e0b9028cd752d5ea177aa6ded95c77f6",
+          "prefix_chars": 3883,
+          "prefix_hash": "4ee0d4e653d5dbbcfad761f0b08138d047f34317b41778fc42303568b3d3790c",
           "prompt_budget_chars": 12000,
-          "prompt_cache_key": "b212e48a8cb26a6564751e76f0e5d424e0b9028cd752d5ea177aa6ded95c77f6",
+          "prompt_cache_key": "4ee0d4e653d5dbbcfad761f0b08138d047f34317b41778fc42303568b3d3790c",
           "prompt_cache_supported": false,
-          "prompt_chars": 4023,
+          "prompt_chars": 5941,
           "prompt_over_budget": false,
           "recent_commits": 0,
           "reduction_order": [
@@ -1710,18 +2093,18 @@
             },
             "history": {
               "budget_chars": 5200,
-              "raw_chars": 635,
-              "rendered_chars": 635
+              "raw_chars": 1389,
+              "rendered_chars": 1389
             },
             "memory": {
               "budget_chars": 1600,
-              "raw_chars": 184,
-              "rendered_chars": 184
+              "raw_chars": 793,
+              "rendered_chars": 793
             },
             "prefix": {
               "budget_chars": 3600,
-              "raw_chars": 3045,
-              "rendered_chars": 3045
+              "raw_chars": 4519,
+              "rendered_chars": 3600
             },
             "relevant_memory": {
               "budget_chars": 1200,
@@ -1736,7 +2119,7 @@
           "workspace_changed": false,
           "workspace_chars": 532,
           "workspace_docs": 1,
-          "workspace_fingerprint": "6f130f3ab3166f93017f02c5d9d14ac076fb071c3806e1ff3a85369c21e822e9"
+          "workspace_fingerprint": "53208df2431d9e87d8048847417809dd15748e1ae70db682a4f0b0a124aba71a"
         },
         "redacted_env": {
           "secret_env_count": 3,
@@ -1746,49 +2129,123 @@
             "XF_API_KEY"
           ]
         },
-        "request_id": "req_20260723-111214-7fd5ca",
+        "request_id": "req_20260805-173321-05b258",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111214-eb281e",
+        "run_id": "run_20260805-173321-5dc7f3",
         "run_state": {
           "attempts": 5,
-          "checkpoint_id": "ckpt_f5abb820",
-          "created_at": "2026-07-23T11:12:14+08:00",
+          "checkpoint_id": "ckpt_7d4ff6b1",
+          "created_at": "2026-08-05T17:33:21+08:00",
           "final_answer": "Done.",
-          "finished_at": "2026-07-23T11:12:16+08:00",
+          "finished_at": "2026-08-05T17:33:22+08:00",
           "last_tool": "patch_file",
-          "request_id": "req_20260723-111214-7fd5ca",
+          "request_id": "req_20260805-173321-05b258",
           "resume_status": "no-checkpoint",
-          "run_id": "run_20260723-111214-eb281e",
+          "run_id": "run_20260805-173321-5dc7f3",
           "status": "completed",
           "stop_reason": "final_answer_returned",
           "tool_steps": 4,
-          "updated_at": "2026-07-23T11:12:16+08:00",
+          "updated_at": "2026-08-05T17:33:22+08:00",
           "user_request": "Recover from repeated identical reads and complete the requested sample.txt edit."
         },
         "status": "completed",
         "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-08-05T09:33:21.243754+00:00",
+          "evidence": [
+            {
+              "affected_paths": [],
+              "created_at": "2026-08-05T09:33:21.498068+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "# sample.txt\n   1: alpha\n   2: beta\n   3: gamma\n   4: placeholder",
+              "tool": "read_file"
+            },
+            {
+              "affected_paths": [],
+              "created_at": "2026-08-05T09:33:21.780977+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "# sample.txt\n   1: alpha\n   2: beta\n   3: gamma\n   4: placeholder",
+              "tool": "read_file"
+            },
+            {
+              "affected_paths": [],
+              "created_at": "2026-08-05T09:33:22.080859+00:00",
+              "error_code": "repeated_identical_call",
+              "kind": "tool",
+              "status": "rejected",
+              "summary": "error: repeated identical tool call for read_file; choose a different tool or return a final answer",
+              "tool": "read_file"
+            },
+            {
+              "affected_paths": [
+                "sample.txt"
+              ],
+              "created_at": "2026-08-05T09:33:22.381247+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "patched sample.txt",
+              "tool": "patch_file"
+            },
+            {
+              "created_at": "2026-08-05T09:33:22.645689+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [
+            {
+              "created_at": "2026-08-05T09:33:22.080869+00:00",
+              "error_code": "repeated_identical_call",
+              "fingerprint": "d93d2da34aea1aa54ff6d798898a4a7f196788ce642655762c697b0a2a8180ce",
+              "resolution": "followed by successful patch_file",
+              "resolved": true,
+              "resolved_at": "2026-08-05T09:33:22.381261+00:00",
+              "retryable": true,
+              "summary": "error: repeated identical tool call for read_file; choose a different tool or return a final answer",
+              "tool": "read_file"
+            }
+          ],
+          "goal": "Recover from repeated identical reads and complete the requested sample.txt edit.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20260805-173321-5dc7f3"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_38aaf30c1b",
+          "updated_at": "2026-08-05T09:33:22.645695+00:00"
+        },
         "tool_steps": 4
       },
-      "report_relpath": "repeated_read_recovery\\bench_repo_patch\\.hh\\runs\\run_20260723-111214-eb281e\\report.json",
-      "run_dir_relpath": "repeated_read_recovery\\bench_repo_patch\\.hh\\runs\\run_20260723-111214-eb281e",
-      "run_id": "run_20260723-111214-eb281e",
+      "report_relpath": "repeated_read_recovery\\bench_repo_patch\\.hh\\runs\\run_20260805-173321-5dc7f3\\report.json",
+      "run_dir_relpath": "repeated_read_recovery\\bench_repo_patch\\.hh\\runs\\run_20260805-173321-5dc7f3",
+      "run_id": "run_20260805-173321-5dc7f3",
       "run_state": {
         "attempts": 5,
-        "checkpoint_id": "ckpt_f5abb820",
-        "created_at": "2026-07-23T11:12:14+08:00",
+        "checkpoint_id": "ckpt_7d4ff6b1",
+        "created_at": "2026-08-05T17:33:21+08:00",
         "final_answer": "Done.",
-        "finished_at": "2026-07-23T11:12:16+08:00",
+        "finished_at": "2026-08-05T17:33:22+08:00",
         "last_tool": "patch_file",
-        "request_id": "req_20260723-111214-7fd5ca",
+        "request_id": "req_20260805-173321-05b258",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111214-eb281e",
+        "run_id": "run_20260805-173321-5dc7f3",
         "status": "completed",
         "stop_reason": "final_answer_returned",
         "tool_steps": 4,
-        "updated_at": "2026-07-23T11:12:16+08:00",
+        "updated_at": "2026-08-05T17:33:22+08:00",
         "user_request": "Recover from repeated identical reads and complete the requested sample.txt edit."
       },
-      "run_state_relpath": "repeated_read_recovery\\bench_repo_patch\\.hh\\runs\\run_20260723-111214-eb281e\\run_state.json",
+      "run_state_relpath": "repeated_read_recovery\\bench_repo_patch\\.hh\\runs\\run_20260805-173321-5dc7f3\\run_state.json",
       "status": "pass",
       "step_budget": 4,
       "stop_reason": "final_answer_returned",
@@ -1825,7 +2282,7 @@
       "prompt": "Complete the task while preserving a checkpoint when the context is reduced.",
       "report": {
         "attempts": 1,
-        "checkpoint_id": "ckpt_826d763c",
+        "checkpoint_id": "ckpt_b41576bf",
         "durable_promotions": [],
         "durable_rejections": [],
         "durable_superseded": [],
@@ -1834,13 +2291,13 @@
           "budget_reductions": [
             {
               "after_chars": 120,
-              "before_chars": 2656,
+              "before_chars": 3845,
               "reason": "section_budget",
               "section": "prefix"
             },
             {
               "after_chars": 120,
-              "before_chars": 170,
+              "before_chars": 437,
               "reason": "section_budget",
               "section": "memory"
             },
@@ -1866,12 +2323,12 @@
             "summarized_tool_count": 0
           },
           "history_chars": 3119,
-          "memory_chars": 170,
+          "memory_chars": 437,
           "prefix_changed": false,
-          "prefix_chars": 2656,
-          "prefix_hash": "a861650ce990d89fe270a36baf57abe74a5cad462a38cb081a7c96ab7f744c74",
+          "prefix_chars": 3845,
+          "prefix_hash": "1deb9e946f6f92bd1531b690600635febb0835ef6a565815b8bec09bfb93186e",
           "prompt_budget_chars": 900,
-          "prompt_cache_key": "a861650ce990d89fe270a36baf57abe74a5cad462a38cb081a7c96ab7f744c74",
+          "prompt_cache_key": "1deb9e946f6f92bd1531b690600635febb0835ef6a565815b8bec09bfb93186e",
           "prompt_cache_supported": false,
           "prompt_chars": 529,
           "prompt_over_budget": false,
@@ -1930,12 +2387,12 @@
             },
             "memory": {
               "budget_chars": 120,
-              "raw_chars": 170,
+              "raw_chars": 437,
               "rendered_chars": 120
             },
             "prefix": {
               "budget_chars": 120,
-              "raw_chars": 2656,
+              "raw_chars": 3845,
               "rendered_chars": 120
             },
             "relevant_memory": {
@@ -1951,7 +2408,7 @@
           "workspace_changed": false,
           "workspace_chars": 608,
           "workspace_docs": 1,
-          "workspace_fingerprint": "54e5dc7d309d1f1c580fc3e2e7eed71745532984395a7ac0d1ade3f4c9ee0398"
+          "workspace_fingerprint": "fe4f6779a6c63c3316243d9fb4332caad77eeb8f9e29b5eb66c57cd8c9be177c"
         },
         "redacted_env": {
           "secret_env_count": 3,
@@ -1961,49 +2418,73 @@
             "XF_API_KEY"
           ]
         },
-        "request_id": "req_20260723-111216-0046bc",
+        "request_id": "req_20260805-173322-16feff",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111216-f59cd3",
+        "run_id": "run_20260805-173322-b2c246",
         "run_state": {
           "attempts": 1,
-          "checkpoint_id": "ckpt_826d763c",
-          "created_at": "2026-07-23T11:12:16+08:00",
+          "checkpoint_id": "ckpt_b41576bf",
+          "created_at": "2026-08-05T17:33:22+08:00",
           "final_answer": "Done.",
-          "finished_at": "2026-07-23T11:12:16+08:00",
+          "finished_at": "2026-08-05T17:33:23+08:00",
           "last_tool": "",
-          "request_id": "req_20260723-111216-0046bc",
+          "request_id": "req_20260805-173322-16feff",
           "resume_status": "no-checkpoint",
-          "run_id": "run_20260723-111216-f59cd3",
+          "run_id": "run_20260805-173322-b2c246",
           "status": "completed",
           "stop_reason": "final_answer_returned",
           "tool_steps": 0,
-          "updated_at": "2026-07-23T11:12:16+08:00",
+          "updated_at": "2026-08-05T17:33:23+08:00",
           "user_request": "Complete the task while preserving a checkpoint when the context is reduced."
         },
         "status": "completed",
         "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-08-05T09:33:22.986858+00:00",
+          "evidence": [
+            {
+              "created_at": "2026-08-05T09:33:23.226167+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [],
+          "goal": "Complete the task while preserving a checkpoint when the context is reduced.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20260805-173322-b2c246"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_673a53f287",
+          "updated_at": "2026-08-05T09:33:23.226172+00:00"
+        },
         "tool_steps": 0
       },
-      "report_relpath": "context_reduction_checkpoint\\bench_repo_readme\\.hh\\runs\\run_20260723-111216-f59cd3\\report.json",
-      "run_dir_relpath": "context_reduction_checkpoint\\bench_repo_readme\\.hh\\runs\\run_20260723-111216-f59cd3",
-      "run_id": "run_20260723-111216-f59cd3",
+      "report_relpath": "context_reduction_checkpoint\\bench_repo_readme\\.hh\\runs\\run_20260805-173322-b2c246\\report.json",
+      "run_dir_relpath": "context_reduction_checkpoint\\bench_repo_readme\\.hh\\runs\\run_20260805-173322-b2c246",
+      "run_id": "run_20260805-173322-b2c246",
       "run_state": {
         "attempts": 1,
-        "checkpoint_id": "ckpt_826d763c",
-        "created_at": "2026-07-23T11:12:16+08:00",
+        "checkpoint_id": "ckpt_b41576bf",
+        "created_at": "2026-08-05T17:33:22+08:00",
         "final_answer": "Done.",
-        "finished_at": "2026-07-23T11:12:16+08:00",
+        "finished_at": "2026-08-05T17:33:23+08:00",
         "last_tool": "",
-        "request_id": "req_20260723-111216-0046bc",
+        "request_id": "req_20260805-173322-16feff",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111216-f59cd3",
+        "run_id": "run_20260805-173322-b2c246",
         "status": "completed",
         "stop_reason": "final_answer_returned",
         "tool_steps": 0,
-        "updated_at": "2026-07-23T11:12:16+08:00",
+        "updated_at": "2026-08-05T17:33:23+08:00",
         "user_request": "Complete the task while preserving a checkpoint when the context is reduced."
       },
-      "run_state_relpath": "context_reduction_checkpoint\\bench_repo_readme\\.hh\\runs\\run_20260723-111216-f59cd3\\run_state.json",
+      "run_state_relpath": "context_reduction_checkpoint\\bench_repo_readme\\.hh\\runs\\run_20260805-173322-b2c246\\run_state.json",
       "status": "pass",
       "step_budget": 1,
       "stop_reason": "final_answer_returned",
@@ -2040,13 +2521,20 @@
       "prompt": "Resume after a key file changed and re-anchor the stale checkpoint.",
       "report": {
         "attempts": 1,
-        "checkpoint_id": "ckpt_cd75d74f",
+        "checkpoint_id": "ckpt_d0681dd8",
         "durable_promotions": [],
         "durable_rejections": [],
         "durable_superseded": [],
         "final_answer": "Done.",
         "prompt_metadata": {
-          "budget_reductions": [],
+          "budget_reductions": [
+            {
+              "after_chars": 3600,
+              "before_chars": 4018,
+              "reason": "section_budget",
+              "section": "prefix"
+            }
+          ],
           "current_request": {
             "raw_chars": 67,
             "rendered_chars": 67,
@@ -2062,14 +2550,14 @@
             "summarized_tool_count": 0
           },
           "history_chars": 74,
-          "memory_chars": 170,
+          "memory_chars": 428,
           "prefix_changed": false,
-          "prefix_chars": 2586,
-          "prefix_hash": "bdb3b3b42701000a3f9d759b0763a8057bfdf3d30d4db82cc18660f08791ec90",
+          "prefix_chars": 3775,
+          "prefix_hash": "04871f109a05b41327ba66b90df263464235af1a9917a94f823e9f6de2487ab3",
           "prompt_budget_chars": 12000,
-          "prompt_cache_key": "bdb3b3b42701000a3f9d759b0763a8057bfdf3d30d4db82cc18660f08791ec90",
+          "prompt_cache_key": "04871f109a05b41327ba66b90df263464235af1a9917a94f823e9f6de2487ab3",
           "prompt_cache_supported": false,
-          "prompt_chars": 3205,
+          "prompt_chars": 4234,
           "prompt_over_budget": false,
           "recent_commits": 0,
           "reduction_order": [
@@ -2126,13 +2614,13 @@
             },
             "memory": {
               "budget_chars": 1600,
-              "raw_chars": 170,
-              "rendered_chars": 170
+              "raw_chars": 428,
+              "rendered_chars": 428
             },
             "prefix": {
               "budget_chars": 3600,
-              "raw_chars": 2829,
-              "rendered_chars": 2829
+              "raw_chars": 4018,
+              "rendered_chars": 3600
             },
             "relevant_memory": {
               "budget_chars": 1200,
@@ -2149,7 +2637,7 @@
           "workspace_changed": false,
           "workspace_chars": 538,
           "workspace_docs": 1,
-          "workspace_fingerprint": "9f942ffdace43d3cb40a6481fd6b7ddb0576994c93747fbf796aab3dbc6c1ff5"
+          "workspace_fingerprint": "2eb664f30b4e4039b0ee0c84a6488000be5aa9ffb9472046db9c30f029be21c7"
         },
         "redacted_env": {
           "secret_env_count": 3,
@@ -2159,49 +2647,73 @@
             "XF_API_KEY"
           ]
         },
-        "request_id": "req_20260723-111217-b36124",
+        "request_id": "req_20260805-173323-40da50",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111217-9f8231",
+        "run_id": "run_20260805-173323-a4d2a1",
         "run_state": {
           "attempts": 1,
-          "checkpoint_id": "ckpt_cd75d74f",
-          "created_at": "2026-07-23T11:12:17+08:00",
+          "checkpoint_id": "ckpt_d0681dd8",
+          "created_at": "2026-08-05T17:33:23+08:00",
           "final_answer": "Done.",
-          "finished_at": "2026-07-23T11:12:17+08:00",
+          "finished_at": "2026-08-05T17:33:23+08:00",
           "last_tool": "",
-          "request_id": "req_20260723-111217-b36124",
+          "request_id": "req_20260805-173323-40da50",
           "resume_status": "no-checkpoint",
-          "run_id": "run_20260723-111217-9f8231",
+          "run_id": "run_20260805-173323-a4d2a1",
           "status": "completed",
           "stop_reason": "final_answer_returned",
           "tool_steps": 0,
-          "updated_at": "2026-07-23T11:12:17+08:00",
+          "updated_at": "2026-08-05T17:33:23+08:00",
           "user_request": "Resume after a key file changed and re-anchor the stale checkpoint."
         },
         "status": "completed",
         "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-08-05T09:33:23.573962+00:00",
+          "evidence": [
+            {
+              "created_at": "2026-08-05T09:33:23.824592+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [],
+          "goal": "Resume after a key file changed and re-anchor the stale checkpoint.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20260805-173323-a4d2a1"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_9f71785c38",
+          "updated_at": "2026-08-05T09:33:23.824596+00:00"
+        },
         "tool_steps": 0
       },
-      "report_relpath": "freshness_reanchor_resume\\bench_repo_patch\\.hh\\runs\\run_20260723-111217-9f8231\\report.json",
-      "run_dir_relpath": "freshness_reanchor_resume\\bench_repo_patch\\.hh\\runs\\run_20260723-111217-9f8231",
-      "run_id": "run_20260723-111217-9f8231",
+      "report_relpath": "freshness_reanchor_resume\\bench_repo_patch\\.hh\\runs\\run_20260805-173323-a4d2a1\\report.json",
+      "run_dir_relpath": "freshness_reanchor_resume\\bench_repo_patch\\.hh\\runs\\run_20260805-173323-a4d2a1",
+      "run_id": "run_20260805-173323-a4d2a1",
       "run_state": {
         "attempts": 1,
-        "checkpoint_id": "ckpt_cd75d74f",
-        "created_at": "2026-07-23T11:12:17+08:00",
+        "checkpoint_id": "ckpt_d0681dd8",
+        "created_at": "2026-08-05T17:33:23+08:00",
         "final_answer": "Done.",
-        "finished_at": "2026-07-23T11:12:17+08:00",
+        "finished_at": "2026-08-05T17:33:23+08:00",
         "last_tool": "",
-        "request_id": "req_20260723-111217-b36124",
+        "request_id": "req_20260805-173323-40da50",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111217-9f8231",
+        "run_id": "run_20260805-173323-a4d2a1",
         "status": "completed",
         "stop_reason": "final_answer_returned",
         "tool_steps": 0,
-        "updated_at": "2026-07-23T11:12:17+08:00",
+        "updated_at": "2026-08-05T17:33:23+08:00",
         "user_request": "Resume after a key file changed and re-anchor the stale checkpoint."
       },
-      "run_state_relpath": "freshness_reanchor_resume\\bench_repo_patch\\.hh\\runs\\run_20260723-111217-9f8231\\run_state.json",
+      "run_state_relpath": "freshness_reanchor_resume\\bench_repo_patch\\.hh\\runs\\run_20260805-173323-a4d2a1\\run_state.json",
       "status": "pass",
       "step_budget": 1,
       "stop_reason": "final_answer_returned",
@@ -2238,13 +2750,20 @@
       "prompt": "Resume after workspace identity drift and record the mismatch.",
       "report": {
         "attempts": 1,
-        "checkpoint_id": "ckpt_edc9d79f",
+        "checkpoint_id": "ckpt_ea9c17a2",
         "durable_promotions": [],
         "durable_rejections": [],
         "durable_superseded": [],
         "final_answer": "Done.",
         "prompt_metadata": {
-          "budget_reductions": [],
+          "budget_reductions": [
+            {
+              "after_chars": 3600,
+              "before_chars": 4028,
+              "reason": "section_budget",
+              "section": "prefix"
+            }
+          ],
           "current_request": {
             "raw_chars": 62,
             "rendered_chars": 62,
@@ -2260,14 +2779,14 @@
             "summarized_tool_count": 0
           },
           "history_chars": 69,
-          "memory_chars": 156,
+          "memory_chars": 409,
           "prefix_changed": false,
-          "prefix_chars": 2586,
-          "prefix_hash": "1efdc254263773def1cc3ccc9fbf71aa6c519880348f527cbcb1ee47dd8907e5",
+          "prefix_chars": 3775,
+          "prefix_hash": "84079e1aa67b8dbcb13e8976a4194bf9ee85a8ab37b24ec647d29b5f3b9b0879",
           "prompt_budget_chars": 12000,
-          "prompt_cache_key": "1efdc254263773def1cc3ccc9fbf71aa6c519880348f527cbcb1ee47dd8907e5",
+          "prompt_cache_key": "84079e1aa67b8dbcb13e8976a4194bf9ee85a8ab37b24ec647d29b5f3b9b0879",
           "prompt_cache_supported": false,
-          "prompt_chars": 3191,
+          "prompt_chars": 4205,
           "prompt_over_budget": false,
           "recent_commits": 0,
           "reduction_order": [
@@ -2326,13 +2845,13 @@
             },
             "memory": {
               "budget_chars": 1600,
-              "raw_chars": 156,
-              "rendered_chars": 156
+              "raw_chars": 409,
+              "rendered_chars": 409
             },
             "prefix": {
               "budget_chars": 3600,
-              "raw_chars": 2839,
-              "rendered_chars": 2839
+              "raw_chars": 4028,
+              "rendered_chars": 3600
             },
             "relevant_memory": {
               "budget_chars": 1200,
@@ -2347,7 +2866,7 @@
           "workspace_changed": false,
           "workspace_chars": 538,
           "workspace_docs": 1,
-          "workspace_fingerprint": "2c4f775f44147dd14fdb4e9676df9330c47fafae35178d4b7717c5e5ba7e4006"
+          "workspace_fingerprint": "53d80ca4dc30008c1250d463cda74a3badfb75cc7ddc6c261c1b19c8fd04325f"
         },
         "redacted_env": {
           "secret_env_count": 3,
@@ -2357,49 +2876,73 @@
             "XF_API_KEY"
           ]
         },
-        "request_id": "req_20260723-111217-e5a813",
+        "request_id": "req_20260805-173324-62be3c",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111217-c59266",
+        "run_id": "run_20260805-173324-93df93",
         "run_state": {
           "attempts": 1,
-          "checkpoint_id": "ckpt_edc9d79f",
-          "created_at": "2026-07-23T11:12:17+08:00",
+          "checkpoint_id": "ckpt_ea9c17a2",
+          "created_at": "2026-08-05T17:33:24+08:00",
           "final_answer": "Done.",
-          "finished_at": "2026-07-23T11:12:17+08:00",
+          "finished_at": "2026-08-05T17:33:24+08:00",
           "last_tool": "",
-          "request_id": "req_20260723-111217-e5a813",
+          "request_id": "req_20260805-173324-62be3c",
           "resume_status": "no-checkpoint",
-          "run_id": "run_20260723-111217-c59266",
+          "run_id": "run_20260805-173324-93df93",
           "status": "completed",
           "stop_reason": "final_answer_returned",
           "tool_steps": 0,
-          "updated_at": "2026-07-23T11:12:17+08:00",
+          "updated_at": "2026-08-05T17:33:24+08:00",
           "user_request": "Resume after workspace identity drift and record the mismatch."
         },
         "status": "completed",
         "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-08-05T09:33:24.179259+00:00",
+          "evidence": [
+            {
+              "created_at": "2026-08-05T09:33:24.452534+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [],
+          "goal": "Resume after workspace identity drift and record the mismatch.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20260805-173324-93df93"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_3bbaa21ff8",
+          "updated_at": "2026-08-05T09:33:24.452539+00:00"
+        },
         "tool_steps": 0
       },
-      "report_relpath": "workspace_mismatch_resume\\bench_repo_patch\\.hh\\runs\\run_20260723-111217-c59266\\report.json",
-      "run_dir_relpath": "workspace_mismatch_resume\\bench_repo_patch\\.hh\\runs\\run_20260723-111217-c59266",
-      "run_id": "run_20260723-111217-c59266",
+      "report_relpath": "workspace_mismatch_resume\\bench_repo_patch\\.hh\\runs\\run_20260805-173324-93df93\\report.json",
+      "run_dir_relpath": "workspace_mismatch_resume\\bench_repo_patch\\.hh\\runs\\run_20260805-173324-93df93",
+      "run_id": "run_20260805-173324-93df93",
       "run_state": {
         "attempts": 1,
-        "checkpoint_id": "ckpt_edc9d79f",
-        "created_at": "2026-07-23T11:12:17+08:00",
+        "checkpoint_id": "ckpt_ea9c17a2",
+        "created_at": "2026-08-05T17:33:24+08:00",
         "final_answer": "Done.",
-        "finished_at": "2026-07-23T11:12:17+08:00",
+        "finished_at": "2026-08-05T17:33:24+08:00",
         "last_tool": "",
-        "request_id": "req_20260723-111217-e5a813",
+        "request_id": "req_20260805-173324-62be3c",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111217-c59266",
+        "run_id": "run_20260805-173324-93df93",
         "status": "completed",
         "stop_reason": "final_answer_returned",
         "tool_steps": 0,
-        "updated_at": "2026-07-23T11:12:17+08:00",
+        "updated_at": "2026-08-05T17:33:24+08:00",
         "user_request": "Resume after workspace identity drift and record the mismatch."
       },
-      "run_state_relpath": "workspace_mismatch_resume\\bench_repo_patch\\.hh\\runs\\run_20260723-111217-c59266\\run_state.json",
+      "run_state_relpath": "workspace_mismatch_resume\\bench_repo_patch\\.hh\\runs\\run_20260805-173324-93df93\\run_state.json",
       "status": "pass",
       "step_budget": 1,
       "stop_reason": "final_answer_returned",
@@ -2436,7 +2979,7 @@
       "prompt": "Record stable project conventions from the final answer.",
       "report": {
         "attempts": 1,
-        "checkpoint_id": "ckpt_1c6b0898",
+        "checkpoint_id": "ckpt_2e11f276",
         "durable_promotions": [
           "project-conventions: Preserve benchmark regression artifacts under artifacts/.",
           "key-decisions: Keep harness regression deterministic and reproducible."
@@ -2445,7 +2988,14 @@
         "durable_superseded": [],
         "final_answer": "Project convention: Preserve benchmark regression artifacts under artifacts/.\nDecision: Keep harness regression deterministic and reproducible.",
         "prompt_metadata": {
-          "budget_reductions": [],
+          "budget_reductions": [
+            {
+              "after_chars": 3600,
+              "before_chars": 3837,
+              "reason": "section_budget",
+              "section": "prefix"
+            }
+          ],
           "current_request": {
             "raw_chars": 56,
             "rendered_chars": 56,
@@ -2461,14 +3011,14 @@
             "summarized_tool_count": 0
           },
           "history_chars": 63,
-          "memory_chars": 150,
+          "memory_chars": 397,
           "prefix_changed": false,
-          "prefix_chars": 2648,
-          "prefix_hash": "d893fe2a1356b18d7ca30cb3eacbe8c4737ba28cfb7a932be27fec8296c86433",
+          "prefix_chars": 3837,
+          "prefix_hash": "1c21245ba0ab78c7892500f942b747e2f24e903fe1c46f754a561b4f58b6534b",
           "prompt_budget_chars": 12000,
-          "prompt_cache_key": "d893fe2a1356b18d7ca30cb3eacbe8c4737ba28cfb7a932be27fec8296c86433",
+          "prompt_cache_key": "1c21245ba0ab78c7892500f942b747e2f24e903fe1c46f754a561b4f58b6534b",
           "prompt_cache_supported": false,
-          "prompt_chars": 2982,
+          "prompt_chars": 4181,
           "prompt_over_budget": false,
           "recent_commits": 0,
           "reduction_order": [
@@ -2525,13 +3075,13 @@
             },
             "memory": {
               "budget_chars": 1600,
-              "raw_chars": 150,
-              "rendered_chars": 150
+              "raw_chars": 397,
+              "rendered_chars": 397
             },
             "prefix": {
               "budget_chars": 3600,
-              "raw_chars": 2648,
-              "rendered_chars": 2648
+              "raw_chars": 3837,
+              "rendered_chars": 3600
             },
             "relevant_memory": {
               "budget_chars": 1200,
@@ -2546,7 +3096,7 @@
           "workspace_changed": false,
           "workspace_chars": 600,
           "workspace_docs": 1,
-          "workspace_fingerprint": "9a3b8aa81f44a5f3666c57c65bf79ddbfb312acd2c80b0e1863f88878138b77c"
+          "workspace_fingerprint": "e2f41ee6256fde2bae2ba6d0e1a7ba82a6756c7a9864062e47c10f95005cfd86"
         },
         "redacted_env": {
           "secret_env_count": 3,
@@ -2556,49 +3106,73 @@
             "XF_API_KEY"
           ]
         },
-        "request_id": "req_20260723-111218-372465",
+        "request_id": "req_20260805-173324-66bcba",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111218-7901b4",
+        "run_id": "run_20260805-173324-06ff96",
         "run_state": {
           "attempts": 1,
-          "checkpoint_id": "ckpt_1c6b0898",
-          "created_at": "2026-07-23T11:12:18+08:00",
+          "checkpoint_id": "ckpt_2e11f276",
+          "created_at": "2026-08-05T17:33:24+08:00",
           "final_answer": "Project convention: Preserve benchmark regression artifacts under artifacts/.\nDecision: Keep harness regression deterministic and reproducible.",
-          "finished_at": "2026-07-23T11:12:18+08:00",
+          "finished_at": "2026-08-05T17:33:25+08:00",
           "last_tool": "",
-          "request_id": "req_20260723-111218-372465",
+          "request_id": "req_20260805-173324-66bcba",
           "resume_status": "no-checkpoint",
-          "run_id": "run_20260723-111218-7901b4",
+          "run_id": "run_20260805-173324-06ff96",
           "status": "completed",
           "stop_reason": "final_answer_returned",
           "tool_steps": 0,
-          "updated_at": "2026-07-23T11:12:18+08:00",
+          "updated_at": "2026-08-05T17:33:25+08:00",
           "user_request": "Record stable project conventions from the final answer."
         },
         "status": "completed",
         "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-08-05T09:33:24.781427+00:00",
+          "evidence": [
+            {
+              "created_at": "2026-08-05T09:33:25.039421+00:00",
+              "kind": "delivery",
+              "summary": "Project convention: Preserve benchmark regression artifacts under artifacts/.\nDecision: Keep harness regression deterministic and reproducible."
+            }
+          ],
+          "failures": [],
+          "goal": "Record stable project conventions from the final answer.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20260805-173324-06ff96"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_f84703ff91",
+          "updated_at": "2026-08-05T09:33:25.039429+00:00"
+        },
         "tool_steps": 0
       },
-      "report_relpath": "durable_promotion_accept\\bench_repo_readme\\.hh\\runs\\run_20260723-111218-7901b4\\report.json",
-      "run_dir_relpath": "durable_promotion_accept\\bench_repo_readme\\.hh\\runs\\run_20260723-111218-7901b4",
-      "run_id": "run_20260723-111218-7901b4",
+      "report_relpath": "durable_promotion_accept\\bench_repo_readme\\.hh\\runs\\run_20260805-173324-06ff96\\report.json",
+      "run_dir_relpath": "durable_promotion_accept\\bench_repo_readme\\.hh\\runs\\run_20260805-173324-06ff96",
+      "run_id": "run_20260805-173324-06ff96",
       "run_state": {
         "attempts": 1,
-        "checkpoint_id": "ckpt_1c6b0898",
-        "created_at": "2026-07-23T11:12:18+08:00",
+        "checkpoint_id": "ckpt_2e11f276",
+        "created_at": "2026-08-05T17:33:24+08:00",
         "final_answer": "Project convention: Preserve benchmark regression artifacts under artifacts/.\nDecision: Keep harness regression deterministic and reproducible.",
-        "finished_at": "2026-07-23T11:12:18+08:00",
+        "finished_at": "2026-08-05T17:33:25+08:00",
         "last_tool": "",
-        "request_id": "req_20260723-111218-372465",
+        "request_id": "req_20260805-173324-66bcba",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111218-7901b4",
+        "run_id": "run_20260805-173324-06ff96",
         "status": "completed",
         "stop_reason": "final_answer_returned",
         "tool_steps": 0,
-        "updated_at": "2026-07-23T11:12:18+08:00",
+        "updated_at": "2026-08-05T17:33:25+08:00",
         "user_request": "Record stable project conventions from the final answer."
       },
-      "run_state_relpath": "durable_promotion_accept\\bench_repo_readme\\.hh\\runs\\run_20260723-111218-7901b4\\run_state.json",
+      "run_state_relpath": "durable_promotion_accept\\bench_repo_readme\\.hh\\runs\\run_20260805-173324-06ff96\\run_state.json",
       "status": "pass",
       "step_budget": 1,
       "stop_reason": "final_answer_returned",
@@ -2635,13 +3209,20 @@
       "prompt": "Keep only safe durable project facts from the final answer.",
       "report": {
         "attempts": 1,
-        "checkpoint_id": "ckpt_782431fb",
+        "checkpoint_id": "ckpt_aef410ee",
         "durable_promotions": [],
         "durable_rejections": [],
         "durable_superseded": [],
         "final_answer": "Project convention: Keep verifier outcomes stable across reruns.\nDependency: API key is sk-benchmark-secret.\nDecision: Current goal is debug the harness.",
         "prompt_metadata": {
-          "budget_reductions": [],
+          "budget_reductions": [
+            {
+              "after_chars": 3600,
+              "before_chars": 3837,
+              "reason": "section_budget",
+              "section": "prefix"
+            }
+          ],
           "current_request": {
             "raw_chars": 59,
             "rendered_chars": 59,
@@ -2657,14 +3238,14 @@
             "summarized_tool_count": 0
           },
           "history_chars": 66,
-          "memory_chars": 153,
+          "memory_chars": 403,
           "prefix_changed": false,
-          "prefix_chars": 2648,
-          "prefix_hash": "59bf482d6f43158d7778d1122c79096e86e5ca10b3e0be08992787be4e4f018b",
+          "prefix_chars": 3837,
+          "prefix_hash": "9db2c1ddb72b7cef89cf597e5dae45d9d0b944636f079429547538cbaaad986e",
           "prompt_budget_chars": 12000,
-          "prompt_cache_key": "59bf482d6f43158d7778d1122c79096e86e5ca10b3e0be08992787be4e4f018b",
+          "prompt_cache_key": "9db2c1ddb72b7cef89cf597e5dae45d9d0b944636f079429547538cbaaad986e",
           "prompt_cache_supported": false,
-          "prompt_chars": 2991,
+          "prompt_chars": 4193,
           "prompt_over_budget": false,
           "recent_commits": 0,
           "reduction_order": [
@@ -2721,13 +3302,13 @@
             },
             "memory": {
               "budget_chars": 1600,
-              "raw_chars": 153,
-              "rendered_chars": 153
+              "raw_chars": 403,
+              "rendered_chars": 403
             },
             "prefix": {
               "budget_chars": 3600,
-              "raw_chars": 2648,
-              "rendered_chars": 2648
+              "raw_chars": 3837,
+              "rendered_chars": 3600
             },
             "relevant_memory": {
               "budget_chars": 1200,
@@ -2742,7 +3323,7 @@
           "workspace_changed": false,
           "workspace_chars": 600,
           "workspace_docs": 1,
-          "workspace_fingerprint": "3705486576b230ba666b9cd3febbf6871eb6b1604b342482c971145179929e06"
+          "workspace_fingerprint": "a7c3cde9973993bd2917f1d96b5e094bc28cad9d32b02f861017e67dd177a88c"
         },
         "redacted_env": {
           "secret_env_count": 3,
@@ -2752,49 +3333,73 @@
             "XF_API_KEY"
           ]
         },
-        "request_id": "req_20260723-111219-773117",
+        "request_id": "req_20260805-173325-290b97",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111219-b5ab64",
+        "run_id": "run_20260805-173325-e2690f",
         "run_state": {
           "attempts": 1,
-          "checkpoint_id": "ckpt_782431fb",
-          "created_at": "2026-07-23T11:12:19+08:00",
+          "checkpoint_id": "ckpt_aef410ee",
+          "created_at": "2026-08-05T17:33:25+08:00",
           "final_answer": "Project convention: Keep verifier outcomes stable across reruns.\nDependency: API key is sk-benchmark-secret.\nDecision: Current goal is debug the harness.",
-          "finished_at": "2026-07-23T11:12:19+08:00",
+          "finished_at": "2026-08-05T17:33:25+08:00",
           "last_tool": "",
-          "request_id": "req_20260723-111219-773117",
+          "request_id": "req_20260805-173325-290b97",
           "resume_status": "no-checkpoint",
-          "run_id": "run_20260723-111219-b5ab64",
+          "run_id": "run_20260805-173325-e2690f",
           "status": "completed",
           "stop_reason": "final_answer_returned",
           "tool_steps": 0,
-          "updated_at": "2026-07-23T11:12:19+08:00",
+          "updated_at": "2026-08-05T17:33:25+08:00",
           "user_request": "Keep only safe durable project facts from the final answer."
         },
         "status": "completed",
         "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-08-05T09:33:25.391170+00:00",
+          "evidence": [
+            {
+              "created_at": "2026-08-05T09:33:25.670214+00:00",
+              "kind": "delivery",
+              "summary": "Project convention: Keep verifier outcomes stable across reruns.\nDependency: API key is sk-benchmark-secret.\nDecision: Current goal is debug the harness."
+            }
+          ],
+          "failures": [],
+          "goal": "Keep only safe durable project facts from the final answer.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20260805-173325-e2690f"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_09ab2b3b5e",
+          "updated_at": "2026-08-05T09:33:25.670218+00:00"
+        },
         "tool_steps": 0
       },
-      "report_relpath": "durable_promotion_reject\\bench_repo_readme\\.hh\\runs\\run_20260723-111219-b5ab64\\report.json",
-      "run_dir_relpath": "durable_promotion_reject\\bench_repo_readme\\.hh\\runs\\run_20260723-111219-b5ab64",
-      "run_id": "run_20260723-111219-b5ab64",
+      "report_relpath": "durable_promotion_reject\\bench_repo_readme\\.hh\\runs\\run_20260805-173325-e2690f\\report.json",
+      "run_dir_relpath": "durable_promotion_reject\\bench_repo_readme\\.hh\\runs\\run_20260805-173325-e2690f",
+      "run_id": "run_20260805-173325-e2690f",
       "run_state": {
         "attempts": 1,
-        "checkpoint_id": "ckpt_782431fb",
-        "created_at": "2026-07-23T11:12:19+08:00",
+        "checkpoint_id": "ckpt_aef410ee",
+        "created_at": "2026-08-05T17:33:25+08:00",
         "final_answer": "Project convention: Keep verifier outcomes stable across reruns.\nDependency: API key is sk-benchmark-secret.\nDecision: Current goal is debug the harness.",
-        "finished_at": "2026-07-23T11:12:19+08:00",
+        "finished_at": "2026-08-05T17:33:25+08:00",
         "last_tool": "",
-        "request_id": "req_20260723-111219-773117",
+        "request_id": "req_20260805-173325-290b97",
         "resume_status": "no-checkpoint",
-        "run_id": "run_20260723-111219-b5ab64",
+        "run_id": "run_20260805-173325-e2690f",
         "status": "completed",
         "stop_reason": "final_answer_returned",
         "tool_steps": 0,
-        "updated_at": "2026-07-23T11:12:19+08:00",
+        "updated_at": "2026-08-05T17:33:25+08:00",
         "user_request": "Keep only safe durable project facts from the final answer."
       },
-      "run_state_relpath": "durable_promotion_reject\\bench_repo_readme\\.hh\\runs\\run_20260723-111219-b5ab64\\run_state.json",
+      "run_state_relpath": "durable_promotion_reject\\bench_repo_readme\\.hh\\runs\\run_20260805-173325-e2690f\\run_state.json",
       "status": "pass",
       "step_budget": 1,
       "stop_reason": "final_answer_returned",
@@ -2808,8 +3413,8 @@
     }
   ],
   "runtime": {
-    "branch": "master",
-    "commit_sha": ""
+    "branch": "main",
+    "commit_sha": "2a2299ef80e60d8887459d261c96d1f397d0de86"
   },
   "schema_version": 1,
   "summary": {

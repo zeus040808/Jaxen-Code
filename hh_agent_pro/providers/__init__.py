@@ -7,6 +7,7 @@ from .clients import (
     OpenAIChatCompatibleModelClient,
     OpenAICompatibleModelClient,
 )
+from .codex_cli import CodexCliModelClient
 
 __all__ = [
     "AnthropicCompatibleModelClient",
@@ -14,4 +15,5 @@ __all__ = [
     "OllamaModelClient",
     "OpenAIChatCompatibleModelClient",
     "OpenAICompatibleModelClient",
+    "CodexCliModelClient",
 ]
