@@ -2,10 +2,12 @@ import json
 from pathlib import Path
 
 from hh_agent_pro.evaluation.enterprise_report_v2 import (
+    annotate_disagreements_from_niceeval_ndjson,
     build_enterprise_summary,
     load_business_feedback,
     select_human_reviews,
     supplement_trials_from_junit,
+    supplement_trials_from_niceeval_ndjson,
     validate_trial_rows,
     write_enterprise_outputs,
 )
@@ -128,6 +130,47 @@ def test_junit_supplements_only_missing_sidecar_attempts(tmp_path):
     assert len(rows) == 1
     assert rows[0]["trial_status"] == "infra_error"
     assert rows[0]["latency_ms"] == 1500
+
+
+def test_killed_run_recovers_provider_errors_from_ndjson(tmp_path):
+    task = TASKS[0]
+    ndjson = tmp_path / "niceeval.ndjson"
+    ndjson.write_text(
+        json.dumps(
+            {
+                "event": "error",
+                "locator": "@attempt1",
+                "evalId": f"enterprise/{task['id']}",
+                "reason": "HH provider/runtime infrastructure error: HTTP 400 reasoning_content missing",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    rows = supplement_trials_from_niceeval_ndjson(
+        [], ndjson, TASKS, "nightly", "deepseek", "deepseek-v4-pro", "test-run"
+    )
+
+    assert len(rows) == 1
+    assert rows[0]["trial_status"] == "infra_error"
+    assert rows[0]["valid_capability_trial"] is False
+
+
+def test_niceeval_disagreement_is_added_without_overwriting_python_result(tmp_path):
+    rows = _rows()
+    task_id = rows[0]["task_id"]
+    ndjson = tmp_path / "niceeval.ndjson"
+    ndjson.write_text(
+        json.dumps({"event": "failure", "evalId": f"enterprise/{task_id}"}) + "\n",
+        encoding="utf-8",
+    )
+
+    annotated = annotate_disagreements_from_niceeval_ndjson(rows, ndjson)
+
+    assert annotated[0]["automated_gate_pass"] is True
+    assert annotated[0]["grader_disagreement"] is True
+    assert annotated[0]["valid_alternative_candidate"] is True
 
 
 def test_human_review_is_additive_and_outputs_are_written(tmp_path):

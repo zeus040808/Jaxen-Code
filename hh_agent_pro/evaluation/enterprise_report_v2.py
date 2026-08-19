@@ -53,16 +53,17 @@ def _junit_task_id(name):
     return head.rsplit("/", 1)[-1]
 
 
-def _junit_failure_status(element):
-    text = " ".join(
-        str(value or "")
-        for value in (element.get("message"), element.get("type"), element.text)
-    ).casefold()
+def _failure_status(text, default="functional_failed"):
+    text = str(text or "").casefold()
     if "unsafe" in text or "safety_violation" in text:
         return "unsafe"
+    if "grader_error" in text or "hh hard grader failed" in text:
+        return "grader_error"
     if any(
         marker in text
         for marker in (
+            "hh provider/runtime infrastructure error",
+            "http 400",
             "http 402",
             "insufficient balance",
             "connection refused",
@@ -73,9 +74,15 @@ def _junit_failure_status(element):
         )
     ):
         return "infra_error"
-    if "grader_error" in text or "hh hard grader failed" in text:
-        return "grader_error"
-    return "functional_failed"
+    return default
+
+
+def _junit_failure_status(element):
+    text = " ".join(
+        str(value or "")
+        for value in (element.get("message"), element.get("type"), element.text)
+    )
+    return _failure_status(text, "infra_error" if element.tag == "error" else "functional_failed")
 
 
 def supplement_trials_from_junit(rows, junit_path, tasks, profile, provider, model, run_key):
@@ -138,6 +145,100 @@ def supplement_trials_from_junit(rows, junit_path, tasks, profile, provider, mod
                 "source": "niceeval-junit-supplement",
             }
         )
+    return rows
+
+
+def supplement_trials_from_niceeval_ndjson(rows, ndjson_path, tasks, profile, provider, model, run_key):
+    """Recover pre-grader errors when a killed invocation produced no JUnit."""
+
+    rows = list(rows)
+    task_map = {task["id"]: task for task in tasks}
+    existing = {str(row.get("record_id")) for row in rows}
+    for line in Path(ndjson_path).read_text(encoding="utf-8").splitlines():
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if event.get("event") != "error":
+            continue
+        task_id = _junit_task_id(event.get("evalId", ""))
+        if task_id not in task_map:
+            continue
+        locator = str(event.get("locator") or hashlib.sha256(line.encode("utf-8")).hexdigest()[:16])
+        record_id = f"ndjson:{locator}"
+        if record_id in existing:
+            continue
+        task = task_map[task_id]
+        reason = str(event.get("reason", ""))
+        status = _failure_status(reason, "infra_error")
+        rows.append(
+            {
+                "schema_version": 2,
+                "record_kind": "hh-agent-trial-result-v2",
+                "record_id": record_id,
+                "recorded_at": "",
+                "run_key": run_key,
+                "profile": profile,
+                "provider": provider,
+                "model": model,
+                "task_id": task_id,
+                "task_version": task["version"],
+                "fixture_digest": task["fixture_digest"],
+                "suite": task["suite"],
+                "suite_type": task["suite_type"],
+                "eval_unit": task["eval_unit"],
+                "risk": task["risk"],
+                "expected_outcome": task["expected_outcome"],
+                "aggregation_key": task.get("aggregation_key"),
+                "variant": task.get("variant"),
+                "trial_status": status,
+                "automated_gate_pass": False,
+                "valid_capability_trial": status not in EXCLUDED_FROM_CAPABILITY_DENOMINATOR,
+                "safety_violation": status == "unsafe",
+                "human_review_required": status in {"unsafe", "partial", "grader_error"},
+                "approval_preexecution_violations": 0,
+                "grader_disagreement": False,
+                "valid_alternative_candidate": False,
+                "changed_paths": [],
+                "checks": [],
+                "usage": {},
+                "latency_ms": None,
+                "source": "niceeval-ndjson-error-supplement",
+                "error": reason,
+            }
+        )
+        existing.add(record_id)
+    return rows
+
+
+def annotate_disagreements_from_niceeval_ndjson(rows, ndjson_path):
+    """Flag Python-pass / NiceEval-fail differences without overwriting either result."""
+
+    rows = [dict(row) for row in rows]
+    niceeval_failures = Counter()
+    for line in Path(ndjson_path).read_text(encoding="utf-8").splitlines():
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if event.get("event") == "failure":
+            niceeval_failures[_junit_task_id(event.get("evalId", ""))] += 1
+    by_task = defaultdict(list)
+    for row in rows:
+        by_task[str(row.get("task_id"))].append(row)
+    for task_id, failure_count in niceeval_failures.items():
+        task_rows = by_task.get(task_id, [])
+        python_failures = sum(
+            row.get("valid_capability_trial") and not row.get("automated_gate_pass")
+            for row in task_rows
+        )
+        disagreement_count = max(0, failure_count - python_failures)
+        candidates = [row for row in task_rows if row.get("automated_gate_pass")]
+        for row in candidates[:disagreement_count]:
+            row["grader_disagreement"] = True
+            row["valid_alternative_candidate"] = True
+            row["human_review_required"] = True
+            row["niceeval_verdict"] = "failed"
     return rows
 
 
@@ -384,6 +485,7 @@ def build_enterprise_summary(
     }
     overall = _aggregate_group(tasks, rows, required)
     statuses = Counter(row["trial_status"] for row in rows)
+    disagreement_count = sum(bool(row.get("grader_disagreement")) for row in rows)
     infra_count = sum(statuses[status] for status in EXCLUDED_FROM_CAPABILITY_DENOMINATOR)
     expected_total = len(tasks) * required
     infra_rate = _rate(infra_count, len(rows)) or 0.0
@@ -482,6 +584,7 @@ def build_enterprise_summary(
             "infra_error_count": infra_count,
             "infra_error_rate": infra_rate,
             "unsafe_count": fatal_counts["unsafe"],
+            "grader_disagreement_count": disagreement_count,
         },
         "overall": overall,
         "suites": by_suite,
@@ -569,6 +672,7 @@ def render_chinese_report(summary):
         f"- 任务：{coverage['physical_task_count']}；期望 trial 槽位：{coverage['expected_trial_slots']}；已记录：{coverage['recorded_trials']}。",
         f"- 每任务所需有效 trial：{coverage['required_valid_trials_per_task']}；覆盖完整任务：{coverage['complete_task_count']}。",
         f"- 基础设施错误率：{percent(summary['trials']['infra_error_rate'])}；unsafe：{summary['trials']['unsafe_count']}。",
+        f"- Python Grader / NiceEval disagreement：{summary['trials'].get('grader_disagreement_count', 0)}（进入人工审核，不覆盖原始结果）。",
         "",
         "## 分层结果",
         "",

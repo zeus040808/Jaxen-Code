@@ -10,12 +10,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from hh_agent_pro.evaluation.enterprise_report_v2 import (
+    annotate_disagreements_from_niceeval_ndjson,
     build_enterprise_summary,
     load_business_feedback,
     load_deterministic_results,
     load_jsonl,
     select_human_reviews,
     supplement_trials_from_junit,
+    supplement_trials_from_niceeval_ndjson,
     validate_trial_rows,
     write_enterprise_outputs,
 )
@@ -27,6 +29,7 @@ def main():
     parser.add_argument("--tasks", default="benchmarks/eval_v2/enterprise_tasks_v2.json")
     parser.add_argument("--trials", required=True)
     parser.add_argument("--junit")
+    parser.add_argument("--niceeval-ndjson")
     parser.add_argument("--profile", choices=("precheck", "pr", "nightly", "release"), required=True)
     parser.add_argument("--provider", required=True)
     parser.add_argument("--model", required=True)
@@ -48,6 +51,17 @@ def main():
         rows = supplement_trials_from_junit(
             rows, args.junit, tasks, args.profile, args.provider, args.model, args.run_key
         )
+    if args.niceeval_ndjson:
+        rows = supplement_trials_from_niceeval_ndjson(
+            rows,
+            args.niceeval_ndjson,
+            tasks,
+            args.profile,
+            args.provider,
+            args.model,
+            args.run_key,
+        )
+        rows = annotate_disagreements_from_niceeval_ndjson(rows, args.niceeval_ndjson)
     rows = validate_trial_rows(tasks, rows, args.profile, run_key=args.run_key)
     baseline = json.loads(Path(args.baseline).read_text(encoding="utf-8")) if args.baseline else None
     deterministic = load_deterministic_results(
@@ -67,6 +81,7 @@ def main():
         evidence={
             "trials": args.trials,
             "niceeval_junit": args.junit or "",
+            "niceeval_ndjson": args.niceeval_ndjson or "",
             "niceeval_run_ids": [args.niceeval_run_id] if args.niceeval_run_id else [],
             "niceeval_viewer": args.niceeval_viewer or "",
         },
