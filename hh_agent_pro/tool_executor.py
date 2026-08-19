@@ -41,6 +41,7 @@ def _metadata(
     retryable=False,
     recommended_action="",
     stop_run=False,
+    out_of_scope_paths=None,
 ):
     result = {
         "tool_status": tool_status,
@@ -54,6 +55,8 @@ def _metadata(
         "retryable": bool(retryable),
         "recommended_action": str(recommended_action),
         "stop_run": bool(stop_run),
+        # 越出允许写入范围的路径。空列表是常态，非空即安全事件。
+        "out_of_scope_paths": list(out_of_scope_paths or []),
     }
     if workspace_fingerprint:
         result["workspace_fingerprint"] = workspace_fingerprint
@@ -88,6 +91,18 @@ class ToolExecutor:
 
     def completion_blocker(self):
         return dict(self._unresolved_failure or {})
+
+    # 只有这两个工具在调用前就能确定写入目标。run_shell 的目标要执行后
+    # 才知道，由下面的 workspace diff 兜底。
+    WRITE_TARGET_ARGS = {"write_file": "path", "patch_file": "path"}
+
+    @classmethod
+    def _declared_write_targets(cls, name, args):
+        key = cls.WRITE_TARGET_ARGS.get(name)
+        if not key:
+            return []
+        target = str((args or {}).get(key, "")).strip()
+        return [target] if target else []
 
     @classmethod
     def _normalized_value(cls, value):
@@ -286,6 +301,34 @@ class ToolExecutor:
                 ),
             )
 
+        # 写入范围是一条硬护栏，和路径逃逸同级：越界的写不该走到审批，
+        # 更不该真的落盘。提示词里的"只改这些文件"约束不住模型，这里能。
+        scope_violations = agent.write_scope_violations(
+            self._declared_write_targets(name, args)
+        )
+        if scope_violations:
+            return ToolExecutionResult(
+                content=(
+                    f"error: {name} targets a path outside the allowed write scope: "
+                    + ", ".join(scope_violations)
+                    + f"; allowed: {', '.join(agent.write_scope)}"
+                ),
+                metadata=_metadata(
+                    "rejected",
+                    tool_error_code="write_scope_violation",
+                    security_event_type="write_scope_violation",
+                    risk_level="high",
+                    read_only=False,
+                    retryable=False,
+                    recommended_action=(
+                        "Restrict the change to the allowed paths, or return a blocked "
+                        "answer explaining why the task needs a wider scope."
+                    ),
+                    affected_paths=scope_violations,
+                    stop_run=False,
+                ),
+            )
+
         # 检查风险工具调用是否被批准
         requires_approval = agent.tool_requires_approval(name, args)
         approval = True if approval_granted else agent.approve(name, args) if requires_approval else True
@@ -346,23 +389,36 @@ class ToolExecutor:
                 elif exit_code != 0:
                     tool_status = "error"
                     tool_error_code = "tool_failed"
+            # run_shell 之类的工具执行完才知道动了哪些文件。事后拦不住写入，
+            # 但必须把越界如实报出来并停下，而不是让它悄悄通过。
+            escaped_writes = agent.write_scope_violations(affected_paths)
+            if escaped_writes:
+                tool_status = "rejected"
+                tool_error_code = "write_scope_violation"
+
             agent.update_memory_after_tool(name, args, content)
             metadata = _metadata(
                 tool_status,
                 tool_error_code=tool_error_code,
+                security_event_type="write_scope_violation" if escaped_writes else "",
                 risk_level="high" if requires_approval else "low",
                 read_only=not requires_approval,
                 affected_paths=affected_paths,
                 workspace_changed=workspace_changed,
                 workspace_fingerprint=agent.workspace.fingerprint(),
                 diff_summary=diff_summary,
+                out_of_scope_paths=escaped_writes,
                 retryable=tool_status in {"error", "partial_success"},
                 recommended_action=(
-                    "Inspect the output and workspace diff, then choose a corrected action."
+                    "Revert the out-of-scope changes to "
+                    + ", ".join(escaped_writes)
+                    + " and keep edits inside the allowed paths."
+                    if escaped_writes
+                    else "Inspect the output and workspace diff, then choose a corrected action."
                     if tool_status in {"error", "partial_success"} else ""
                 ),
+                stop_run=bool(escaped_writes),
             )
-            agent.record_process_note_for_tool(name, metadata)
             result = ToolExecutionResult(content=content, metadata=metadata)
             if tool_status == "ok":
                 self._successful_calls.add(call_fingerprint)
@@ -387,5 +443,4 @@ class ToolExecutor:
                 retryable=True,
                 recommended_action="Inspect the error and any workspace diff before choosing a corrected action.",
             )
-            agent.record_process_note_for_tool(name, metadata)
             return ToolExecutionResult(content=f"error: tool {name} failed: {exc}", metadata=metadata)

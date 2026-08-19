@@ -11,14 +11,14 @@ import platform
 import re
 import uuid
 from datetime import datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from . import checkpoint as checkpointlib
 from .memory import CuratedMemoryStore, DurableMemoryLearner, SessionArchive, WorkingMemory, default_working_state
 from .skills import SkillLearner, SkillStore
-from .features.background_tasks import BackgroundTaskManager
-from .features.cron_scheduler import CronScheduler
-from .features.project_tasks import ProjectTaskStore
+from .services.background_tasks import BackgroundTaskManager
+from .services.cron_scheduler import CronScheduler
+from .services.project_tasks import ProjectTaskStore
 from . import security as securitylib
 from .context_manager import ContextManager
 from .evidence import EvidenceLedger, default_evidence_state, summarize_source_text
@@ -67,6 +67,7 @@ class HH:
         depth=0,
         max_depth=1,
         read_only=False,
+        write_scope=None,
         shell_env_allowlist=None,
         secret_env_names=None,
         feature_flags=None,
@@ -87,6 +88,9 @@ class HH:
         self.depth = depth
         self.max_depth = max_depth
         self.read_only = read_only
+        # 评测反复观测到「范围蔓延」：只让改 validators.py，模型顺手把
+        # tests/test_smoke.py 也改了。提示词管不住它，所以升级成运行时约束。
+        self.write_scope = self._normalize_write_scope(write_scope)
 
         # 补全安全和功能配置
         self.shell_env_allowlist = tuple(shell_env_allowlist or DEFAULT_SHELL_ENV_ALLOWLIST)
@@ -629,11 +633,6 @@ class HH:
     def note_tool(self, name, args, result):
         self.update_memory_after_tool(name, args, result)
 
-    def record_process_note_for_tool(self, name, metadata):
-        # Failure/retry state already lives in ToolExecutor + TaskState. Keeping
-        # another process-note copy made completion checks and prompts disagree.
-        return None
-
     def auto_capture_durable_memory(self, user_message):
         if not self.feature_enabled("memory"):
             self.last_auto_memory = {"status": "skipped", "reason": "feature_disabled", "results": []}
@@ -809,33 +808,6 @@ class HH:
             self.emit_trace(run_state, "skill_auto_deposited", self.last_auto_skill)
             self.emit_ui("skill_learned", **self.last_auto_skill)
         return self.last_auto_skill
-
-    def tool_list_files(self, args):
-        return toolkit.tool_list_files(self.tool_context(), args)
-
-    def tool_read_file(self, args):
-        return toolkit.tool_read_file(self.tool_context(), args)
-
-    def tool_read_files(self, args):
-        return toolkit.tool_read_files(self.tool_context(), args)
-
-    def tool_search(self, args):
-        return toolkit.tool_search(self.tool_context(), args)
-
-    def tool_run_shell(self, args):
-        return toolkit.tool_run_shell(self.tool_context(), args)
-
-    def tool_runtime_info(self, args):
-        return toolkit.tool_runtime_info(self.tool_context(), args)
-
-    def tool_write_file(self, args):
-        return toolkit.tool_write_file(self.tool_context(), args)
-
-    def tool_patch_file(self, args):
-        return toolkit.tool_patch_file(self.tool_context(), args)
-
-    def tool_delegate(self, args):
-        return toolkit.tool_delegate(self.tool_context(), args)
 
     def approve(self, name, args):
         if self.read_only:
@@ -1211,3 +1183,38 @@ class HH:
         if os.path.commonpath([str(self.root), str(resolved)]) != str(self.root):
             raise ValueError(f"path escapes workspace: {raw_path}")
         return resolved
+
+    @staticmethod
+    def _normalize_write_scope(write_scope):
+        """None 表示不限制；给了列表就必须非空，避免"写了个空列表以为放开了"。"""
+
+        if write_scope is None:
+            return None
+        patterns = tuple(str(item).strip().replace("\\", "/") for item in write_scope)
+        if not patterns or any(not item for item in patterns):
+            raise ValueError("write_scope must be a non-empty sequence of path patterns")
+        return patterns
+
+    def relative_workspace_path(self, resolved_path):
+        try:
+            return Path(resolved_path).resolve().relative_to(self.root).as_posix()
+        except ValueError:
+            return None
+
+    def write_scope_violations(self, paths):
+        """返回 paths 中不在允许写入范围内的仓库相对路径。"""
+
+        if self.write_scope is None:
+            return []
+        violations = []
+        for raw_path in paths:
+            relative = str(raw_path).replace("\\", "/").lstrip("./")
+            if not relative:
+                continue
+            allowed = any(
+                relative == pattern or PurePosixPath(relative).match(pattern)
+                for pattern in self.write_scope
+            )
+            if not allowed and relative not in violations:
+                violations.append(relative)
+        return violations
