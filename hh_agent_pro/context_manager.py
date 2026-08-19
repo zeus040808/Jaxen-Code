@@ -296,12 +296,20 @@ class ContextManager:
             self.build(user_message)
             rendered = self._last_rendered
         system_prompt = rendered["prefix"].rendered
+        # 顺序按「稳定 → 易变」排，这是给 prompt cache 用的。
+        # 前缀缓存只在完全一致时命中，所以一个每轮都变的分区会让排在它
+        # 后面的所有内容一起失效。durable_memory 与 skills 是 Session 级
+        # 冻结快照（最稳），task_state 与 evidence 每轮都在变（最不稳）。
+        #
+        # 实测依据：调整前 session-hitl 每 episode 3.0 次请求、缓存命中
+        # 仅 2.2%，而请求数相近的 security（2.5 次）能到 38.2% —— 差别
+        # 就在多轮场景里 task_state/evidence churn 得厉害，却排在中间。
         context_names = (
-            "working_memory",
             "durable_memory",
+            "skills",
+            "working_memory",
             "task_state",
             "evidence",
-            "skills",
         )
         context = "\n\n".join(rendered[name].rendered for name in context_names)
         if bool(getattr(self.agent, "output_recovery_active", False)):
