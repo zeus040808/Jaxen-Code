@@ -48,8 +48,8 @@ jobs:
           name: hh-agent-release-eval
           path: |
             artifacts/eval-v2/
-            artifacts/harness-regression-v2.json
-            artifacts/tool-contract-v1.json
-            artifacts/security-regression-v1.json
+            artifacts/deterministic/harness-regression-v2.json
+            artifacts/deterministic/tool-contract-v1.json
+            artifacts/deterministic/security-regression-v1.json
             .niceeval/
           retention-days: 90
