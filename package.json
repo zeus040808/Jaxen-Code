@@ -13,7 +13,9 @@
     "eval:release": "niceeval exp hh-agent-release --no-early-exit",
     "eval:profile:precheck": "python scripts/run_enterprise_eval_profile.py precheck --platform linux",
     "eval:ci": "niceeval exp hh-agent-pilot --no-early-exit --json --junit artifacts/eval-v2/niceeval-junit.xml",
-    "typecheck:eval": "tsc --noEmit"
+    "typecheck:eval": "tsc --noEmit",
+    "postinstall": "python scripts/patch_niceeval_windows.py",
+    "eval:check-patch": "python scripts/patch_niceeval_windows.py --check"
   },
   "devDependencies": {
     "@types/node": "26.2.0",

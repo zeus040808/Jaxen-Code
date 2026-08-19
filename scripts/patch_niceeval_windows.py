@@ -145,9 +145,12 @@ def main(argv=None):
         outcomes.append(status)
         print(f"  [{status:14s}] {message}")
 
-    if any(status in {"anchor-missing", "unexpected", "missing"} for status in outcomes):
+    broken = any(status in {"anchor-missing", "unexpected", "missing"} for status in outcomes)
+    if broken:
         print("\n补丁未能完整应用。NiceEval 版本可能已升级，请重新核对上游实现。")
-        return 1
+        # 作为 postinstall 钩子运行时绝不能阻断 pnpm install——依赖装不上
+        # 比缺一个平台兼容补丁严重得多。只有显式 --check 才把它当失败。
+        return 1 if args.check else 0
     if args.check and "patched" in outcomes:
         print("\n检查未通过：仍有位置需要打补丁。运行 python scripts/patch_niceeval_windows.py")
         return 1
