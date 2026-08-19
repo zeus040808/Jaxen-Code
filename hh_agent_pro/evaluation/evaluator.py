@@ -18,7 +18,7 @@ from ..workspace import WorkspaceContext
 BENCHMARK_SCHEMA_VERSION = 1
 DEFAULT_BENCHMARK_PATH = Path("benchmarks/coding_tasks.json")
 DEFAULT_ARTIFACT_PATH = Path("benchmarks/benchmark-v1.json")
-DEFAULT_HARNESS_REGRESSION_V2_ARTIFACT_PATH = Path("artifacts/harness-regression-v2.json")
+DEFAULT_HARNESS_REGRESSION_V2_ARTIFACT_PATH = Path("artifacts/deterministic/harness-regression-v2.json")
 DEFAULT_MODEL_NAME = "FakeModelClient"
 DEFAULT_MODEL_VERSION = "scripted-deterministic"
 DEFAULT_TEMPERATURE = 0.0

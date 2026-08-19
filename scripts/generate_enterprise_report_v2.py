@@ -39,9 +39,9 @@ def main():
     parser.add_argument("--output-dir", default="artifacts/eval-v2/report-v2")
     parser.add_argument("--baseline")
     parser.add_argument("--business-feedback")
-    parser.add_argument("--runtime-artifact", default="artifacts/harness-regression-v2.json")
-    parser.add_argument("--tool-artifact", default="artifacts/tool-contract-v1.json")
-    parser.add_argument("--security-artifact", default="artifacts/security-regression-v1.json")
+    parser.add_argument("--runtime-artifact", default="artifacts/deterministic/harness-regression-v2.json")
+    parser.add_argument("--tool-artifact", default="artifacts/deterministic/tool-contract-v1.json")
+    parser.add_argument("--security-artifact", default="artifacts/deterministic/security-regression-v1.json")
     parser.add_argument("--platform", choices=("linux", "windows"), default="windows")
     args = parser.parse_args()
 

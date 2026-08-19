@@ -17,13 +17,13 @@ from ..runtime import HH, SessionStore
 from ..workspace import WorkspaceContext
 
 METRICS_SCHEMA_VERSION = 2
-DEFAULT_HARNESS_REGRESSION_V2_PATH = Path("artifacts/harness-regression-v2.json")
-DEFAULT_CONTEXT_ABLATION_V2_PATH = Path("artifacts/context-ablation-v2.json")
-DEFAULT_MEMORY_ABLATION_V2_PATH = Path("artifacts/memory-ablation-v2.json")
-DEFAULT_RECOVERY_ABLATION_V2_PATH = Path("artifacts/recovery-ablation-v2.json")
-DEFAULT_SECURITY_REGRESSION_V1_PATH = Path("artifacts/security-regression-v1.json")
-DEFAULT_TOOL_CONTRACT_V1_PATH = Path("artifacts/tool-contract-v1.json")
-DEFAULT_CORE_REPORT_PATH = Path("docs/metrics/hh-benchmark-core-report.md")
+DEFAULT_HARNESS_REGRESSION_V2_PATH = Path("artifacts/deterministic/harness-regression-v2.json")
+DEFAULT_CONTEXT_ABLATION_V2_PATH = Path("artifacts/ablations/context-ablation-v2.json")
+DEFAULT_MEMORY_ABLATION_V2_PATH = Path("artifacts/ablations/memory-ablation-v2.json")
+DEFAULT_RECOVERY_ABLATION_V2_PATH = Path("artifacts/ablations/recovery-ablation-v2.json")
+DEFAULT_SECURITY_REGRESSION_V1_PATH = Path("artifacts/deterministic/security-regression-v1.json")
+DEFAULT_TOOL_CONTRACT_V1_PATH = Path("artifacts/deterministic/tool-contract-v1.json")
+DEFAULT_CORE_REPORT_PATH = Path("docs/evaluation/benchmark-core-report.md")
 
 
 def _safe_mean(values):

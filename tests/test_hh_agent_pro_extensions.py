@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from hh_agent_pro.checkpoint import MAX_CHECKPOINTS
-from hh_agent_pro.features.cron_scheduler import cron_matches, validate_cron
+from hh_agent_pro.services.cron_scheduler import cron_matches, validate_cron
 from hh_agent_pro.run_state import (
     RunState,
     STATUS_COMPLETED,

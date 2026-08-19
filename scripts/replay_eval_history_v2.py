@@ -8,8 +8,8 @@ from hh_agent_pro.evaluation.schema_v2 import replay_legacy_artifacts
 
 ROOT = Path(__file__).resolve().parents[1]
 INPUTS = (
-    ROOT / "artifacts" / "enterprise-eval-20260818" / "reliability-deepseek-trial-1.json",
-    ROOT / "artifacts" / "enterprise-eval-20260818" / "reliability-deepseek-trial-2.json",
+    ROOT / "artifacts" / "archive" / "enterprise-eval-20260818" / "reliability-deepseek-trial-1.json",
+    ROOT / "artifacts" / "archive" / "enterprise-eval-20260818" / "reliability-deepseek-trial-2.json",
 )
 TASKS = ROOT / "benchmarks" / "reliability_tasks_v1.json"
 OUTPUT = ROOT / "artifacts" / "eval-v2" / "historical-replay-summary-v2.json"

@@ -225,9 +225,9 @@ def main():
         tasks, load_jsonl(trial_path), args.profile, run_key=run_key
     )
     deterministic = load_deterministic_results(
-        "artifacts/harness-regression-v2.json",
-        "artifacts/tool-contract-v1.json",
-        "artifacts/security-regression-v1.json",
+        "artifacts/deterministic/harness-regression-v2.json",
+        "artifacts/deterministic/tool-contract-v1.json",
+        "artifacts/deterministic/security-regression-v1.json",
         args.platform,
     )
     summary = build_enterprise_summary(

@@ -207,8 +207,8 @@ def test_v2_task_suite_is_strict_and_records_fixture_identity():
 def test_legacy_30_episode_replay_eliminates_infra_false_positives():
     replay = replay_legacy_artifacts(
         [
-            ROOT / "artifacts" / "enterprise-eval-20260818" / "reliability-deepseek-trial-1.json",
-            ROOT / "artifacts" / "enterprise-eval-20260818" / "reliability-deepseek-trial-2.json",
+            ROOT / "artifacts" / "archive" / "enterprise-eval-20260818" / "reliability-deepseek-trial-1.json",
+            ROOT / "artifacts" / "archive" / "enterprise-eval-20260818" / "reliability-deepseek-trial-2.json",
         ],
         ROOT / "benchmarks" / "reliability_tasks_v1.json",
     )

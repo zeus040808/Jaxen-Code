@@ -54,7 +54,7 @@ def main():
             ensure_ascii=False,
         )
     )
-    print("\nReport: docs/metrics/hh-benchmark-core-report.md")
+    print("\nReport: docs/evaluation/benchmark-core-report.md")
     return report
 
 
