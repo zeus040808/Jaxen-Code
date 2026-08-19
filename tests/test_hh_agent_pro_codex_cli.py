@@ -273,12 +273,20 @@ def test_callback_event_sink_preserves_structured_event():
 
 
 def test_terminal_sink_replaces_unencodable_symbols_in_legacy_console():
+    """老式控制台（ascii/gbk）遇到不可编码字符必须降级，而不是抛异常。
+
+    这里断言的是"写得出去且没崩"，不绑定具体前缀符号——
+    前缀属于观感，随时可能调整，而不崩溃是硬要求。
+    """
     raw = io.BytesIO()
     stream = io.TextIOWrapper(raw, encoding="ascii", errors="strict")
     sink = TerminalEventSink(stream=stream, use_color=False)
     sink.emit("provider_status", message="中文状态")
     stream.flush()
-    assert b"->" in raw.getvalue()
+
+    written = raw.getvalue()
+    assert written.strip(), "状态行不能被整条吞掉"
+    assert b"?" in written, "不可编码字符应被替换而非导致异常"
 
 
 class StreamingScriptedModel:

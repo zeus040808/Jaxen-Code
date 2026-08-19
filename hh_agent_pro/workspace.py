@@ -110,7 +110,13 @@ class WorkspaceContext:
                     ["git", *args],
                     cwd=cwd,
                     capture_output=True,  # 捕获 stdout/stderr
-                    text=True,            # 输出按字符串处理
+                    # git 输出 UTF-8，但 text=True 会用系统 locale 解码——
+                    # 中文 Windows 上是 GBK，遇到中文 commit message 直接崩。
+                    # 而且异常发生在 subprocess 的读取线程里，外面这个
+                    # except 根本抓不到，只会在终端刷屏。必须显式指定。
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
                     check=True,           # git 命令失败就抛异常
                     timeout=5,
                 )

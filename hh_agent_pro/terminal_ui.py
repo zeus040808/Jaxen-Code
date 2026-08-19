@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sys
 
+from .markdown_console import MarkdownConsole
 from .workspace import clip
 
 
@@ -14,6 +15,16 @@ class TerminalEventSink:
         self.use_color = self.stream.isatty() if use_color is None else bool(use_color)
         self.final_rendered = False
         self.needs_input = False
+        self.markdown = MarkdownConsole(
+            use_color=self.use_color,
+            encoding=getattr(self.stream, "encoding", None),
+        )
+        # provider 每轮会推 started / reasoning / completed 三条，
+        # 对用户没有信息量，只保留"正在思考"这一条状态。
+        self._provider_noise = {
+            "deepseek turn started",
+            "deepseek turn completed",
+        }
 
     def reset_turn(self):
         self.final_rendered = False
@@ -43,8 +54,8 @@ class TerminalEventSink:
             return
         if event_type == "provider_status":
             message = self._one_line(payload.get("message", ""))
-            if message:
-                self._write(self._paint(f"  -> {message}", "90"))
+            if message and message.strip().casefold() not in self._provider_noise:
+                self._write(self._paint(f"  {message}", "90"))
             return
         if event_type == "reasoning_summary":
             text = str(payload.get("text", "")).strip()
@@ -89,6 +100,8 @@ class TerminalEventSink:
         if event_type == "run_finished":
             final = str(payload.get("final_answer", "")).strip()
             if final and not self.needs_input:
+                self._write()
                 self._write(self._paint("* Answer", "32;1"))
-                self._write(final)
+                # 模型用 Markdown 回答，直接 print 会露出 ** 和 |---| 这些语法。
+                self._write(self.markdown.render(final))
             self.final_rendered = bool(final)

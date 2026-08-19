@@ -187,6 +187,8 @@ def _run_checks(task, workspace_root):
             shell=True,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=int(check.get("timeout", 30)),
         )
         rows.append(
