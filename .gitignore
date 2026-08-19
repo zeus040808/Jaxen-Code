@@ -38,5 +38,6 @@ node_modules/
 artifacts/reliability-runs/
 artifacts/enterprise-eval-*/evidence/
 artifacts/eval-v2/niceeval-*-junit.xml
+artifacts/eval-v2/*-junit.xml
 artifacts/eval-v2/niceeval-*-view/
 artifacts/eval-v2/niceeval-*.ndjson

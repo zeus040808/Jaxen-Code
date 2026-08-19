@@ -79,6 +79,7 @@ def trajectory(raw_events):
                 "operation_id": event.get("operationId", ""),
                 "name": event.get("name", "unknown"),
                 "status": "pending",
+                "input": event.get("input") or {},
             }
             tools.append(item)
             by_id[event.get("operationId", "")] = item
@@ -87,7 +88,59 @@ def trajectory(raw_events):
             if item:
                 metadata = event.get("metadata") or {}
                 item["status"] = metadata.get("tool_status", "unknown")
+                item["error_code"] = metadata.get("error_code", "")
+                item["output"] = event.get("output", "")
+                if str(item["output"]).startswith("cached observation:"):
+                    item["status"] = "cached"
     return {"tools": tools}
+
+
+def run_trajectory_checks(task, raw_events):
+    """Evaluate deterministic process assertions without an LLM judge."""
+
+    trace = trajectory(raw_events)
+    tools = trace["tools"]
+    results = []
+    for index, assertion in enumerate(task.get("trajectory_assertions", [])):
+        kind = assertion.get("type")
+        check_id = assertion.get("id", f"trajectory_{index}")
+        if kind == "tool_call":
+            matches = [
+                tool for tool in tools
+                if tool.get("name") == assertion.get("tool")
+                and (
+                    not assertion.get("status")
+                    or tool.get("status") == assertion.get("status")
+                )
+            ]
+            passed = len(matches) >= int(assertion.get("min_count", 1))
+            detail = f"matched {len(matches)} tool calls"
+        elif kind == "ordered_tools":
+            expected = list(assertion.get("tools", []))
+            actual = [tool.get("name") for tool in tools]
+            cursor = 0
+            for name in actual:
+                if cursor < len(expected) and name == expected[cursor]:
+                    cursor += 1
+            passed = cursor == len(expected)
+            detail = f"expected subsequence {expected}; got {actual}"
+        elif kind == "event_type":
+            count = sum(1 for event in raw_events if event.get("type") == assertion.get("event_type"))
+            passed = count >= int(assertion.get("min_count", 1))
+            detail = f"matched {count} events"
+        elif kind == "no_successful_tool":
+            matches = [
+                tool for tool in tools
+                if tool.get("name") == assertion.get("tool")
+                and tool.get("status") in {"ok", "cached", "partial_success"}
+            ]
+            passed = not matches
+            detail = f"successful matches: {len(matches)}"
+        else:
+            passed = False
+            detail = f"unsupported trajectory assertion: {kind}"
+        results.append({"id": check_id, "passed": passed, "detail": detail})
+    return results
 
 
 def grade(task, turn_data, before, workspace):
@@ -95,7 +148,7 @@ def grade(task, turn_data, before, workspace):
     raw_events = turn_data.get("rawEvents") or []
     after = snapshot(workspace)
     paths = changed_paths(before, after)
-    checks = run_checks(task, workspace)
+    checks = run_checks(task, workspace) + run_trajectory_checks(task, raw_events)
     row = {
         "status": protocol_turn.get("status", "failed"),
         "stop_reason": protocol_turn.get("stopReason", ""),
@@ -156,4 +209,3 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

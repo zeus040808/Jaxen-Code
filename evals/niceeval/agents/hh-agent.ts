@@ -30,6 +30,7 @@ interface EvalPolicy {
   maxSteps: number;
   maxNewTokens: number;
   timeoutMs: number;
+  secretEnv?: { name: string; value: string };
 }
 
 const sessionStateSlot = createSessionSlot<SessionState>("hh-agent/jsonl-state-v1");
@@ -70,12 +71,16 @@ async function readPolicy(ctx: SandboxAgentContext): Promise<EvalPolicy> {
   if (!(["ask", "auto", "never"] as const).includes(approval as EvalPolicy["approval"])) {
     throw new Error(`Invalid eval approval policy: ${approval}`);
   }
+  const secret = asObject(raw.secretEnv);
+  const secretName = asString(secret.name);
+  const secretValue = asString(secret.value);
   return {
     approval: approval as EvalPolicy["approval"],
     readOnly: raw.readOnly === true,
     maxSteps: Math.max(1, Math.trunc(asNumber(raw.maxSteps, 12))),
     maxNewTokens: Math.max(1, Math.trunc(asNumber(raw.maxNewTokens, 2048))),
     timeoutMs: Math.max(1, Math.trunc(asNumber(raw.timeoutMs, 180_000))),
+    secretEnv: secretName && secretValue ? { name: secretName, value: secretValue } : undefined,
   };
 }
 
@@ -271,6 +276,10 @@ const hhAgent = defineSandboxAgent({
 
     const env: Record<string, string> = { PYTHONUNBUFFERED: "1" };
     const sensitiveValues: string[] = [];
+    if (policy.secretEnv) {
+      env[policy.secretEnv.name] = policy.secretEnv.value;
+      sensitiveValues.push(policy.secretEnv.value);
+    }
     if (provider === "fake") {
       env.HH_ALLOW_EVAL_FAKE_PROVIDER = "1";
       env.HH_EVAL_FAKE_SCRIPT_PATH = FAKE_SCRIPT_PATH;

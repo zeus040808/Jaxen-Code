@@ -12,6 +12,8 @@ ENV PYTHONPATH=/opt/hh-agent \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
+RUN pip install --no-cache-dir pytest==8.4.2
+
 RUN python3 -c "import hh_agent_pro; print('hh-agent image ready')" \
     && git --version \
     && rg --version

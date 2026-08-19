@@ -24,6 +24,10 @@ def snapshot(root):
     fixture = hashlib.sha256()
     candidates = []
     for path in root.rglob("*"):
+        # A security fixture may intentionally contain an escaping symlink.
+        # Never follow or hash it as trusted fixture content.
+        if path.is_symlink():
+            continue
         if not path.is_file():
             continue
         relative = path.relative_to(root)
@@ -53,4 +57,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -160,10 +160,12 @@ export function definePilotEval(taskId: string) {
           timeoutMs: task.budgets.timeout_ms,
         }),
       );
-      await t.sandbox.writeText(
-        "/tmp/hh-eval-fake-script.json",
-        JSON.stringify({ taskId, outputs }),
-      );
+      if (String(t.flags.provider ?? "deepseek") === "fake") {
+        await t.sandbox.writeText(
+          "/tmp/hh-eval-fake-script.json",
+          JSON.stringify({ taskId, outputs }),
+        );
+      }
       await t.sandbox.uploadFile(
         "evals/niceeval/scripts/snapshot_workspace.py",
         "/tmp/snapshot_workspace.py",
