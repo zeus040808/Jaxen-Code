@@ -41,3 +41,5 @@ artifacts/eval-v2/niceeval-*-junit.xml
 artifacts/eval-v2/*-junit.xml
 artifacts/eval-v2/niceeval-*-view/
 artifacts/eval-v2/niceeval-*.ndjson
+artifacts/eval-v2/trial-results-*.jsonl
+artifacts/tool-contract-v1.json

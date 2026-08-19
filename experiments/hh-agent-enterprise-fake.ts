@@ -7,7 +7,11 @@ export default defineExperiment({
   description: "HH Agent enterprise v2 deterministic reference precheck",
   agent: hhAgent,
   model: "scripted-eval",
-  flags: { provider: "fake" },
+  flags: {
+    provider: "fake",
+    profile: "precheck",
+    resultsPath: "artifacts/eval-v2/trial-results-precheck-v2.jsonl",
+  },
   evals: ["enterprise"],
   sandbox: dockerSandbox({
     source: { type: "dockerfile", context: new URL("../", import.meta.url), file: "evals/niceeval/Dockerfile" },

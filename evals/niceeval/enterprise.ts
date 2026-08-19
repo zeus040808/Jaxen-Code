@@ -2,6 +2,9 @@ import { defineEval } from "niceeval";
 import type { JsonValue, TestContext } from "niceeval";
 import { equals, excludes, isTrue } from "niceeval/expect";
 import { loadCriteria, loadJson } from "niceeval/loaders";
+import { randomUUID } from "node:crypto";
+import { appendFile, mkdir } from "node:fs/promises";
+import { dirname } from "node:path";
 
 interface EvalTask {
   id: string;
@@ -99,6 +102,65 @@ function protocolData(turns: EvalTurn[]) {
   return { protocolTurn: latest?.protocolTurn ?? {}, rawEvents };
 }
 
+async function recordTrialResult(
+  task: EvalTask,
+  t: TestContext,
+  result: Record<string, JsonValue>,
+  startedAtMs: number,
+) {
+  const resultsPath = String(t.flags.resultsPath ?? "");
+  if (!resultsPath) return;
+  const row = result.row && typeof result.row === "object" && !Array.isArray(result.row)
+    ? result.row as Record<string, JsonValue>
+    : {};
+  const payload = {
+    schema_version: 2,
+    record_kind: "hh-agent-trial-result-v2",
+    record_id: randomUUID(),
+    recorded_at: new Date().toISOString(),
+    run_key: process.env.HH_EVAL_RUN_KEY ?? "unlabeled",
+    profile: String(t.flags.profile ?? "precheck"),
+    provider: String(t.flags.provider ?? "unknown"),
+    model: String(t.model ?? "unknown"),
+    task_id: task.id,
+    task_version: task.version,
+    fixture_digest: task.fixture_digest,
+    suite: task.suite,
+    suite_type: task.suite_type,
+    eval_unit: task.eval_unit,
+    risk: task.risk,
+    expected_outcome: task.expected_outcome,
+    aggregation_key: task.aggregation_key ?? null,
+    variant: task.variant ?? null,
+    trial_status: result.trial_status,
+    automated_gate_pass: result.automated_gate_pass,
+    valid_capability_trial: result.valid_capability_trial,
+    safety_violation: result.safety_violation,
+    human_review_required: result.human_review_required,
+    approval_preexecution_violations: Number(result.approval_preexecution_violations ?? 0),
+    grader_disagreement: false,
+    valid_alternative_candidate: result.trial_status === "partial",
+    changed_paths: result.changed_paths ?? [],
+    checks: result.checks ?? [],
+    usage: row.usage ?? {},
+    latency_ms: Date.now() - startedAtMs,
+  };
+  await mkdir(dirname(resultsPath), { recursive: true });
+  await appendFile(resultsPath, `${JSON.stringify(payload)}\n`, "utf8");
+  if (!result.automated_gate_pass) {
+    t.diagnostic({
+      code: "hh-grader-result-v2",
+      level: "warning",
+      message: `${task.id}: ${String(result.trial_status)}`,
+      data: {
+        taskId: task.id,
+        trialStatus: result.trial_status ?? null,
+        automatedGatePass: false,
+      },
+    });
+  }
+}
+
 async function drive(task: EvalTask, t: TestContext): Promise<EvalTurn[]> {
   const turns: EvalTurn[] = [];
   const first = await t.send(task.prompt);
@@ -152,6 +214,7 @@ export function defineEnterpriseEval(task: EvalTask) {
     },
     diff: { ignore: [".hh/**", "**/__pycache__/**", "**/*.pyc"] },
     async test(t) {
+      const startedAtMs = Date.now();
       await t.sandbox.uploadDirectory(task.fixture_repo, undefined, { ignore: ["**/__pycache__/**", "**/*.pyc", "**/*.pyo"] });
       await applySetup(task, t);
       const secretEnv = task.setup?.kind === "secret_env"
@@ -181,6 +244,7 @@ export function defineEnterpriseEval(task: EvalTask) {
       const grader = await t.sandbox.runCommand("python3", ["/tmp/hard_grader.py", "--workspace", t.sandbox.workdir, "--before", "/tmp/hh-before.json", "--task", "/tmp/hh-task.json", "--turn", "/tmp/hh-turn.json"]);
       if (grader.exitCode !== 0) throw new Error(`HH hard grader failed (exit=${grader.exitCode}): ${grader.stdout || grader.stderr}`);
       const result = JSON.parse(grader.stdout) as Record<string, JsonValue>;
+      await recordTrialResult(task, t, result, startedAtMs);
       t.check(result.automated_gate_pass, isTrue("Python hard grader gate"));
       t.check(result.trial_status, equals(task.expected_outcome === "correct_failure" ? "correct_failure" : "passed"));
       if (task.require_no_changes) t.sandbox.noChanges();

@@ -1,0 +1,68 @@
+name: Eval PR Gate
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  linux-authoritative:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install locked dependencies
+        run: |
+          python -m pip install -r requirements-dev.txt
+          corepack enable
+          corepack prepare pnpm@11.19.0 --activate
+          pnpm install --frozen-lockfile
+      - name: Unit, schema, and TypeScript checks
+        run: |
+          python -m pytest -q
+          pnpm run typecheck:eval
+      - name: Deterministic runtime, tool, and security gates
+        run: python scripts/run_deterministic_eval_gate.py --repetitions 1 --platform linux
+      - name: Five-task Fake-provider NiceEval smoke
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p artifacts/eval-v2
+          pnpm exec niceeval exp hh-agent-pilot --no-early-exit --rerun all --json \
+            --junit artifacts/eval-v2/niceeval-pr-junit.xml \
+            | tee artifacts/eval-v2/niceeval-pr.ndjson
+          exit "${PIPESTATUS[0]}"
+      - name: Upload PR eval evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-agent-pr-eval
+          path: |
+            artifacts/eval-v2/
+            artifacts/harness-regression-v2.json
+            artifacts/tool-contract-v1.json
+            artifacts/security-regression-v1.json
+          retention-days: 30
+
+  windows-compatibility:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Windows compatibility supplement
+        run: |
+          python -m pytest -q
+          python scripts/run_deterministic_eval_gate.py --repetitions 1 --platform windows
+

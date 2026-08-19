@@ -1,0 +1,50 @@
+name: Eval Nightly
+
+on:
+  schedule:
+    - cron: "0 18 * * *"
+  workflow_dispatch:
+
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      HH_DEEPSEEK_API_KEY: ${{ secrets.HH_DEEPSEEK_API_KEY }}
+      HH_DEEPSEEK_API_BASE: ${{ secrets.HH_DEEPSEEK_API_BASE }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install locked dependencies
+        run: |
+          python -m pip install -r requirements-dev.txt
+          corepack enable
+          corepack prepare pnpm@11.19.0 --activate
+          pnpm install --frozen-lockfile
+      - name: Check required provider secret
+        shell: bash
+        run: ': "${HH_DEEPSEEK_API_KEY:?HH_DEEPSEEK_API_KEY secret is required}"'
+      - name: Run all real tasks three times
+        run: >-
+          python scripts/run_enterprise_eval_profile.py nightly
+          --platform linux
+          --infra-retries 2
+          --freeze-baseline artifacts/eval-v2/baselines/nightly-v2.json
+      - name: Upload Nightly record and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hh-agent-nightly-eval
+          path: |
+            artifacts/eval-v2/
+            artifacts/harness-regression-v2.json
+            artifacts/tool-contract-v1.json
+            artifacts/security-regression-v1.json
+            .niceeval/
+          retention-days: 30

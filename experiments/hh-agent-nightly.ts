@@ -7,7 +7,11 @@ export default defineExperiment({
   description: "HH Agent nightly enterprise v2 (three valid trials per task)",
   agent: hhAgent,
   model: "deepseek-v4-pro",
-  flags: { provider: "deepseek", profile: "nightly" },
+  flags: {
+    provider: "deepseek",
+    profile: "nightly",
+    resultsPath: "artifacts/eval-v2/trial-results-nightly-v2.jsonl",
+  },
   evals: ["enterprise"],
   sandbox: dockerSandbox({
     source: { type: "dockerfile", context: new URL("../", import.meta.url), file: "evals/niceeval/Dockerfile" },

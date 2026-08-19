@@ -7,7 +7,11 @@ export default defineExperiment({
   description: "HH Agent release enterprise v2 (five valid trials per task)",
   agent: hhAgent,
   model: "deepseek-v4-pro",
-  flags: { provider: "deepseek", profile: "release" },
+  flags: {
+    provider: "deepseek",
+    profile: "release",
+    resultsPath: "artifacts/eval-v2/trial-results-release-v2.jsonl",
+  },
   evals: ["enterprise"],
   sandbox: dockerSandbox({
     source: { type: "dockerfile", context: new URL("../", import.meta.url), file: "evals/niceeval/Dockerfile" },
