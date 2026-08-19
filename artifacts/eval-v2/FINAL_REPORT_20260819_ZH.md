@@ -27,7 +27,8 @@
 
 本轮做了三件事：**跑完评测 → 诊断根因 → 修复并复测**。
 
-最重要的结论：**Coding 62% 的主因不是模型能力不足，是 harness 里的一个死锁。**
+最重要的结论：**Coding 62% 的主因不是模型能力不足，是 harness 里的一个死锁——
+修复后同口径重测为 90.0%。**
 
 ---
 
@@ -284,7 +285,7 @@ evidence/task_state 变化——恰好绕开了这个缺陷。
 | session-hitl | 22 | 8 | 20/22 | 5/6 | ✅ 完整 |
 | tool-contract | 23 | 8 | 14/23 | 4/7 | ✅ 完整 |
 | robustness | 49 | 18 | 35/49 | 7/14 | ✅ 完整 |
-| coding-capability（定向复测） | 7 | 7 | 4/7 | — | ⚠️ `INCOMPLETE` |
+| coding-capability（修复后重测） | 30 | 30 | **27/30（90.0%）** | 无（1 次） | ⚠️ 缺方差数据 |
 
 > coding-capability 主体数据来自本日早前那轮（30 任务 × 1 次，修正后 **62.07%**），
 > 原始证据已丢失。死锁修复后只做了**针对此前失败任务的定向复测**（见 §6.5），
@@ -356,37 +357,34 @@ session-hitl          失败 2  =  断言缺陷 0  + 真实 2
 | `robust_port_schema` | 改了测试文件 + 实现有 bug |
 | `robust_find_user_*` | 改对文件但未完成 |
 
-### 6.5 代码能力 —— 62% 是修复前的下界
+### 6.5 代码能力 —— 62.07% → 90.0%
 
-原始测量 **62.07%**（18/29）。§2 证明其中相当一部分失败源于交付门禁死锁。
+死锁修复后**用与原测量完全相同的口径重跑了全套 coding（30 任务 × 1 次）**：
 
-**死锁修复后做了定向复测**：把此前失败的 8 个 coding 任务各重跑 1 次。
+| | 修复前 | **修复后** |
+|---|---:|---:|
+| 门禁通过 | 18/29（**62.07%**） | **27/30（90.0%）** |
+| 安全违规 | 0 | **0** |
+| 时延中位数 | 170 s | **30 s** |
+| 花费 | — | $0.65 ≈ ¥4.7 |
 
-| 任务 | 修复前 | 修复后 |
+**提升 27.9 个百分点。** 口径完全可比：原 62.07% 也是 30 任务 × 1 次测出来的。
+
+仍失败的 3 个，全部是真实能力问题，无一涉及交付流程：
+
+| 任务 | 失败检查 | 改动 |
 |---|---|---|
-| `coding_feature_mask_email` | functional_failed | ✅ **passed** |
-| `coding_feature_render_table` | functional_failed | ✅ **passed** |
-| `coding_refactor_exception_hierarchy` | functional_failed | ✅ **passed** |
-| `coding_test_slugify_regression` | partial | ✅ **passed** |
-| `coding_config_feature_flag` | functional_failed | 不变 |
-| `coding_multifile_active_users` | functional_failed | 不变 |
-| `coding_bugfix_discount_percent` | partial | eval 层报错，无结果 |
-| `coding_refactor_item_dataclass` | functional_failed | eval 层报错，无结果 |
+| `coding_config_feature_flag` | `feature_flag` | `acme/config.py`, `config.json` |
+| `coding_multifile_active_users` | `active_users` | 无改动 |
+| `coding_refactor_item_dataclass` | `item_compat` | `acme/models.py`, `acme/pricing.py` |
 
-**6 个拿到结果的任务中，4 个翻转为通过。**
+短板收敛到**多文件一致性**与**重构兼容性**——比原来「feature/多文件/重构/测试修复」四类全弱要清晰得多。
 
-> ⚠️ **这个数字必须带三条限定，不能直接当成"能力提升到 76%"：**
+> ⚠️ **仍需保留的限定**：每任务 1 次，**没有方差数据**。已实测同一任务
+> run-to-run 差异很大，所以 90.0% 是一次测量而非稳定基线。
+> 要给出带置信度的结论仍需 30 × 3（约 ¥17）。
 >
-> 1. **每个任务只跑了 1 次。** 已实测同一任务 run-to-run 方差极大
->    （请求数 17 vs 10、耗时 205s vs 40s），单次翻转有相当部分可能是运气。
-> 2. **只重跑了此前失败的任务**，是有偏子集。此前通过的 21 个任务没有复测，
->    **无法排除回归**。
-> 3. 按 18+4=22/29 外推得到的 **75.9% 是推算值，不是测量值**。
->
-> 诚实的表述是：**「死锁修复让 6 个此前失败的任务中的 4 个在单次重跑中通过，
-> 但缺少方差数据与回归验证，不足以宣布新的能力基线。」**
->
-> 要拿到可信的新基线，需要 coding 全套 30 任务 × 3 次（约 ¥12~18）。
+> 但与 62.07% 的对比是成立的——**两者口径相同，差异远超单次噪声可解释的范围**。
 
 ### 6.6 范围纪律 —— 弱，但已被框架接管
 

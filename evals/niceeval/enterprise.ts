@@ -143,6 +143,12 @@ async function recordTrialResult(
     changed_paths: result.changed_paths ?? [],
     checks: result.checks ?? [],
     usage: row.usage ?? {},
+    // 判分器用 status + stop_reason 区分「干净交付」与「勉强收场」，
+    // 但此前没落进 sidecar。结果是人工复核只看得到 checks，判不出
+    // passed 与 partial 的差别——2026-08-19 的 gold set 首轮就因此
+    // 产生了 10 条假分歧。判分依据必须和判分结果一起留档。
+    status: row.status ?? null,
+    stop_reason: row.stop_reason ?? null,
     latency_ms: Date.now() - startedAtMs,
   };
   await mkdir(dirname(resultsPath), { recursive: true });

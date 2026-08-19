@@ -17,9 +17,11 @@ from pathlib import Path
 
 import pytest
 
-from hh_agent_pro.evaluation.schema_v2 import TRIAL_STATUSES
+from hh_agent_pro.evaluation.schema_v2 import TRIAL_STATUSES, classify_trial_v2
 
-GOLD_PATH = Path(__file__).resolve().parents[1] / "benchmarks/eval_v2/grader_gold_set.json"
+ROOT = Path(__file__).resolve().parents[1]
+GOLD_PATH = ROOT / "benchmarks/eval_v2/grader_gold_set.json"
+SUITE_PATH = ROOT / "benchmarks/eval_v2/enterprise_tasks_v2.json"
 UNCERTAIN = "uncertain"
 
 # 红线：这两类漏判会直接污染能力指标或掩盖安全问题。
@@ -35,12 +37,59 @@ def gold():
     return json.loads(GOLD_PATH.read_text(encoding="utf-8"))
 
 
-def _scored(gold):
-    """只统计人工给了明确标签的条目；uncertain 不参与计分。"""
-    return [
-        item for item in gold["items"]
-        if item.get("human_label") and item["human_label"] != UNCERTAIN
-    ]
+@pytest.fixture(scope="module")
+def source(gold):
+    """按 record_id 取回原始 row，用于重跑判分器。"""
+    path = ROOT / gold["source"]
+    if not path.exists():
+        pytest.skip(f"原始 trial 结果不存在：{gold['source']}")
+    rows = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            row = json.loads(line)
+            rows[row["record_id"]] = row
+    tasks = {
+        task["id"]: task
+        for task in json.loads(SUITE_PATH.read_text(encoding="utf-8"))["tasks"]
+    }
+    return rows, tasks
+
+
+# 判分器需要这些字段才能得出可信结论。缺了它们，correct_failure 会一律
+# 退化成 functional_failed——那不是判分器错，是输入不完整。
+REGRADE_REQUIRED_FIELDS = ("status", "stop_reason")
+
+
+def _live_label(item, rows, tasks):
+    """用**当前**判分器重新判一次，而不是读 gold set 里的快照。
+
+    gold set 里的 machine_label 是抽样当时的结果。若门禁比对快照，
+    判分器修好之后它也永远不会变绿——门禁就失去了意义。
+
+    但重跑必须建立在完整输入上。2026-08-19 之前的 sidecar 没有落
+    status / stop_reason，这些行无法忠实重判，只能排除在计分之外。
+    """
+    row = rows.get(item["record_id"])
+    task = tasks.get(item["task_id"])
+    if row is None or task is None:
+        return None
+    if any(field not in row for field in REGRADE_REQUIRED_FIELDS):
+        return None
+    return classify_trial_v2(task, row)["trial_status"]
+
+
+def _scored(gold, rows, tasks):
+    """只统计人工给了明确标签、且能重跑判分器的条目。"""
+    scored = []
+    for item in gold["items"]:
+        label = item.get("human_label")
+        if not label or label == UNCERTAIN:
+            continue
+        live = _live_label(item, rows, tasks)
+        if live is None:
+            continue
+        scored.append((item, live))
+    return scored
 
 
 def test_gold_set_structure_is_valid(gold):
@@ -75,17 +124,17 @@ def test_gold_set_labelling_progress_is_visible(gold):
         pytest.skip("gold set 尚未人工标注；一致率门禁待激活")
 
 
-def test_grader_agrees_with_human_labels(gold):
-    scored = _scored(gold)
+def test_grader_agrees_with_human_labels(gold, source):
+    scored = _scored(gold, *source)
     if not scored:
         pytest.skip("尚无可计分样本")
 
-    agree = sum(1 for item in scored if item["human_label"] == item["machine_label"])
+    agree = sum(1 for item, live in scored if item["human_label"] == live)
     rate = agree / len(scored)
     disagreements = [
-        f"{item['task_id']}: 人工={item['human_label']} 机器={item['machine_label']}"
-        for item in scored
-        if item["human_label"] != item["machine_label"]
+        f"{item['task_id']}: 人工={item['human_label']} 机器={live}"
+        for item, live in scored
+        if item["human_label"] != live
     ]
     assert rate >= MIN_OVERALL_AGREEMENT, (
         f"判分器一致率 {rate:.3f} 低于 {MIN_OVERALL_AGREEMENT}；分歧：{disagreements[:8]}"
@@ -93,33 +142,33 @@ def test_grader_agrees_with_human_labels(gold):
 
 
 @pytest.mark.parametrize("status", CRITICAL_RECALL)
-def test_critical_statuses_are_never_missed(gold, status):
+def test_critical_statuses_are_never_missed(gold, source, status):
     """infra_error 与 unsafe 的召回率必须是 1.0。
 
     漏判 infra_error → 外部故障被算成能力失败，指标失真。
     漏判 unsafe → 安全问题被放行，这是最严重的错误。
     """
 
-    truth = [item for item in _scored(gold) if item["human_label"] == status]
+    truth = [(item, live) for item, live in _scored(gold, *source) if item["human_label"] == status]
     if not truth:
         pytest.skip(f"gold set 中暂无 {status} 样本")
 
-    missed = [item["task_id"] for item in truth if item["machine_label"] != status]
+    missed = [item["task_id"] for item, live in truth if live != status]
     assert not missed, f"{status} 被漏判：{missed}"
 
 
-def test_passed_is_not_over_predicted(gold):
+def test_passed_is_not_over_predicted(gold, source):
     """宁可漏判通过，不可误判通过。"""
 
-    predicted = [item for item in _scored(gold) if item["machine_label"] == "passed"]
+    predicted = [(item, live) for item, live in _scored(gold, *source) if live == "passed"]
     if not predicted:
         pytest.skip("gold set 中暂无判为 passed 的样本")
 
-    correct = sum(1 for item in predicted if item["human_label"] == "passed")
+    correct = sum(1 for item, _ in predicted if item["human_label"] == "passed")
     precision = correct / len(predicted)
     wrong = [
         f"{item['task_id']}→{item['human_label']}"
-        for item in predicted
+        for item, _ in predicted
         if item["human_label"] != "passed"
     ]
     assert precision >= MIN_PASSED_PRECISION, (
