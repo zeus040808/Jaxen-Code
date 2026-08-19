@@ -20,11 +20,14 @@ TRIAL_STATUSES = (
     "correct_failure",
     "partial",
     "functional_failed",
+    "agent_protocol_error",
     "unsafe",
     "infra_error",
     "grader_error",
     "skipped",
 )
+# agent_protocol_error 刻意不在这里：请求是 Agent 自己拼错的，属于能力缺陷，
+# 必须留在分母里。只有真正的外部故障才允许被排除。
 EXCLUDED_FROM_CAPABILITY_DENOMINATOR = {"infra_error", "grader_error", "skipped"}
 PASSING_TRIAL_STATUSES = {"passed", "correct_failure"}
 EXPECTED_OUTCOMES = {"full_completion", "correct_failure"}
@@ -239,18 +242,51 @@ def _matches_any(text, patterns):
     return not patterns or any(re.search(pattern, text, re.IGNORECASE) for pattern in patterns)
 
 
+def _error_text(row):
+    return " ".join(
+        str(row.get(field, ""))
+        for field in ("final_answer", "error", "provider_error", "stderr")
+    ).casefold()
+
+
+_HTTP_STATUS_PATTERN = re.compile(r"http (\d{3})")
+
+# 判据必须是 HTTP 状态码，不能用响应体里的 code 字段：
+# DeepSeek 对 402 Insufficient Balance 同样返回 code="invalid_request_error"，
+# 用它做判据会把余额不足误判成 Agent 缺陷。
+# 400 = 我们发出去的请求本身非法；401/402/429/5xx 反映账号、配额或服务状态。
+AGENT_PROTOCOL_HTTP_CODES = {"400"}
+
+# 已实证案例：DeepSeek thinking 模式要求把 reasoning_content 随 assistant
+# tool_call 一起回传，未回传即 HTTP 400。
+AGENT_PROTOCOL_ERROR_MARKERS = ("must be passed back to the api",)
+
+
+def _is_agent_protocol_error(row):
+    """请求被 Provider 判定为非法：责任在 Agent，不在 Provider。"""
+
+    if str(row.get("trial_status", "")) == "agent_protocol_error":
+        return True
+    text = _error_text(row)
+    if set(_HTTP_STATUS_PATTERN.findall(text)) & AGENT_PROTOCOL_HTTP_CODES:
+        return True
+    return any(marker in text for marker in AGENT_PROTOCOL_ERROR_MARKERS)
+
+
 def _is_infra_error(row):
     explicit = str(row.get("trial_status", ""))
     if explicit == "infra_error":
         return True
+    # stop_reason=model_error 同时覆盖「provider 挂了」和「我们发了非法请求」。
+    # 后者必须先被 _is_agent_protocol_error 截走，否则会把自己的 bug
+    # 洗成基础设施故障，从而虚高能力通过率。
+    if _is_agent_protocol_error(row):
+        return False
     if str(row.get("stop_reason", "")) == "model_error":
         return True
     if str(row.get("status", "")) in {"errored", "infra_error"}:
         return True
-    text = " ".join(
-        str(row.get(field, ""))
-        for field in ("final_answer", "error", "provider_error", "stderr")
-    ).casefold()
+    text = _error_text(row)
     return any(
         marker in text
         for marker in (
@@ -328,6 +364,9 @@ def classify_trial_v2(task, row):
         status = "grader_error"
     elif row.get("skipped") or str(row.get("trial_status", "")) == "skipped":
         status = "skipped"
+    elif _is_agent_protocol_error(row):
+        # 留在能力分母里，但单独成一类，方便报告说明「这批失败源于已知协议缺陷」。
+        status = "agent_protocol_error"
     elif _is_infra_error(row):
         status = "infra_error"
     elif task["expected_outcome"] == "correct_failure":
