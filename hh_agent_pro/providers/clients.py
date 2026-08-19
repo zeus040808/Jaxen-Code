@@ -454,6 +454,9 @@ class OpenAIChatCompatibleModelClient:
         # 表示当前适配器不支持显式提示词缓存控制
         self.supports_prompt_cache = False
         self.supports_native_tools = True
+        # 控制循环一轮只执行一个工具。默认关闭并行调用，避免模型把输出
+        # 预算浪费在会被丢弃的调用上。后端若不认这个参数，构造时置 True 即可。
+        self.allow_parallel_tool_calls = False
         self.requires_reasoning_content_for_tool_calls = any(
             marker in str(model).casefold()
             for marker in ("deepseek-v4", "deepseek-reasoner")
@@ -502,6 +505,11 @@ class OpenAIChatCompatibleModelClient:
         if tools:
             payload["tools"] = list(tools)
             payload["tool_choice"] = "auto"
+            # 控制循环每轮只执行一个工具，多返回的会被丢弃。与其让模型把
+            # 输出预算花在注定作废的调用上（实测每轮丢 1~3 个），不如直接
+            # 关掉并行，让它把这一轮想清楚。
+            if not self.allow_parallel_tool_calls:
+                payload["parallel_tool_calls"] = False
         if self.temperature is not None:
             payload["temperature"] = self.temperature
 
@@ -612,6 +620,10 @@ class OpenAIChatCompatibleModelClient:
             "finish_reason": finish_reason,
             "output_truncated": finish_reason == "length",
             "max_output_tokens_requested": int(max_new_tokens),
+            # 后端一次可能返回多个并行 tool_call，但控制循环每轮只执行一个。
+            # 记下返回数与丢弃数，否则"模型想一次做三件事"这个事实不可观测。
+            "native_tool_calls_returned": len(tool_calls),
+            "native_tool_calls_discarded": max(len(tool_calls) - 1, 0),
             **_extract_usage_cache_details(usage),
         }
         # A length-truncated native tool call often ends with incomplete JSON.

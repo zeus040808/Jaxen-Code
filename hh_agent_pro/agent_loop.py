@@ -12,6 +12,10 @@ from .run_state import (
 from . import tools as toolkit
 from .workspace import clip, now
 
+# 交付门禁最多驳回几次。驳回的意义是提醒模型"还有活没干完"，
+# 提醒两次还不动，再提醒也只是烧 token 和墙钟。
+MAX_DELIVERY_DEFERRALS = 2
+
 
 class AgentLoop:
     def __init__(self, agent):
@@ -280,6 +284,8 @@ class AgentLoop:
         attempts = 0
         max_attempts = max(agent.max_steps * 3, agent.max_steps + 4)
         truncation_recoveries = 0
+        delivery_deferrals = 0
+        unresolved_blockers = []
         protocol_recoveries = 0
 
         # 这是 agent 的主循环，可以按“感知 -> 决策 -> 行动 -> 记录”来理解：
@@ -819,16 +825,40 @@ class AgentLoop:
 
             blockers = agent.delivery_blockers()
             if blockers:
-                notice = (
-                    "Runtime delivery check rejected the final answer because: "
-                    + " | ".join(blockers[:6])
-                    + ". Resolve the blockers, use <needs_user_input>, or use <blocked>."
+                # 门禁只有在模型「还能动手解决」时才值得驳回。工具已被禁用
+                # （步数耗尽或进入 final-only）却仍要求先解决工具失败，就是死锁：
+                # 解决需要工具，而工具不会再给了 —— 模型只能反复交同一份答案，
+                # 直到 episode 超时。这条路径实测吃掉了 47% 的模型请求。
+                actionable = not agent.final_only_mode and tool_steps < agent.max_steps
+                delivery_deferrals += 1
+                if actionable and delivery_deferrals <= MAX_DELIVERY_DEFERRALS:
+                    notice = (
+                        "Runtime delivery check rejected the final answer because: "
+                        + " | ".join(blockers[:6])
+                        + ". Resolve the blockers, use <needs_user_input>, or use <blocked>."
+                    )
+                    agent.record({"role": "assistant", "content": notice, "created_at": now()})
+                    agent.emit_trace(
+                        run_state,
+                        "completion_deferred",
+                        {"blockers": blockers, "attempt": delivery_deferrals},
+                    )
+                    if agent.background_tasks.pending_count():
+                        time.sleep(0.05)
+                    continue
+
+                # 不再驳回，但也不假装干净：把未解决项挂在答案里交出去，
+                # 让下游判分和用户都看得见，而不是让它们消失在超时里。
+                unresolved_blockers = list(blockers)
+                agent.emit_trace(
+                    run_state,
+                    "completion_forced",
+                    {
+                        "blockers": blockers,
+                        "reason": "tools_exhausted" if not actionable else "deferral_budget_spent",
+                        "deferrals": delivery_deferrals,
+                    },
                 )
-                agent.record({"role": "assistant", "content": notice, "created_at": now()})
-                agent.emit_trace(run_state, "completion_deferred", {"blockers": blockers})
-                if agent.background_tasks.pending_count():
-                    time.sleep(0.05)
-                continue
 
             final = (payload or raw).strip()
             if agent.output_recovery_active:
@@ -841,6 +871,12 @@ class AgentLoop:
                 agent.output_recovery_active = False
                 agent.output_recovery_draft = ""
                 agent.session["pending_output"] = {}
+            if unresolved_blockers:
+                final = (
+                    final
+                    + "\n\nUnresolved at delivery (no tool budget left to fix these):\n"
+                    + "\n".join(f"- {item}" for item in unresolved_blockers[:6])
+                )
             # 保存模型最终回答
             agent.record({"role": "assistant", "content": final, "created_at": now()})
             run_state.finish_success(final)
