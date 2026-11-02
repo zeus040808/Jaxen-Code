@@ -155,6 +155,8 @@ python -m hh_agent_pro
 
 默认使用 `deepseek / deepseek-v4-pro`。多模型切换仍然保留：
 
+> 2026-10-30：provider 只保留 `deepseek` / `openai`（任意 OpenAI 兼容端点）/ `fake`，下面的 codex、ollama、anthropic 示例已失效。
+
 ```text
 /model codex
 /model deepseek
@@ -226,18 +228,18 @@ Runtime 对下一次决策的纠错    -> 当前 Prompt 的 authoritative direct
 
 ## 5. 修复三：`...` 不能再让任务完成
 
-修复位于 `hh_agent_pro/runtime.py` 的 `HH.parse()`。
+修复位于 `hh_agent_pro/agent.py` 的 `CodingAgent.parse()`。
 
 ```python
 if "<final>" in raw:
     if "</final>" not in raw:
-        return "retry", HH.retry_notice(
+        return "retry", CodingAgent.retry_notice(
             "model returned an incomplete <final> answer"
         )
 
-    final = HH.extract(raw, "final").strip()
-    if HH.looks_like_placeholder_answer(final):
-        return "retry", HH.retry_notice(
+    final = CodingAgent.extract(raw, "final").strip()
+    if CodingAgent.looks_like_placeholder_answer(final):
+        return "retry", CodingAgent.retry_notice(
             "model returned a placeholder instead of "
             "a meaningful <final> answer"
         )
@@ -250,8 +252,8 @@ if "<final>" in raw:
 
 ```python
 raw = raw.strip()
-if HH.looks_like_placeholder_answer(raw):
-    return "retry", HH.retry_notice(
+if CodingAgent.looks_like_placeholder_answer(raw):
+    return "retry", CodingAgent.retry_notice(
         "model returned a placeholder instead of a meaningful answer"
     )
 if raw:
@@ -285,6 +287,8 @@ def looks_like_placeholder_answer(raw):
 ---
 
 ## 6. 修复四：普通分区裁切不再制造 Checkpoint
+
+> 2026-10-30：分区预算（`section_budget` / `total_budget`）已删除。现在只有真正发生压缩（轻压缩、摘要或兜底裁剪）时才建 `context_reduction` 检查点，见 [context-engineering.md](context-engineering.md)。本节保留作历史记录。
 
 本次 Trace 每个 Prompt 都有：
 
@@ -332,7 +336,7 @@ if material_reductions:
 
 Session 是“可恢复的长期会话状态”，本质是一个 Python 字典，最终保存成 JSON。
 
-新 Session 的骨架在 `hh_agent_pro/runtime.py` 的 `HH.__init__()` 中建立：
+新 Session 的骨架在 `hh_agent_pro/agent.py` 的 `CodingAgent.__init__()` 中建立：
 
 ```python
 self.session = session or {
@@ -386,11 +390,11 @@ Session 可以保存很多历史，但 `ContextManager` 会按预算、相关性
 
 | 字段 | 含义 | 主要创建/赋值位置 |
 |---|---|---|
-| `id` | Session 唯一 ID，也是 JSON 文件名 | `runtime.py: HH.__init__ / _ensure_session_shape` |
-| `created_at` | Session 创建时间，UTC ISO 字符串 | `runtime.py: HH.__init__` |
-| `workspace_root` | 此 Session 所属仓库根目录 | `runtime.py: HH.__init__` |
-| `history` | 用户、assistant、tool 的权威事件流 | `runtime.py: HH.record` |
-| `archive_next_sequence` | 下一条消息的会话内顺序号 | `runtime.py: HH.record` |
+| `id` | Session 唯一 ID，也是 JSON 文件名 | `agent.py: CodingAgent.__init__ / _ensure_session_shape` |
+| `created_at` | Session 创建时间，UTC ISO 字符串 | `agent.py: CodingAgent.__init__` |
+| `workspace_root` | 此 Session 所属仓库根目录 | `agent.py: CodingAgent.__init__` |
+| `history` | 用户、assistant、tool 的权威事件流 | `agent.py: CodingAgent.record` |
+| `archive_next_sequence` | 下一条消息的会话内顺序号 | `agent.py: CodingAgent.record` |
 | `memory` | 轻量工作记忆和笔记 | `features/memory.py` |
 | `task_state` | 当前用户任务的语义进度 | `task_state.py`、`agent_loop.py` |
 | `source_evidence` | 当前任务读过的文件和工具动作证据 | `evidence.py`、`agent_loop.py` |
@@ -476,7 +480,7 @@ Session 可以保存很多历史，但 `ContextManager` 会按预算、相关性
 
 ### 10.1 字段在哪里赋值
 
-所有消息统一走 `HH.record()`：
+所有消息统一走 `CodingAgent.record()`：
 
 ```python
 def record(self, item):
@@ -499,13 +503,13 @@ def record(self, item):
 
 ```text
 AgentLoop 收到用户输入
-  -> HH.record(user)
+  -> CodingAgent.record(user)
 模型请求工具
-  -> HH.record(assistant + tool_call)
+  -> CodingAgent.record(assistant + tool_call)
 工具执行完成
-  -> HH.record(tool + tool_call_id)
+  -> CodingAgent.record(tool + tool_call_id)
 模型给出最终答案
-  -> HH.record(assistant)
+  -> CodingAgent.record(assistant)
 ```
 
 ### 10.2 为什么同时有 JSON history 和 SQLite Archive
@@ -550,7 +554,7 @@ archive_message_id = 在整个 Archive 数据库里是哪一行
 
 因为 history 已经有序号 `0、1、2、3、4` 五条消息，下一条应当使用 `5`。
 
-每次 `HH.record()`：
+每次 `CodingAgent.record()`：
 
 ```python
 sequence_no = session["archive_next_sequence"]
@@ -591,7 +595,7 @@ def default_memory_state():
 
 - 最近接触的最多 8 个文件；
 - `read_file`、`read_files`、写入或补丁工具成功后，由
-  `HH.update_memory_after_tool()` 调用 `remember_file()` 更新；
+  `CodingAgent.update_memory_after_tool()` 调用 `remember_file()` 更新；
 - 样本没有工具调用，所以是空数组。
 
 ### `file_summaries`
@@ -1018,26 +1022,26 @@ Session 保持干净，让 Trace 专注工程事实。
 
 ```mermaid
 flowchart TD
-    A["CLI 收到用户输入"] --> B["HH.ask(user_message)"]
+    A["CLI 收到用户输入"] --> B["CodingAgent.ask(user_message)"]
     B --> C["AgentLoop.run"]
     C --> D["Memory.set_task_summary"]
-    C --> E["HH.record user -> history + archive + JSON"]
+    C --> E["CodingAgent.record user -> history + archive + JSON"]
     C --> F["RunState.create"]
     C --> G["TaskState.begin"]
     G --> H["EvidenceLedger.begin"]
-    H --> I["HH._build_prompt_and_metadata"]
+    H --> I["CodingAgent._build_prompt_and_metadata"]
     I --> J["evaluate_resume_state"]
     I --> K["ContextManager.build"]
     K --> L["Provider complete_stream"]
-    L --> M["HH.parse"]
+    L --> M["CodingAgent.parse"]
     M -- "retry" --> N["model_output_correction + trace"]
     N --> I
     M -- "tool" --> O["ToolExecutor.execute"]
-    O --> P["HH.record tool result"]
+    O --> P["CodingAgent.record tool result"]
     O --> Q["更新 Memory / TaskState / Evidence"]
     Q --> I
     M -- "final" --> R["完成前交付检查"]
-    R --> S["HH.record assistant final"]
+    R --> S["CodingAgent.record assistant final"]
     S --> T["RunState.finish_success"]
     T --> U["TaskState.mark_completed"]
     U --> V["创建 run_finished Checkpoint"]
@@ -1048,7 +1052,7 @@ flowchart TD
 
 ```text
 cli.py
-  -> runtime.py: HH.ask / HH.record / HH.parse
+  -> agent.py: CodingAgent.ask / CodingAgent.record / CodingAgent.parse
   -> agent_loop.py: AgentLoop.run
   -> context_manager.py: build / provider_request
   -> task_state.py

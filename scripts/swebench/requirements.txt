@@ -1,0 +1,2 @@
+# SWE-bench 评测工具链（单独的 venv，不混进 agent 本身的依赖）
+swebench==5.0.2

@@ -1,21 +1,14 @@
-﻿"""Model provider adapters."""
+﻿"""模型后端：OpenAI Chat Completions 兼容接口，以及测试/评测用的脚本化模型。"""
 
-from .clients import (
-    AnthropicCompatibleModelClient,
-    EvalScriptModelClient,
-    FakeModelClient,
-    OllamaModelClient,
-    OpenAIChatCompatibleModelClient,
-    OpenAICompatibleModelClient,
-)
-from .codex_cli import CodexCliModelClient
+from .base import MODEL_LIMITS, ModelRequest, model_limits
+from .openai_chat import OpenAIChatClient
+from .scripted import EvalScriptModelClient, FakeModelClient
 
 __all__ = [
-    "AnthropicCompatibleModelClient",
     "EvalScriptModelClient",
     "FakeModelClient",
-    "OllamaModelClient",
-    "OpenAIChatCompatibleModelClient",
-    "OpenAICompatibleModelClient",
-    "CodexCliModelClient",
+    "MODEL_LIMITS",
+    "ModelRequest",
+    "OpenAIChatClient",
+    "model_limits",
 ]

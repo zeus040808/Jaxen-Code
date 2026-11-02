@@ -1,4 +1,7 @@
-﻿"""Narrow context passed from runtime into tool functions."""
+﻿"""传给工具实现的受限上下文。
+
+CodingAgent 只暴露工具需要的路径、环境和服务，避免工具依赖整个 Agent。
+"""
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,6 +26,7 @@ class ToolContext:
     session_archive: Any = None
     skill_store: Any = None
     session_id: str = ""
+    toolset: str = "full"
 
     def path(self, raw_path):
         return self.path_resolver(str(raw_path))

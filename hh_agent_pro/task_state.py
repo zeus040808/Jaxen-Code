@@ -8,6 +8,7 @@ collected, and which failures or claims are still unresolved.
 from __future__ import annotations
 
 import re
+import shlex
 import uuid
 
 from .workspace import clip, now
@@ -17,6 +18,52 @@ TASK_STATE_SCHEMA_VERSION = "v1"
 EVIDENCE_LIMIT = 60
 FAILURE_LIMIT = 30
 CLAIM_LIMIT = 30
+VERIFICATION_REPAIR_STEPS = 4
+MAX_TODOS = 20
+TODO_STATUSES = {"pending", "in_progress", "completed"}
+CODE_SUFFIXES = {".py", ".js", ".jsx", ".ts", ".tsx", ".go", ".rs", ".java", ".c", ".cc", ".cpp", ".h"}
+CHECK_PREFIX = r"^(?:(?:uv|poetry)\s+run(?:\s+--with\s+\S+)*\s+)?"
+TEST_COMMAND = re.compile(
+    CHECK_PREFIX + r"(?:python(?:3(?:\.\d+)?)?\s+-m\s+(?:pytest|unittest)\b"
+    r"|pytest\b|npm\s+(?:run\s+)?test\b|pnpm\s+test\b|yarn\s+test\b"
+    r"|cargo\s+test\b|go\s+test\b|mvn\s+test\b|(?:\./)?gradle(?:w)?\s+test\b)",
+    re.I,
+)
+STATIC_COMMAND = re.compile(
+    CHECK_PREFIX + r"(?:python(?:3(?:\.\d+)?)?\s+-m\s+compileall\b"
+    r"|ruff\s+check\b|mypy\b|tsc\b|npm\s+run\s+build\b|cargo\s+check\b)",
+    re.I,
+)
+
+
+LEADING_CD = re.compile(r"^(?:cd\s+(?:\"[^\"]+\"|'[^']+'|\S+)\s*&&\s*)+")
+
+
+def _check_kind(command):
+    command = str(command).strip()
+    # 开头的 `cd 目录 &&` 是安全的：&& 会把失败传下去，退出码由后面的检查命令决定。
+    command = LEADING_CD.sub("", command)
+    try:
+        lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|<>")
+        lexer.whitespace_split = True
+        parts = list(lexer)
+    except ValueError:
+        return ""
+    # Shell chaining can hide a failing test; punctuation inside quoted Python code is safe.
+    if any(part and set(part) <= set(";&|<>") for part in parts):
+        return ""
+    if any(part in {"--help", "--version", "--collect-only", "--dry-run", "--listTests", "-h", "-V"} for part in parts):
+        return ""
+    if len(parts) >= 3 and re.fullmatch(r"python(?:3(?:\.\d+)?)?", parts[0], re.I):
+        if parts[1] == "-c" and re.search(r"\bassert\b", parts[2]):
+            return "test"
+    if len(parts) >= 4 and parts[0] == "test" and "=" in parts:
+        return "test"
+    if TEST_COMMAND.match(command):
+        return "test"
+    if STATIC_COMMAND.match(command):
+        return "static"
+    return ""
 
 
 def default_task_state():
@@ -32,7 +79,11 @@ def default_task_state():
         "claims": [],
         "open_questions": [],
         "failures": [],
+        "verification_pending": False,
+        "verification": {"edit_revision": 0, "changed_paths": [], "checks": []},
         "next_action": "",
+        # 会话内的轻量计划（todo_write 整体替换）；新任务时随 _reset 清空。
+        "todos": [],
         "created_at": "",
         "updated_at": now(),
     }
@@ -62,6 +113,13 @@ class TaskState:
         ):
             if not isinstance(self.state.get(key), list):
                 self.state[key] = []
+        if not isinstance(self.state.get("verification"), dict):
+            self.state["verification"] = defaults["verification"]
+        for key, value in defaults["verification"].items():
+            self.state["verification"].setdefault(key, list(value) if isinstance(value, list) else value)
+        if self.state["verification_pending"] and not self.state["verification"]["edit_revision"]:
+            # Sessions created before detailed verification records still need a post-edit test.
+            self.state["verification"]["edit_revision"] = 1
         self.state["schema_version"] = TASK_STATE_SCHEMA_VERSION
 
     def to_dict(self):
@@ -138,18 +196,54 @@ class TaskState:
             }
         )
 
+        verification = self.state["verification"]
+        changed_code_paths = [
+            str(path) for path in metadata.get("affected_paths", [])
+            if str(path).lower().endswith(tuple(CODE_SUFFIXES))
+        ] if metadata.get("workspace_changed") else []
+        if changed_code_paths:
+            verification["edit_revision"] += 1
+            verification["changed_paths"] = sorted(set(verification["changed_paths"] + changed_code_paths))
+            self.state["verification_pending"] = True
+        elif name == "run_shell" and not (args or {}).get("background"):
+            command = str((args or {}).get("command", ""))
+            kind = _check_kind(command)
+            if kind:
+                passed = status == "ok" and not (
+                    kind == "test" and re.search(r"Ran 0 tests\b", str(result), re.I)
+                )
+                verification["checks"].append({
+                    "command": clip(command, 300),
+                    "kind": kind,
+                    "passed": passed,
+                    "edit_revision": verification["edit_revision"],
+                    "changed_paths": list(verification["changed_paths"]),
+                    "summary": clip(str(result), 350),
+                    "created_at": now(),
+                })
+                verification["checks"] = verification["checks"][-8:]
+                if kind == "test" and verification["edit_revision"]:
+                    self.state["verification_pending"] = not passed
+
         if status == "ok":
             for failure in self.state["failures"]:
-                if failure.get("retryable") and not failure.get("resolved"):
+                same_action = failure.get("tool") == name and (
+                    not failure.get("path") or failure.get("path") == str((args or {}).get("path", ""))
+                )
+                if name == "run_shell" and failure.get("check_kind"):
+                    same_action = same_action and failure["check_kind"] == _check_kind((args or {}).get("command", ""))
+                if failure.get("retryable") and not failure.get("resolved") and same_action:
                     failure["resolved"] = True
                     failure["resolved_at"] = now()
-                    failure["resolution"] = f"followed by successful {name}"
+                    failure["resolution"] = f"corrected by successful {name}"
             self.state["next_action"] = "Review the evidence and choose the next required action."
         else:
             fingerprint = str(metadata.get("failure_fingerprint", ""))
             self.state["failures"].append(
                 {
                     "tool": str(name),
+                    "path": str((args or {}).get("path", "")),
+                    "check_kind": _check_kind((args or {}).get("command", "")) if name == "run_shell" else "",
                     "error_code": error_code or status,
                     "fingerprint": fingerprint,
                     "retryable": bool(metadata.get("retryable", False)),
@@ -245,6 +339,9 @@ class TaskState:
 
     def delivery_blockers(self, background_pending=0):
         blockers = []
+        # 改了代码但没跑通测试只是提示（见 render 的 Code verification 一行），不阻止交付：
+        # 正则识别不了所有合法验证方式（复现脚本、仓库自定义命令），硬门禁会误报，
+        # 还会逼模型自己写测试文件来过关。
         if background_pending:
             blockers.append(f"{background_pending} background task(s) are still running")
 
@@ -276,6 +373,31 @@ class TaskState:
         blockers = self.delivery_blockers()
         return " | ".join(blockers[:4])
 
+    def set_todos(self, todos):
+        """Replace the whole todo list; the model always restates the full plan."""
+        if not isinstance(todos, list) or len(todos) > MAX_TODOS:
+            raise ValueError(f"todos must be a list of at most {MAX_TODOS} items")
+        cleaned = []
+        for item in todos:
+            if not isinstance(item, dict):
+                raise ValueError("each todo must be an object with content and status")
+            content = str(item.get("content", "")).strip()
+            status = str(item.get("status", "pending")).strip()
+            if not content:
+                raise ValueError("todo content must not be empty")
+            if status not in TODO_STATUSES:
+                raise ValueError(f"todo status must be one of {sorted(TODO_STATUSES)}")
+            cleaned.append({"content": clip(content, 200), "status": status})
+        self.state["todos"] = cleaned
+        self._touch()
+        return self.render_todos() or "Todo list cleared."
+
+    def render_todos(self):
+        marks = {"completed": "[x]", "in_progress": "[>]", "pending": "[ ]"}
+        return "\n".join(
+            f"  {marks[item['status']]} {item['content']}" for item in self.state.get("todos", [])
+        )
+
     def render(self):
         lines = [
             "Task progress:",
@@ -283,6 +405,22 @@ class TaskState:
             f"- Status: {self.state.get('status') or 'idle'}",
             f"- Next action: {self.state.get('next_action') or '-'}",
         ]
+        todos = self.render_todos()
+        if todos:
+            lines.append("- Todos:")
+            lines.append(todos)
+        verification = self.state["verification"]
+        if verification["edit_revision"]:
+            lines.append(
+                f"- Code verification: {'pending test' if self.state['verification_pending'] else 'tested'} "
+                f"for edit {verification['edit_revision']} ({', '.join(verification['changed_paths'])})"
+            )
+            if verification["checks"]:
+                check = verification["checks"][-1]
+                lines.append(
+                    f"- Last check: {check['kind']} {'passed' if check['passed'] else 'failed'} "
+                    f"on edit {check['edit_revision']}: {check['command']}"
+                )
         tasks = self._subtasks()
         if tasks:
             lines.append("- Subtasks:")

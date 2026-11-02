@@ -2,6 +2,7 @@ import { defineEval } from "niceeval";
 import type { JsonValue, TestContext } from "niceeval";
 import { equals, isTrue } from "niceeval/expect";
 import { loadCriteria, loadJson } from "niceeval/loaders";
+import { evalToolLimit } from "./verification-budget.js";
 
 interface EvalTask {
   id: string;
@@ -177,7 +178,7 @@ export function definePilotEval(taskId: string) {
       ]);
 
       const turn = await t.send(task.prompt);
-      turn.maxToolCalls(task.budgets.max_steps);
+      turn.maxToolCalls(evalToolLimit(task));
 
       // Hidden criteria enter the sandbox only after the agent send window is closed.
       await t.sandbox.uploadFile(

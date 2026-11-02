@@ -2,7 +2,7 @@
   "schema_version": 2,
   "suite_id": "hh-enterprise-v2",
   "suite_version": 1,
-  "generated_by": "scripts/build_enterprise_eval_v2.py",
+  "generated_by": "scripts/eval/build_enterprise_dataset.py",
   "suite_counts": {
     "coding-capability": 30,
     "tool-contract": 8,

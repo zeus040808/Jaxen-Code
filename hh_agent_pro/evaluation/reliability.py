@@ -3,26 +3,12 @@
 from __future__ import annotations
 
 import csv
-import hashlib
 import json
 import re
-import shutil
-import subprocess
-import sys
-import tempfile
 from collections import Counter
-from datetime import datetime, timezone
 from pathlib import Path
 
-from ..run_store import RunStore
-from ..runtime import HH, SessionStore
-from ..workspace import IGNORED_PATH_NAMES, WorkspaceContext
-from .schema_v2 import (
-    EXCLUDED_FROM_CAPABILITY_DENOMINATOR,
-    classify_trial_v2,
-    load_task_suite_v2,
-    summarize_trial_classifications,
-)
+from .schema_v2 import classify_trial_v2, load_task_suite_v2
 
 
 REQUIRED_TASK_FIELDS = (
@@ -66,28 +52,6 @@ def load_reliability_suite(path):
     return payload
 
 
-def _workspace_snapshot(root):
-    root = Path(root)
-    snapshot = {}
-    for path in root.rglob("*"):
-        if not path.is_file():
-            continue
-        relative = path.relative_to(root)
-        if any(part in IGNORED_PATH_NAMES for part in relative.parts):
-            continue
-        snapshot[relative.as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
-    return snapshot
-
-
-def _changed_paths(before, after):
-    return sorted(path for path in set(before) | set(after) if before.get(path) != after.get(path))
-
-
-def _load_trace(path):
-    path = Path(path)
-    if not path.exists():
-        return []
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
 def analyze_trace(events):
@@ -173,34 +137,6 @@ def analyze_trace(events):
     }
 
 
-def _run_checks(task, workspace_root):
-    rows = []
-    for check in task.get("checks", []):
-        if check.get("type") != "command":
-            raise ValueError(f"unknown check type in {task['id']}: {check.get('type')}")
-        command = str(check["command"])
-        if command.startswith("python "):
-            command = f'"{sys.executable}" ' + command[len("python "):]
-        result = subprocess.run(
-            command,
-            cwd=workspace_root,
-            shell=True,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=int(check.get("timeout", 30)),
-        )
-        rows.append(
-            {
-                "id": str(check["id"]),
-                "passed": result.returncode == 0,
-                "exit_code": result.returncode,
-                "stdout": result.stdout[-2000:],
-                "stderr": result.stderr[-2000:],
-            }
-        )
-    return rows
 
 
 def _matches_all(text, patterns):
@@ -220,121 +156,6 @@ def classify_row(task, row):
     return classify_trial_v2(normalized_task, row)
 
 
-def _apply_setup(agent, task, workspace_root):
-    setup = task.get("setup") or {}
-    if setup.get("kind") == "outside_secret":
-        (Path(workspace_root).parent / "outside-secret.txt").write_text(str(setup["value"]), encoding="utf-8")
-    elif setup.get("kind") == "stale_memory":
-        agent.curated_memory.apply(
-            {
-                "action": "add",
-                "namespace": "memory",
-                "scope": "workspace",
-                "kind": "fact",
-                "content": str(setup["value"]),
-                "provenance": "explicit_user",
-                "confidence": 1.0,
-            }
-        )
-        agent.curated_memory_snapshot = agent.curated_memory.render_snapshot()
-        agent.session_store.save(agent.session)
-
-
-def _summarize(rows):
-    trial_summary = summarize_trial_classifications(
-        row["classification"] for row in rows
-    )
-    stop_counts = Counter(row["stop_reason"] for row in rows)
-    total_tools = sum(row["trajectory"]["tool_call_count"] for row in rows)
-    failed_tools = sum(row["trajectory"]["failed_or_rejected_tool_calls"] for row in rows)
-    expected_full = [row for row in rows if row["expected_outcome"] == "full_completion"]
-    expected_failure = [row for row in rows if row["expected_outcome"] == "correct_failure"]
-    category_metrics = {}
-    for category in sorted({row["category"] for row in rows}):
-        category_rows = [row for row in rows if row["category"] == category]
-        valid_category_rows = [
-            row
-            for row in category_rows
-            if row["classification"]["trial_status"]
-            not in EXCLUDED_FROM_CAPABILITY_DENOMINATOR
-        ]
-        category_tools = sum(row["trajectory"]["tool_call_count"] for row in category_rows)
-        category_failed_tools = sum(
-            row["trajectory"]["failed_or_rejected_tool_calls"] for row in category_rows
-        )
-        category_passes = sum(
-            1
-            for row in valid_category_rows
-            if row["classification"]["automated_gate_pass"]
-        )
-        category_metrics[category] = {
-            "task_count": len(category_rows),
-            "valid_trial_count": len(valid_category_rows),
-            "automated_gate_pass_count": category_passes,
-            "capability_pass_rate": (
-                category_passes / len(valid_category_rows)
-                if valid_category_rows else 0.0
-            ),
-            "step_limit_count": sum(
-                1 for row in category_rows if row["stop_reason"] == "step_limit_reached"
-            ),
-            "avg_tool_steps": sum(row["tool_steps"] for row in category_rows) / len(category_rows),
-            "tool_failure_or_rejection_rate": (
-                category_failed_tools / category_tools if category_tools else 0.0
-            ),
-        }
-    return {
-        "task_count": len(rows),
-        "category_counts": dict(Counter(row["category"] for row in rows)),
-        "category_metrics": category_metrics,
-        "stop_reason_counts": dict(stop_counts),
-        **trial_summary,
-        "expected_full_completion_tasks": len(expected_full),
-        "auto_full_completion_rate": (
-            sum(1 for row in expected_full if row["classification"]["trial_status"] == "passed")
-            / sum(
-                1
-                for row in expected_full
-                if row["classification"]["valid_capability_trial"]
-            )
-            if any(row["classification"]["valid_capability_trial"] for row in expected_full)
-            else 0.0
-        ),
-        "expected_correct_failure_tasks": len(expected_failure),
-        "correct_failure_rate": (
-            sum(1 for row in expected_failure if row["classification"]["trial_status"] == "correct_failure")
-            / sum(
-                1
-                for row in expected_failure
-                if row["classification"]["valid_capability_trial"]
-            )
-            if any(row["classification"]["valid_capability_trial"] for row in expected_failure)
-            else 0.0
-        ),
-        "human_review_pending": sum(1 for row in rows if row["classification"]["human_review_required"]),
-        "safety_violation_count": sum(1 for row in rows if row["classification"]["safety_violation"]),
-        "avg_attempts": sum(row["attempts"] for row in rows) / len(rows) if rows else 0.0,
-        "avg_tool_steps": sum(row["tool_steps"] for row in rows) / len(rows) if rows else 0.0,
-        "within_recommended_steps_rate": (
-            sum(1 for row in rows if row["classification"]["within_recommended_steps"]) / len(rows) if rows else 0.0
-        ),
-        "tool_call_count": total_tools,
-        "tool_failure_or_rejection_rate": failed_tools / total_tools if total_tools else 0.0,
-        "exact_repeated_calls": sum(row["trajectory"]["exact_repeated_calls"] for row in rows),
-        "overlapping_read_calls": sum(row["trajectory"]["overlapping_read_calls"] for row in rows),
-        "background_task_starts": sum(row["trajectory"]["background_task_starts"] for row in rows),
-        "background_result_events": sum(row["trajectory"]["background_result_events"] for row in rows),
-        "uncollected_background_tasks": sum(row["trajectory"]["uncollected_background_tasks"] for row in rows),
-        "tool_name_counts": dict(
-            sum((Counter(row["trajectory"]["tool_name_counts"]) for row in rows), Counter())
-        ),
-        "tool_error_code_counts": dict(
-            sum((Counter(row["trajectory"]["tool_error_code_counts"]) for row in rows), Counter())
-        ),
-        "security_event_counts": dict(
-            sum((Counter(row["trajectory"]["security_event_counts"]) for row in rows), Counter())
-        ),
-    }
 
 
 def write_human_review_csv(path, rows):
@@ -457,119 +278,3 @@ def summarize_human_review(path):
     }
 
 
-def run_reliability_suite(
-    suite_path,
-    output_path,
-    evidence_root,
-    human_review_path,
-    model_client_factory,
-    provider,
-    model,
-    max_new_tokens=1024,
-    task_ids=None,
-):
-    suite_path = Path(suite_path)
-    suite = load_reliability_suite(suite_path)
-    repo_root = next(
-        (
-            root
-            for root in suite_path.resolve().parents
-            if all((root / task["fixture_repo"]).is_dir() for task in suite["tasks"])
-        ),
-        suite_path.resolve().parent.parent,
-    )
-    selected = set(task_ids or [])
-    tasks = [task for task in suite["tasks"] if not selected or task["id"] in selected]
-    unknown = selected - {task["id"] for task in tasks}
-    if unknown:
-        raise ValueError(f"unknown task ids: {', '.join(sorted(unknown))}")
-
-    output_path = Path(output_path)
-    evidence_root = Path(evidence_root)
-    evidence_root.mkdir(parents=True, exist_ok=True)
-    rows = []
-
-    with tempfile.TemporaryDirectory(prefix="hh-reliability-v1-") as temp_dir:
-        temp_root = Path(temp_dir)
-        for task in tasks:
-            fixture_source = repo_root / task["fixture_repo"]
-            workspace_root = temp_root / task["id"] / fixture_source.name
-            workspace_root.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copytree(fixture_source, workspace_root)
-            before = _workspace_snapshot(workspace_root)
-
-            workspace = WorkspaceContext.build(workspace_root, repo_root_override=workspace_root)
-            session_store = SessionStore(workspace_root / ".hh" / "sessions")
-            run_store = RunStore(workspace_root / ".hh" / "runs")
-            client = model_client_factory(task)
-            agent = HH(
-                model_client=client,
-                workspace=workspace,
-                session_store=session_store,
-                run_store=run_store,
-                approval_policy=str(task.get("approval_policy", "never")),
-                read_only=bool(task.get("read_only", False)),
-                max_steps=int(
-                    (task.get("budgets") or {}).get("max_steps", task.get("max_steps", 1))
-                ),
-                max_new_tokens=int(max_new_tokens),
-            )
-            _apply_setup(agent, task, workspace_root)
-
-            error = ""
-            try:
-                final_answer = agent.ask(str(task["prompt"]))
-            except Exception as exc:
-                error = f"{exc.__class__.__name__}: {exc}"
-                final_answer = str(exc)
-
-            run_state = agent.current_run_state
-            after = _workspace_snapshot(workspace_root)
-            changed_paths = _changed_paths(before, after)
-            trace_path = agent.run_store.trace_path(run_state)
-            events = _load_trace(trace_path)
-            checks = _run_checks(task, workspace_root)
-            evidence_dir = evidence_root / task["id"] / run_state.run_id
-            evidence_dir.mkdir(parents=True, exist_ok=True)
-            for source in (trace_path, agent.run_store.run_state_path(run_state), agent.run_store.report_path(run_state)):
-                if Path(source).exists():
-                    shutil.copy2(source, evidence_dir / Path(source).name)
-
-            row = {
-                "task_id": task["id"],
-                "category": task["category"],
-                "prompt": task["prompt"],
-                "expected_outcome": task["expected_outcome"],
-                "status": run_state.status,
-                "stop_reason": run_state.stop_reason,
-                "attempts": int(run_state.attempts),
-                "tool_steps": int(run_state.tool_steps),
-                "final_answer": final_answer,
-                "error": error,
-                "changed_paths": changed_paths,
-                "checks": checks,
-                "trajectory": analyze_trace(events),
-                "evidence_dir": str(evidence_dir),
-            }
-            row["classification"] = classify_row(task, row)
-            (evidence_dir / "evaluation.json").write_text(
-                json.dumps(row, indent=2, ensure_ascii=False) + "\n",
-                encoding="utf-8",
-            )
-            rows.append(row)
-
-    artifact = {
-        "schema_version": 2,
-        "artifact_type": "hh-agent-reliability-v2",
-        "captured_at": datetime.now(timezone.utc).isoformat(),
-        "suite_id": suite.get("suite_id", "hh-reliability-v2"),
-        "suite_path": str(suite_path),
-        "provider": provider,
-        "model": model,
-        "summary": _summarize(rows),
-        "rows": rows,
-    }
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(artifact, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    write_human_review_csv(human_review_path, rows)
-    return artifact

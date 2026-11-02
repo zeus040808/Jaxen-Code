@@ -5,6 +5,7 @@ import { loadCriteria, loadJson } from "niceeval/loaders";
 import { randomUUID } from "node:crypto";
 import { appendFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
+import { evalToolLimit } from "./verification-budget.js";
 
 interface EvalTask {
   id: string;
@@ -241,7 +242,7 @@ export function defineEnterpriseEval(task: EvalTask) {
       await t.sandbox.runCommandOrThrow("python3", ["/tmp/snapshot_workspace.py", "--workspace", t.sandbox.workdir, "--output", "/tmp/hh-before.json"]);
 
       const turns = await drive(task, t);
-      t.maxToolCalls(task.budgets.max_steps);
+      t.maxToolCalls(evalToolLimit(task));
 
       // The real agent has finished before hidden criteria enter its sandbox.
       await t.sandbox.uploadFile("evals/niceeval/criteria/hard_grader.py", "/tmp/hard_grader.py");

@@ -1,118 +1,55 @@
-﻿# HH Agent Pro 说明文档
+# HH Agent Pro 说明文档
 
-`hh_agent_pro` 是一个完整工程基底上的增强版 HH coding agent。
-
-它和 `hh_coder_agent` 的定位不同：
-
-- `hh_coder_agent`：学习友好的精简融合版，代码更短，方便讲清楚。
-- `hh_agent_pro`：产品化增强版，完整保留上游工程骨架，再增量加入 `learn-claude-code` / `hh_agent` 的优点。
+`hh_agent_pro` 是本仓库的本地 coding agent：在完整的工程骨架（OpenAI 兼容模型接口、
+checkpoint、trace、审批、记忆）之上，增量吸收 `learn-claude-code` 的设计。
+模块职责和调用链见 [模块导览](module-map.md)，2026-10-30 的 harness 改动见
+[harness-upgrades-20261030.md](harness-upgrades-20261030.md)。
 
 ## 运行方式
 
-HH Agent Pro 默认使用 DeepSeek `deepseek-v4-pro`，同时支持显式切换到
-Codex CLI、Ollama、OpenAI-compatible 和 Anthropic-compatible 后端：
+只支持 **OpenAI Chat Completions 兼容**的大模型接口，默认 DeepSeek `deepseek-flash`：
 
 ```powershell
 python -m hh_agent_pro --approval ask
-```
-
-每个用户请求默认最多执行 12 次有效工具调用。需要为某次启动临时调整时使用：
-
-```powershell
-python -m hh_agent_pro --max-steps 20
-```
-
-缓存命中的重复读取不会重复消耗有效工具额度；达到上限后 Agent 会进入
-`final-only`，要求模型基于已有证据回答，而不是继续执行工具。
-
-一次性任务：
-
-```powershell
 python -m hh_agent_pro --approval auto "分析项目结构并提出改进建议"
+python -m hh_agent_pro --model deepseek-v4-pro
 ```
 
-如果要切换到 Codex，再确认本机 Codex CLI 可用：
+| provider | 用途 | 配置 |
+|---|---|---|
+| `deepseek`（默认） | DeepSeek 预设 | `HH_DEEPSEEK_API_KEY`、`HH_DEEPSEEK_API_BASE`、`HH_DEEPSEEK_MODEL` |
+| `openai` | 任意兼容端点（通义千问兼容模式、OpenAI 等） | `HH_OPENAI_API_KEY`，加 `--base-url`/`HH_OPENAI_API_BASE` 与 `--model`/`HH_OPENAI_MODEL`；不在内置窗口表里的模型用 `--context-window` |
+| `fake` | 仅限隔离评测的脚本化模型 | `HH_ALLOW_EVAL_FAKE_PROVIDER=1` |
 
-```powershell
-codex --version
-codex login status
-```
+每个用户请求默认最多 50 次有效工具调用（`--max-steps` 调整）。缓存命中的重复读取不消耗额度；
+达到上限后进入 `final-only`，要求模型基于已有证据回答。
 
-默认不传参数时选择 DeepSeek V4 Pro。需要临时覆盖模型时可使用：
-
-```powershell
-python -m hh_agent_pro --model <model-name>
-```
-
-Codex 子进程采用 `exec --json --ephemeral --sandbox read-only`。Codex 只负责返回下一步决策；文件写入、Shell、审批、Session、记忆与工具审计仍由 HH runtime 执行。
-
-启动时选择 provider：
-
-```powershell
-python -m hh_agent_pro --provider codex
-python -m hh_agent_pro --provider deepseek
-python -m hh_agent_pro --provider ollama --model qwen3.5:4b
-python -m hh_agent_pro --provider openai --model gpt-5.4
-python -m hh_agent_pro --provider anthropic --model claude-sonnet-4-6
-```
-
-交互运行中可以查看或切换模型，不需要退出 Agent：
+交互运行中可以切换模型，Session、历史、记忆、任务和审批策略都保留；新 provider 初始化失败时旧
+client 保持不变：
 
 ```text
 hh> /model
-hh> /model deepseek
-hh> /model codex
-hh> /model deepseek deepseek-reasoner
+hh> /model deepseek deepseek-v4-pro
+hh> /model openai qwen-plus
 ```
 
-运行中切换只替换 `agent.model_client`。当前 Session、history、working memory、
-项目任务、工具和审批策略都保留；如果新 provider 缺少密钥或初始化失败，旧 client
-保持不变。
-
-DeepSeek 从项目 `.env` 读取独立配置：
-
-```dotenv
-HH_DEEPSEEK_API_KEY=your-key
-HH_DEEPSEEK_API_BASE=https://api.deepseek.com
-HH_DEEPSEEK_MODEL=deepseek-v4-pro
-```
-
-DeepSeek 使用 Chat Completions SSE。终端实时显示请求开始、reasoning 进行中和请求完成，
-但不会打印服务端的私有逐字推理；完整的 HH `<tool>/<final>` 协议文本收齐后才交给
-`AgentLoop` 解析，避免半截 JSON 或半截 XML 标签被执行。
+客户端流式读取 SSE：终端实时显示请求开始、reasoning 进行中和请求完成，但不打印私有推理；
+原生 tool_calls 收齐后才交给 `AgentLoop`，避免执行半截参数。
 
 ## 流式终端
 
-终端会实时输出：
+终端会实时输出模型回合状态、工具名/参数/结果、危险操作审批提示，以及最终答案或阻塞原因。
+模型返回 `<needs_user_input>` 时显示 `? Need your input`，交互模式下一轮提示符变成 `choice>`。
 
-- 当前模型回合与网络重连状态；
-- Codex JSONL 提供的 reasoning summary；
-- HH 工具名、参数、状态与裁剪后的结果；
-- 危险操作审批提示；
-- 最终答案或阻塞原因。
-
-这里的 `Reasoning summary` 是可审计的简短推理摘要，不是模型隐藏思维链。隐藏思维链不会打印。
-
-当模型返回 `<needs_user_input>` 时，终端会显示 `? Need your input`，交互模式下一轮提示符变成 `choice>`；一次性模式若终端可交互，也会停下来等待补充。
-
-针对 Windows 多文件交互、工具选择和上下文裁剪的完整修复说明见
-[`HH_AGENT_PRO_INTERACTION_TOOLCHAIN_REPAIR_ZH.md`](HH_AGENT_PRO_INTERACTION_TOOLCHAIN_REPAIR_ZH.md)。
-
-新增两个只读基础工具：
-
-- `runtime_info`：返回脱敏的 provider、model、平台、shell 和工作区信息；
-- `read_files`：单次读取最多 8 个工作区文件，供多文件比较和总结。
-
-核心规则、完整工具目录和 runtime identity 现在属于不可裁剪区；只有 Git 状态和
-项目文档快照允许压缩。DeepSeek 使用原生 function tool schema，Codex 仍保持
-`read-only + ephemeral` 边界。
+上下文如何组装、何时压缩见 [context-engineering.md](context-engineering.md)，
+模块职责和调用链见 [模块导览](module-map.md)。
 
 ## 保留的工程能力
 
 `hh_agent_pro` 保留这些核心结构：
 
-- `runtime.HH`
-- `AgentLoop`
+- `agent.CodingAgent`
+- `AgentLoop`（单次请求的控制循环）
 - `ToolExecutor`
 - `ToolContext`
 - `WorkspaceContext`
@@ -122,7 +59,7 @@ DeepSeek 使用 Chat Completions SSE。终端实时显示请求开始、reasonin
 - `RunState`
 - `TaskState`
 - checkpoint / resume 检查
-- prompt prefix / prompt cache metadata
+- 稳定 system 前缀 + 只追加会话记录 + 按 token 预算压缩的上下文
 - layered memory
 - provider clients
 - shell env allowlist
@@ -230,15 +167,13 @@ ProjectTask 支持 `pending`、`in_progress`、`completed`、`failed`、`blocked
 - 存在未解决的可恢复工具失败
 - 仍有后台任务运行
 
-完整设计见 [`HH_TASK_STATE_AND_DELIVERY_GATE_ZH.md`](HH_TASK_STATE_AND_DELIVERY_GATE_ZH.md)。
+完整设计见 [`HH_TASK_STATE_AND_DELIVERY_GATE_ZH.md`](task-state-and-delivery.md)。
 
-## 为什么这版比精简版更强
+## 工程能力清单
 
-精简版 `hh_coder_agent` 只实现了一个小型可讲解 harness。
+`hh_agent_pro` 保留的工程特性：
 
-`hh_agent_pro` 保留了完整工程特性：
-
-- 多 provider
+- OpenAI Chat Completions 兼容接口（DeepSeek 预设）
 - checkpoint / resume
 - prompt metadata
 - run trace / report
@@ -251,14 +186,12 @@ ProjectTask 支持 `pending`、`in_progress`、`completed`、`failed`、`blocked
 
 然后在工具层和运行层补上任务、后台、定时能力。
 
-所以它更适合作为“产品化 coding agent 项目”放进简历。
-
 ## 测试
 
 增强能力测试：
 
 ```powershell
-pytest tests/test_hh_agent_pro_extensions.py -q
+pytest tests/test_extensions.py -q
 ```
 
 完整测试：
@@ -267,14 +200,14 @@ pytest tests/test_hh_agent_pro_extensions.py -q
 pytest -q
 ```
 
-当前验证结果：
+当前验证结果（2026-10-30）：
 
 ```text
-161 passed
+206 passed, 4 skipped
 ```
 
 ## 简历表述建议
 
 可以写：
 
-> 基于 HH 完整 agent runtime 实现增强版本地 coding agent，保留多 provider、checkpoint/resume、run trace/report、workspace fingerprint、layered memory、ToolExecutor 安全审计等工程能力，并增量加入 learn-claude-code 风格的持久化任务系统、后台工具执行和 cron 定时唤醒机制；通过 pytest 覆盖工具协议、任务流、后台通知、定时调度和 run artifact。
+> 基于 HH 完整 agent runtime 实现增强版本地 coding agent，支持任意 OpenAI 兼容大模型、checkpoint/resume、run trace/report、workspace fingerprint、layered memory、ToolExecutor 安全审计等工程能力，并增量加入 learn-claude-code 风格的持久化任务系统、后台工具执行和 cron 定时唤醒机制；通过 pytest 覆盖工具协议、任务流、后台通知、定时调度和 run artifact。

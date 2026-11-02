@@ -1,4 +1,9 @@
-﻿import hashlib
+"""运行评测任务并收集 Agent 的结果与过程证据。
+
+属于离线评测层，不参与 CodingAgent 的正常决策循环。
+"""
+
+import hashlib
 import json
 import locale as locale_module
 import shutil
@@ -8,8 +13,9 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from ..providers.clients import FakeModelClient
-from ..runtime import HH, SessionStore
+from ..context_manager import estimate_tokens
+from ..providers import FakeModelClient
+from ..agent import CodingAgent, SessionStore
 from ..run_store import RunStore
 from ..run_state import STOP_REASON_FINAL_ANSWER_RETURNED
 from ..tools import legal_tool_names
@@ -328,13 +334,13 @@ def _apply_task_setup(agent, task, fixture_copy_root):
                 }
             )
         agent.session["memory"] = agent.memory.to_dict()
-        agent.context_manager.total_budget = int(setup.get("total_budget", 900))
-        agent.context_manager.section_budgets = dict(
-            setup.get(
-                "section_budgets",
-                {"prefix": 120, "memory": 120, "skills": 120, "history": 160},
-            )
+        # 预算 = system 本身 + 一小段对话额度，保证历史溢出、必然触发压缩。
+        # 关掉 LLM 摘要：脚本化模型的输出不能被摘要调用提前消耗，结果才确定。
+        manager = agent.context_manager
+        manager.working_budget_tokens = estimate_tokens(manager.system_prompt()) + int(
+            setup.get("transcript_budget_tokens", 400)
         )
+        agent.feature_flags = {**agent.feature_flags, "context_summary": False}
         return
 
     if kind == "freshness_mismatch":
@@ -463,7 +469,7 @@ class BenchmarkEvaluator:
             model_client = self.model_client_factory(task=task, workspace=workspace)
         else:
             model_client = FakeModelClient(_scripted_outputs_for_task(task))
-        agent = HH(
+        agent = CodingAgent(
             model_client=model_client,
             workspace=workspace,
             session_store=session_store,

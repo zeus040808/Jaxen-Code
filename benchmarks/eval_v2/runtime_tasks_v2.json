@@ -2,7 +2,7 @@
   "schema_version": 2,
   "suite_id": "hh-runtime-regression-v2",
   "suite_version": 1,
-  "generated_by": "scripts/build_enterprise_eval_v2.py",
+  "generated_by": "scripts/eval/build_enterprise_dataset.py",
   "tasks": [
     {
       "id": "readme_intro_locked",
@@ -473,7 +473,7 @@
         "kind": "context_reduction",
         "history_count": 12,
         "note_count": 6,
-        "total_budget": 900
+        "transcript_budget_tokens": 400
       }
     },
     {

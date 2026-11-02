@@ -32,7 +32,7 @@ jobs:
         run: ': "${HH_DEEPSEEK_API_KEY:?HH_DEEPSEEK_API_KEY secret is required}"'
       - name: Run all real tasks three times
         run: >-
-          python scripts/run_enterprise_eval_profile.py nightly
+          python scripts/eval/run_eval_profile.py nightly
           --platform linux
           --infra-retries 2
           --freeze-baseline artifacts/eval-v2/baselines/nightly-v2.json

@@ -7,7 +7,7 @@
 这个文件把那种溯源变成常设检查：只要 gold set 里有人工标注，
 每次 PR 都会重新核对判分器和人的判断是否一致。
 
-标注流程见 ``scripts/build_grader_gold_set.py``。未标注时本文件只做
+标注流程见 ``scripts/eval/build_grader_gold_set.py``。未标注时本文件只做
 结构校验并跳过一致率断言——**它不会因为"还没标"而变绿说谎**，
 ``test_gold_set_labelling_progress_is_visible`` 会把进度打出来。
 """
@@ -33,7 +33,7 @@ MIN_PASSED_PRECISION = 0.98
 @pytest.fixture(scope="module")
 def gold():
     if not GOLD_PATH.exists():
-        pytest.skip("gold set 尚未生成：python scripts/build_grader_gold_set.py")
+        pytest.skip("gold set 尚未生成：python scripts/eval/build_grader_gold_set.py")
     return json.loads(GOLD_PATH.read_text(encoding="utf-8"))
 
 

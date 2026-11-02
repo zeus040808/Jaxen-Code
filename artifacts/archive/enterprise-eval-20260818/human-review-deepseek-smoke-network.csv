@@ -1,1 +1,0 @@
-﻿task_id,category,prompt,expected_outcome,auto_outcome,hard_pass,attempts,tool_steps,stop_reason,changed_paths,check_results,tool_trace_summary,evidence_dir,final_answer,review_status,human_outcome_label,task_completion_0_2,evidence_quality_0_2,trajectory_quality_0_2,failure_handling_0_2,final_answer_consistency_0_2,reviewer_notes

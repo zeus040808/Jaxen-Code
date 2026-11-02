@@ -17,20 +17,13 @@
 
 from pathlib import Path
 
-import pytest
 
 from hh_agent_pro.agent_loop import MAX_DELIVERY_DEFERRALS
-from hh_agent_pro.providers.clients import FakeModelClient
+from hh_agent_pro.providers import FakeModelClient
 from hh_agent_pro.run_store import RunStore
-from hh_agent_pro.runtime import HH, SessionStore
+from hh_agent_pro.agent import CodingAgent
+from hh_agent_pro.session_store import SessionStore
 from hh_agent_pro.workspace import WorkspaceContext
-
-
-class _NativeFake(FakeModelClient):
-    """走原生工具协议的假模型，便于复现真实的 final-only 路径。"""
-
-    supports_native_tools = True
-    model = "fake-native"
 
 
 def _build_agent(tmp_path, scripted, *, max_steps):
@@ -39,8 +32,8 @@ def _build_agent(tmp_path, scripted, *, max_steps):
     (root / "sample.txt").write_text("alpha\nbeta\n", encoding="utf-8")
 
     workspace = WorkspaceContext.build(root, repo_root_override=root)
-    return HH(
-        model_client=_NativeFake(list(scripted)),
+    return CodingAgent(
+        model_client=FakeModelClient(list(scripted)),
         workspace=workspace,
         session_store=SessionStore(root / ".hh" / "sessions"),
         run_store=RunStore(root / ".hh" / "runs"),
@@ -83,8 +76,9 @@ def test_exhausted_tool_budget_does_not_trap_the_final_answer(tmp_path):
     final = agent.ask("修一下 sample.txt")
     events = _trace_events(agent)
 
-    assert agent.current_run_state.status == "completed"
-    assert agent.current_run_state.stop_reason == "final_answer_returned"
+    assert agent.current_run_state.status == "stopped"
+    assert agent.current_run_state.stop_reason == "incomplete_delivery"
+    assert agent.task_state.to_dict()["status"] == "paused"
     # 驳回次数必须有上限，不能把预算烧光。
     assert _count(events, "completion_deferred") <= MAX_DELIVERY_DEFERRALS
     assert _count(events, "completion_forced") == 1
@@ -139,3 +133,48 @@ def test_gate_still_pushes_back_while_tools_remain(tmp_path):
     assert _count(events, "completion_forced") == 0
     assert "Unresolved at delivery" not in final
     assert (Path(agent.root) / "sample.txt").read_text(encoding="utf-8").count("beta-fixed") == 1
+
+
+def test_gate_reminds_once_then_delivers_with_disclosure(tmp_path):
+    """P1-c：门禁只提醒一次。模型仍交同一份答案时放行，未解决项照实写进答案。
+
+    反复驳回会逼模型自己写测试文件来过门禁（实测 flash 11 个任务里 9 个越界改测试）。
+    """
+
+    failing_patch = (
+        '<tool>{"name":"patch_file","args":{"path":"sample.txt",'
+        '"old_text":"NOT-PRESENT","new_text":"x"}}</tool>'
+    )
+    agent = _build_agent(
+        tmp_path,
+        [failing_patch, "<final>完成。</final>", "<final>完成。</final>"],
+        max_steps=6,
+    )
+
+    final = agent.ask("修一下 sample.txt")
+    events = _trace_events(agent)
+
+    assert MAX_DELIVERY_DEFERRALS == 1
+    assert _count(events, "completion_deferred") == 1
+    assert _count(events, "completion_forced") == 1
+    assert "Unresolved at delivery" in final
+    assert agent.current_run_state.stop_reason == "incomplete_delivery"
+
+
+def test_policy_rejected_call_does_not_block_delivery(tmp_path):
+    """被策略拒绝、本就不该重试的调用（path_escape）不算"未解决失败"。
+
+    模型越界读被拒后改走正确路径并完成，就是正确恢复，不应被记成 incomplete_delivery。
+    """
+
+    escape = '<tool>{"name":"read_file","args":{"path":"../outside.txt"}}</tool>'
+    good_patch = (
+        '<tool>{"name":"patch_file","args":{"path":"sample.txt",'
+        '"old_text":"beta","new_text":"beta-fixed"}}</tool>'
+    )
+    agent = _build_agent(tmp_path, [escape, good_patch, "<final>完成。</final>"], max_steps=6)
+
+    final = agent.ask("修一下 sample.txt")
+
+    assert "Unresolved at delivery" not in final
+    assert agent.current_run_state.stop_reason != "incomplete_delivery"

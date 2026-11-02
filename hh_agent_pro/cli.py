@@ -1,6 +1,6 @@
-﻿"""命令行入口。
+"""命令行入口。
 
-这个模块负责把“用户怎么启动 HH”翻译成 runtime 能理解的对象：
+这个模块负责把“用户怎么启动 HH”翻译成 CodingAgent 需要的对象：
 解析参数、挑模型后端、构建工作区快照、恢复或新建 session，
 最后进入 one-shot 或交互式循环。
 """
@@ -14,15 +14,9 @@ import textwrap
 import time
 
 from .config import load_project_env, provider_env
-from .providers.clients import (
-    AnthropicCompatibleModelClient,
-    EvalScriptModelClient,
-    OllamaModelClient,
-    OpenAIChatCompatibleModelClient,
-    OpenAICompatibleModelClient,
-)
-from .providers.codex_cli import CodexCliModelClient
-from .runtime import HH, SessionStore
+from .providers import EvalScriptModelClient, OpenAIChatClient
+from .agent import CodingAgent
+from .session_store import SessionStore
 from .terminal_ui import TerminalEventSink
 from .workspace import WorkspaceContext, middle
 
@@ -35,7 +29,7 @@ WELCOME_ART = (
     "/_/ /_/ /_/ /_/              /___/                  ",
 )
 WELCOME_NAME = "HH AGENT PRO"
-WELCOME_SUBTITLE = "DeepSeek-default multi-model coding agent harness"
+WELCOME_SUBTITLE = "OpenAI-compatible coding agent harness"
 WELCOME_STATUS = "workspace armed | tools gated | traces on"
 HELP_DETAILS = textwrap.dedent(
     """\
@@ -53,47 +47,43 @@ HELP_DETAILS = textwrap.dedent(
 ).strip()
 
 
-DEFAULT_OLLAMA_MODEL = "qwen3.5:4b"
-DEFAULT_OLLAMA_HOST = "http://127.0.0.1:11434"
-DEFAULT_OPENAI_MODEL = "gpt-5.4"
-DEFAULT_OPENAI_BASE_URL = "https://www.right.codes/codex/v1"
-DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-6"
-DEFAULT_ANTHROPIC_BASE_URL = "https://www.right.codes/claude/v1"
-DEFAULT_CODEX_TIMEOUT = 300
-DEFAULT_DEEPSEEK_MODEL = "deepseek-v4-pro"
+DEFAULT_DEEPSEEK_MODEL = "deepseek-flash"
 DEFAULT_DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 SECRET_ENV_NAMES_VAR = "HH_SECRET_ENV_NAMES"
-PROVIDER_NAMES = ("codex", "deepseek", "ollama", "openai", "anthropic", "fake")
+# deepseek：DeepSeek 预设；openai：任意 OpenAI Chat Completions 兼容端点（通义、OpenAI 等）；
+# fake：仅限隔离评测的脚本化模型。
+PROVIDER_NAMES = ("deepseek", "openai", "fake")
+# 每个 provider 从哪些环境变量取 key / base_url / model（按优先级）。
+PROVIDER_ENV = {
+    "deepseek": {
+        "api_key": ("HH_DEEPSEEK_API_KEY", "DEEPSEEK_API_KEY"),
+        "base_url": ("HH_DEEPSEEK_API_BASE", "DEEPSEEK_API_BASE"),
+        "model": ("HH_DEEPSEEK_MODEL", "DEEPSEEK_MODEL"),
+    },
+    "openai": {
+        "api_key": ("HH_OPENAI_API_KEY", "OPENAI_API_KEY"),
+        "base_url": ("HH_OPENAI_API_BASE", "OPENAI_API_BASE"),
+        "model": ("HH_OPENAI_MODEL", "OPENAI_MODEL"),
+    },
+}
 
 # 决定这次 agent 到底用哪个模型名
 # args：命令行参数对象
 # provider：当前使用哪个模型服务商
 def _effective_model(args, provider):
-    # 模型选择优先级：
-    # 1. 用户显式传入 --model
-    # 2. provider 对应的环境变量
-    # 3. 代码里的默认值
+    # 优先级：命令行 --model > provider 对应的环境变量 > 代码默认值。
     explicit_model = getattr(args, "model", None)
     if explicit_model:
         return explicit_model
-    if provider == "codex":
-        # Omit --model by default so Codex uses the authenticated local config.
-        return "codex-config-default"
+    if provider == "fake":
+        return EvalScriptModelClient.model
+    names = PROVIDER_ENV[provider]["model"]
+    model = provider_env(names[0], names[1:])
+    if model:
+        return model
     if provider == "deepseek":
-        model = provider_env("HH_DEEPSEEK_MODEL", ("DEEPSEEK_MODEL", "LLM_MODEL_ID"))
-        return model or DEFAULT_DEEPSEEK_MODEL
-    # 选择模型，根据命令行参数，从.env中提取
-    if provider == "openai":
-        model = provider_env("HH_OPENAI_MODEL", ("OPENAI_MODEL",))
-        if model:
-            return model
-        return DEFAULT_OPENAI_MODEL
-    if provider == "anthropic":
-        model = provider_env("HH_ANTHROPIC_MODEL", ("ANTHROPIC_MODEL",))
-        if model:
-            return model
-        return DEFAULT_ANTHROPIC_MODEL
-    return DEFAULT_OLLAMA_MODEL
+        return DEFAULT_DEEPSEEK_MODEL
+    raise RuntimeError("Set --model or HH_OPENAI_MODEL for the openai provider.")
 
 # 需要加密的环境变量名
 DEFAULT_SECRET_ENV_NAMES = (
@@ -102,11 +92,6 @@ DEFAULT_SECRET_ENV_NAMES = (
     "HH_OPENAI_API_KEY",
     "OPENAI_API_KEY",
     "OPENAI_API_TOKEN",
-    "HH_ANTHROPIC_API_KEY",
-    "ANTHROPIC_API_KEY",
-    "ANTHROPIC_AUTH_TOKEN",
-    "HH_RIGHT_CODES_API_KEY",
-    "RIGHT_CODES_API_KEY",
     "GITHUB_PAT",
     "GH_PAT",
 )
@@ -131,83 +116,25 @@ def _configured_secret_names(args):
 
 def _build_model_client(args):
     provider = getattr(args, "provider", "deepseek")
-    # CLI 只负责把 provider 选择翻译成具体 client。
-    # 真正的提示词格式、缓存支持、HTTP 协议差异，都封装在 models.py 里。
     if provider == "fake":
         return EvalScriptModelClient()
-    if provider == "codex":
-        client = CodexCliModelClient(
-            workspace_root=args.cwd,
-            executable=getattr(args, "codex_path", "codex"),
-            model=getattr(args, "model", None),
-            timeout=getattr(args, "codex_timeout", DEFAULT_CODEX_TIMEOUT),
-        )
-        client.provider = provider
-        return client
-    if provider == "deepseek":
-        api_key = provider_env("HH_DEEPSEEK_API_KEY", ("DEEPSEEK_API_KEY",))
-        if not api_key:
-            raise RuntimeError(
-                "DeepSeek API key is missing. Set HH_DEEPSEEK_API_KEY or "
-                "DEEPSEEK_API_KEY in the project .env file."
-            )
-        client = OpenAIChatCompatibleModelClient(
-            model=_effective_model(args, provider),
-            base_url=(
-                getattr(args, "base_url", None)
-                or provider_env(
-                    "HH_DEEPSEEK_API_BASE",
-                    ("DEEPSEEK_API_BASE", "BASE_URL"),
-                    DEFAULT_DEEPSEEK_BASE_URL,
-                )
-            ),
-            api_key=api_key,
-            temperature=args.temperature,
-            timeout=getattr(args, "openai_timeout", 300),
-        )
-        client.provider = provider
-        return client
-    if provider == "openai":
-        model = _effective_model(args, provider)
-        # 先看命令行中有没有base_url
-        base_url = getattr(args, "base_url", None) or provider_env("HH_OPENAI_API_BASE", ("OPENAI_API_BASE",), DEFAULT_OPENAI_BASE_URL)
-        api_key = provider_env(
-            "HH_OPENAI_API_KEY",
-            ("OPENAI_API_KEY", "HH_RIGHT_CODES_API_KEY", "RIGHT_CODES_API_KEY", "HH_ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY"),
-        )
-        client = OpenAICompatibleModelClient(
-            model=model,
-            base_url=base_url,
-            api_key=api_key,
-            temperature=args.temperature,
-            timeout=getattr(args, "openai_timeout", getattr(args, "ollama_timeout", 300)),
-        )
-        client.provider = provider
-        return client
-    if provider == "anthropic":
-        model = _effective_model(args, provider)
-        base_url = getattr(args, "base_url", None) or provider_env("HH_ANTHROPIC_API_BASE", ("ANTHROPIC_API_BASE",), DEFAULT_ANTHROPIC_BASE_URL)
-        api_key = provider_env(
-            "HH_ANTHROPIC_API_KEY",
-            ("ANTHROPIC_API_KEY", "HH_RIGHT_CODES_API_KEY", "RIGHT_CODES_API_KEY", "HH_OPENAI_API_KEY", "OPENAI_API_KEY"),
-        )
-        client = AnthropicCompatibleModelClient(
-            model=model,
-            base_url=base_url,
-            api_key=api_key,
-            temperature=args.temperature,
-            timeout=getattr(args, "openai_timeout", getattr(args, "ollama_timeout", 300)),
-        )
-        client.provider = provider
-        return client
-    model = _effective_model(args, provider)
-    host = getattr(args, "host", DEFAULT_OLLAMA_HOST)
-    client = OllamaModelClient(
-        model=model,
-        host=host,
+    env = PROVIDER_ENV[provider]
+    api_key = provider_env(env["api_key"][0], env["api_key"][1:])
+    if not api_key:
+        raise RuntimeError(f"{provider} API key is missing. Set {' or '.join(env['api_key'])} in the project .env file.")
+    base_url = getattr(args, "base_url", None) or provider_env(
+        env["base_url"][0], env["base_url"][1:], DEFAULT_DEEPSEEK_BASE_URL if provider == "deepseek" else ""
+    )
+    if not base_url:
+        raise RuntimeError("Set --base-url or HH_OPENAI_API_BASE for the openai provider.")
+    client = OpenAIChatClient(
+        model=_effective_model(args, provider),
+        base_url=base_url,
+        api_key=api_key,
         temperature=args.temperature,
-        top_p=args.top_p,
-        timeout=args.ollama_timeout,
+        timeout=args.request_timeout,
+        context_window=getattr(args, "context_window", None),
+        label="DeepSeek" if provider == "deepseek" else "Model",
     )
     client.provider = provider
     return client
@@ -246,10 +173,10 @@ def _switch_model(agent, args, provider, model=None):
     agent.model_client = replacement
     if hasattr(agent, "refresh_prefix"):
         try:
-            agent.refresh_prefix(force=True)
+            agent.refresh_prefix()
         except Exception:
             agent.model_client = old_client
-            agent.refresh_prefix(force=True)
+            agent.refresh_prefix()
             raise
     args.provider = provider
     args.model = switch_args.model
@@ -318,20 +245,21 @@ def build_agent(args, event_sink=None, machine_mode=False):
     """根据 CLI 参数装配出一个可运行的 Agent 实例。
 
     为什么存在：
-    命令行参数只是字符串和开关，runtime 需要的是已经装配好的对象图：
+    命令行参数只是字符串和开关，CodingAgent 需要的是已经装配好的对象图：
     model client、workspace snapshot、session store、secret 配置等。
     这个函数负责把“启动参数”翻译成“agent 运行现场”。
 
     输入 / 输出：
     - 输入：`argparse` 解析后的 `args`
-    - 输出：一个新的 `HH`，或一个从旧 session 恢复出来的 `HH`
+    - 输出：一个新的 `CodingAgent`，或一个从旧 Session 恢复出来的 `CodingAgent`
 
     在 agent 链路里的位置：
-    它是整个程序启动链路里最靠近 runtime 的装配点。`main()` 先调它，
+    它是整个程序启动链路里创建 Agent 的装配点。`main()` 先调它，
     得到 agent 后，后面无论是 one-shot 还是 REPL 模式，都会落到 `ask()`。
     """
-    # 这里是 CLI 到 runtime 的装配点：
-    # 先采集工作区快照和加载项目级环境，再整理 secret 名单、模型后端和 session。
+    # 这里是 CLI 到 Agent 的装配点：
+    # 先采集工作区快照和加载项目级环境，再整理 secret 名单、模型后端和 session。、
+    # 分配工作区和沙箱路径
     workspace = WorkspaceContext.build(args.cwd)
     # 加载环境变量
     load_project_env(workspace.repo_root)
@@ -340,17 +268,13 @@ def build_agent(args, event_sink=None, machine_mode=False):
     # 创建 SessionStore对象 sessions 文件夹（目录）
     store = SessionStore(workspace.repo_root + "/.hh/sessions")
 
-    # 构建大模型
-    # Codex needs the resolved repository root, not the caller's possibly relative cwd.
-    if getattr(args, "provider", "deepseek") == "codex":
-        args.cwd = workspace.repo_root
     model = _build_model_client(args)
     session_id = args.resume
     if session_id == "latest":
         session_id = store.latest()
     if session_id:
-        # 调用from_session函数（在runtime中实现）
-        return HH.from_session(
+        # 从 SessionStore 恢复旧会话，再装配 CodingAgent。
+        return CodingAgent.from_session(
             model_client=model,
             workspace=workspace,
             session_store=store,
@@ -362,10 +286,12 @@ def build_agent(args, event_sink=None, machine_mode=False):
             secret_env_names=configured_secret_names,
             event_sink=event_sink,
             machine_mode=machine_mode,
-            episode_timeout_ms=getattr(args, "episode_timeout_ms", 180000),
+            episode_timeout_ms=getattr(args, "episode_timeout_ms", 1_200_000),
             feature_flags={"skill_learning": not bool(getattr(args, "no_auto_skills", False))},
+            toolset=getattr(args, "toolset", "core"),
         )
-    return HH(
+    # 没有恢复 ID 时，创建一个新 Agent。
+    return CodingAgent(
         model_client=model,
         workspace=workspace,
         session_store=store,
@@ -376,8 +302,9 @@ def build_agent(args, event_sink=None, machine_mode=False):
         secret_env_names=configured_secret_names,
         event_sink=event_sink,
         machine_mode=machine_mode,
-        episode_timeout_ms=getattr(args, "episode_timeout_ms", 180000),
+        episode_timeout_ms=getattr(args, "episode_timeout_ms", 1_200_000),
         feature_flags={"skill_learning": not bool(getattr(args, "no_auto_skills", False))},
+        toolset=getattr(args, "toolset", "core"),
     )
 
 # 定义命令行参数规则
@@ -394,23 +321,13 @@ def build_arg_parser():
 
     # --cwd 指定 Agent 工作在哪个目录
     parser.add_argument("--cwd", default=".", help="Workspace directory.")
-    parser.add_argument("--provider", choices=PROVIDER_NAMES, default="deepseek", help="Model backend to use. DeepSeek V4 Pro is the default.")
+    parser.add_argument("--provider", choices=PROVIDER_NAMES, default="deepseek", help="Model backend to use. DeepSeek (deepseek-flash) is the default.")
 
     # --model 用来临时覆盖模型名
-    parser.add_argument(
-        "--model",
-        default=None,
-        help="Model override. For Codex, omit this to use the model in local Codex config.",
-    )
-    # 这个主要给 Ollama 用
-    parser.add_argument("--host", default=DEFAULT_OLLAMA_HOST, help="Ollama server URL.")
-    parser.add_argument("--base-url", default=None, help="Provider API base URL for deepseek, openai, or anthropic.")
-
-    # 请求超时时间
-    parser.add_argument("--ollama-timeout", type=int, default=300, help="Ollama request timeout in seconds.")
-    parser.add_argument("--openai-timeout", type=int, default=300, help="OpenAI-compatible request timeout in seconds.")
-    parser.add_argument("--codex-timeout", type=int, default=DEFAULT_CODEX_TIMEOUT, help="Codex CLI turn timeout in seconds.")
-    parser.add_argument("--codex-path", default="codex", help="Codex CLI executable name or path.")
+    parser.add_argument("--model", default=None, help="Model override.")
+    parser.add_argument("--base-url", default=None, help="OpenAI-compatible API base URL (required for --provider openai).")
+    parser.add_argument("--context-window", type=int, default=None, help="Model context window in tokens, for models not in the built-in table.")
+    parser.add_argument("--request-timeout", type=int, default=300, help="Model request timeout in seconds.")
 
     #用来恢复之前的 session（默认新建session）
     parser.add_argument("--resume", default=None, help="Session id to resume or 'latest'.")
@@ -430,14 +347,19 @@ def build_arg_parser():
         help="Extra environment variable names to treat as secrets for trace/report redaction.",
     )
 
-    parser.add_argument("--max-steps", type=int, default=12, help="Maximum effective tool calls per request (default: 12).")
+    parser.add_argument(
+        "--toolset",
+        choices=("core", "full"),
+        default="core",
+        help="core: coding tools only (default); full: also task/cron/memory/skill/session tools.",
+    )
+    parser.add_argument("--max-steps", type=int, default=50, help="Maximum effective tool calls per request (default: 50).")
     #限制模型每次最多输出多少 token
-    parser.add_argument("--max-new-tokens", type=int, default=2048, help="Maximum model output tokens per step.")
-    parser.add_argument("--episode-timeout-ms", type=int, default=180000, help="Wall-clock budget for the complete episode.")
+    parser.add_argument("--max-new-tokens", type=int, default=8192, help="Maximum model output tokens per step (default: 8192).")
+    parser.add_argument("--episode-timeout-ms", type=int, default=1_200_000, help="Wall-clock budget for the complete episode (default: 20 min).")
     parser.add_argument("--jsonl", action="store_true", help="Read versioned machine requests from stdin and emit JSONL events/turns.")
     parser.add_argument("--no-auto-skills", action="store_true", help="Disable automatic SKILL.md deposition after verified complex runs.")
-    parser.add_argument("--temperature", type=float, default=0.2, help="Sampling temperature sent to Ollama.")
-    parser.add_argument("--top-p", type=float, default=0.9, help="Top-p sampling value sent to Ollama.")
+    parser.add_argument("--temperature", type=float, default=0.2, help="Sampling temperature.")
     return parser
 
 
@@ -448,7 +370,7 @@ def main(argv=None):
         from .jsonl_protocol import run_jsonl_stdio
 
         return run_jsonl_stdio(args, build_agent)
-    # 实现一个agent对象
+    # 创建 Agent；后续每条输入分别调用一次 ask()。
     terminal = TerminalEventSink()
     agent = build_agent(args, event_sink=terminal)
     restored_crons = agent.cron_scheduler.start()
@@ -457,7 +379,7 @@ def main(argv=None):
     agent_lock = threading.Lock()
 
     model = _model_status(agent)
-    host = getattr(agent.model_client, "host", getattr(agent.model_client, "base_url", getattr(args, "host", DEFAULT_OLLAMA_HOST)))
+    host = getattr(agent.model_client, "base_url", "-")
     # 打印欢迎界面
     print(build_welcome(agent, model=model, host=host))
     if restored_crons:
@@ -485,7 +407,7 @@ def main(argv=None):
                 if not terminal.needs_input:
                     break
                 if not sys.stdin.isatty():
-                    print("Codex requested user input, but stdin is not interactive.", file=sys.stderr)
+                    print("The agent requested user input, but stdin is not interactive.", file=sys.stderr)
                     return 2
                 try:
                     prompt = input("\nchoice> ").strip()
@@ -574,6 +496,7 @@ def main(argv=None):
         print()
         try:
             with agent_lock:
+                # 处理本条请求；AgentLoop 会控制这次任务的生命周期。
                 result = agent.ask(user_input)
                 if not terminal.final_rendered:
                     print(result)

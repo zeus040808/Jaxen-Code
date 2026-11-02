@@ -28,7 +28,7 @@ jobs:
           python -m pytest -q
           pnpm run typecheck:eval
       - name: Deterministic runtime, tool, and security gates
-        run: python scripts/run_deterministic_eval_gate.py --repetitions 1 --platform linux
+        run: python scripts/eval/run_deterministic_gate.py --repetitions 1 --platform linux
       - name: Five-task Fake-provider NiceEval smoke
         shell: bash
         run: |
@@ -64,5 +64,5 @@ jobs:
       - name: Windows compatibility supplement
         run: |
           python -m pytest -q
-          python scripts/run_deterministic_eval_gate.py --repetitions 1 --platform windows
+          python scripts/eval/run_deterministic_gate.py --repetitions 1 --platform windows
 

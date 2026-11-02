@@ -1,11 +1,17 @@
-﻿"""Structured tool execution for the agent runtime."""
+﻿"""工具执行闸口：校验、审批、执行和结果归一化。
+
+AgentLoop 决定何时调用工具；本模块决定一次调用是否允许及如何执行。
+"""
 
 from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import json
 import re
+from pathlib import Path
 
-from .workspace import clip, file_freshness
+from .task_state import _check_kind
+from .workspace import clip_head_tail, file_freshness
 
 
 @dataclass(frozen=True)
@@ -64,14 +70,67 @@ def _metadata(
 
 
 class ToolExecutor:
+    # 可以并行执行调用的函数名单
+    PARALLEL_READ_TOOLS = frozenset({"list_files", "read_file", "read_files", "search", "glob", "runtime_info"})
+
+    # 防止模型凭记忆或过期内容改文件：
+    # - write_file 覆盖已有文件前必须先读过（整文件盲写风险最大）；
+    # - patch_file 的 old_text 必须唯一匹配，本身证明了模型知道内容，不强制先读；
+    # - 任何编辑在「读过之后文件又被改了」时都拒绝。新建文件不受限。
+    EDIT_TOOLS = frozenset({"write_file", "patch_file"})
+
     def __init__(self, agent):
         self.agent = agent
+        # 绝对路径 -> 模型最近一次看到的内容指纹；跨 run 保留，Session 内有效。
+        self._observed_files = {}
         self.reset_run_state()
 
     def execute(self, name, args):
         name = self.agent.canonical_tool_name(name)
+        # 得到工具调用结果
         result = self._execute(name, args)
         return self._observe_result(name, args, result)
+
+    def execute_read_batch(self, actions):
+        """Run independent reads concurrently; update shared state in call order."""
+        if not 2 <= len(actions) <= 4:
+            raise ValueError("parallel read batch must contain 2 to 4 calls")
+        prepared = []
+        for action in actions:
+            name = self.agent.canonical_tool_name(action["name"])
+            args = action["args"]
+            if name not in self.PARALLEL_READ_TOOLS or name not in self.agent.tools:
+                raise ValueError("parallel batches support read-only tools only")
+            if self.agent.allowed_tools is not None and name not in self.agent.allowed_tools:
+                raise ValueError(f"tool '{name}' is not allowed in this run")
+            self.agent.validate_tool(name, args)
+            prepared.append((name, args, self.agent.tools[name]["run"]))
+
+        def run_one(item):
+            name, args, runner = item
+            try:
+                content = self.agent.redact_text(clip_head_tail(runner(args)))
+                return ToolExecutionResult(content, _metadata("ok", read_only=True))
+            except Exception as exc:
+                return ToolExecutionResult(
+                    f"error: tool {name} failed: {self.agent.redact_text(str(exc))}",
+                    _metadata("error", tool_error_code="tool_failed", read_only=True,
+                              retryable=True, recommended_action="Inspect the error and retry with corrected arguments."),
+                )
+
+        with ThreadPoolExecutor(max_workers=len(prepared)) as pool:
+            results = list(pool.map(run_one, prepared))
+        observed = []
+        for (name, args, _), result in zip(prepared, results):
+            if result.metadata["tool_status"] == "ok":
+                self.agent.update_memory_after_tool(name, args, result.content)
+                self._remember_files(name, args)
+            result = self._observe_result(name, args, result)
+            self.agent.task_state.observe_tool(name, args, result.content, result.metadata)
+            observed.append(result)
+        self.agent.session["task_state"] = self.agent.task_state.to_dict()
+        self.agent.session_path = self.agent.session_store.save(self.agent.session)
+        return observed
 
     def execute_approved(self, name, args, expected_fingerprint):
         """Execute exactly one previously persisted approval request."""
@@ -91,6 +150,34 @@ class ToolExecutor:
 
     def completion_blocker(self):
         return dict(self._unresolved_failure or {})
+
+    def _file_key(self, raw_path):
+        return str((Path(self.agent.root) / str(raw_path)).resolve())
+
+    def _remember_files(self, name, args):
+        if name == "read_file" or name in self.EDIT_TOOLS:
+            raw_paths = [(args or {}).get("path")]
+        elif name == "read_files":
+            raw_paths = list((args or {}).get("paths") or [])
+        else:
+            return
+        for raw_path in raw_paths:
+            digest = file_freshness(raw_path, self.agent.root)
+            if digest:
+                self._observed_files[self._file_key(raw_path)] = digest
+
+    def _stale_edit_reason(self, name, args):
+        """Why an edit must read the file first, or '' when it may proceed."""
+        if name not in self.EDIT_TOOLS:
+            return ""
+        raw_path = str((args or {}).get("path", "")).strip()
+        current = file_freshness(raw_path, self.agent.root)
+        if not current:
+            return ""
+        seen = self._observed_files.get(self._file_key(raw_path))
+        if seen is None:
+            return "file_not_read" if name == "write_file" else ""
+        return "" if seen == current else "file_changed_since_read"
 
     # 只有这两个工具在调用前就能确定写入目标。run_shell 的目标要执行后
     # 才知道，由下面的 workspace diff 兜底。
@@ -152,7 +239,12 @@ class ToolExecutor:
         metadata = dict(result.metadata or {})
         status = str(metadata.get("tool_status", ""))
         if status in {"ok", "waiting", "denied"}:
-            self._unresolved_failure = None
+            previous = self._unresolved_failure
+            if previous and status == "ok" and previous.get("name") == name:
+                previous_path = previous.get("path")
+                same_check = not previous.get("check_kind") or previous["check_kind"] == _check_kind((args or {}).get("command", ""))
+                if same_check and (not previous_path or previous_path == str((args or {}).get("path", ""))):
+                    self._unresolved_failure = None
             return result
 
         error_code = str(metadata.get("tool_error_code", "") or status or "tool_failed")
@@ -184,12 +276,15 @@ class ToolExecutor:
 
         self._unresolved_failure = {
             "name": name,
+            "path": str((args or {}).get("path", "")),
+            "check_kind": _check_kind((args or {}).get("command", "")) if name == "run_shell" else "",
             "error_code": metadata.get("tool_error_code", error_code),
             "retryable": bool(metadata.get("retryable", False)),
             "recommended_action": metadata.get("recommended_action", ""),
         }
         return result
 
+    # 核心工具调用函数
     def _execute(self, name, args, approval_granted=False):
         agent = self.agent
         name = agent.canonical_tool_name(name)
@@ -270,6 +365,7 @@ class ToolExecutor:
                 f"cached observation: unchanged successful {name} result reused; no tool step consumed.\n"
                 + ("\n".join(summaries) if summaries else "Use the existing verified evidence.")
             )
+            self._remember_files(name, args)
             metadata = dict(cached.metadata)
             metadata.update(
                 {
@@ -329,6 +425,27 @@ class ToolExecutor:
                 ),
             )
 
+        stale_reason = self._stale_edit_reason(name, args)
+        if stale_reason:
+            target = str(args.get("path", ""))
+            problem = (
+                "has not been read in this session"
+                if stale_reason == "file_not_read"
+                else "changed on disk since it was last read"
+            )
+            return ToolExecutionResult(
+                content=f"error: {name} refused: {target} {problem}. Read it with read_file first, then retry.",
+                metadata=_metadata(
+                    "rejected",
+                    tool_error_code=stale_reason,
+                    risk_level="high",
+                    read_only=False,
+                    retryable=True,
+                    recommended_action=f"Call read_file on {target} and base the edit on its current content.",
+                    stop_run=False,
+                ),
+            )
+
         # 检查风险工具调用是否被批准
         requires_approval = agent.tool_requires_approval(name, args)
         approval = True if approval_granted else agent.approve(name, args) if requires_approval else True
@@ -372,9 +489,8 @@ class ToolExecutor:
         after_snapshot = before_snapshot
 
         try:
-            # 执行工具
-            content = agent.redact_text(clip(tool["run"](args)))
-
+            # 执行工具（获取工具调用结果的时候先做一次压缩截断处理）
+            content = agent.redact_text(clip_head_tail(tool["run"](args)))
             after_snapshot = agent.capture_workspace_snapshot() if requires_approval else before_snapshot
             affected_paths, diff_summary = agent.diff_workspace_snapshots(before_snapshot, after_snapshot)
             workspace_changed = bool(affected_paths)
@@ -422,6 +538,7 @@ class ToolExecutor:
             result = ToolExecutionResult(content=content, metadata=metadata)
             if tool_status == "ok":
                 self._successful_calls.add(call_fingerprint)
+                self._remember_files(name, args)
                 if cache_key:
                     self._read_cache[cache_key] = result
             return result

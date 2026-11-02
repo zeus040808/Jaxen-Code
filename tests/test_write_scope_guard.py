@@ -14,9 +14,10 @@ from pathlib import Path
 
 import pytest
 
-from hh_agent_pro.providers.clients import FakeModelClient
+from hh_agent_pro.providers import FakeModelClient
 from hh_agent_pro.run_store import RunStore
-from hh_agent_pro.runtime import HH, SessionStore
+from hh_agent_pro.agent import CodingAgent
+from hh_agent_pro.session_store import SessionStore
 from hh_agent_pro.workspace import WorkspaceContext
 
 
@@ -28,7 +29,7 @@ def _build_agent(tmp_path, write_scope, scripted=None):
     (root / "tests" / "test_smoke.py").write_text("def test_ok():\n    assert True\n", encoding="utf-8")
 
     workspace = WorkspaceContext.build(root, repo_root_override=root)
-    return HH(
+    return CodingAgent(
         model_client=FakeModelClient(list(scripted or ["<final>done</final>"])),
         workspace=workspace,
         session_store=SessionStore(root / ".hh" / "sessions"),
@@ -79,6 +80,7 @@ def test_write_inside_scope_still_works(tmp_path):
     """护栏不能误伤正常写入。"""
 
     agent = _build_agent(tmp_path, ["acme/validators.py"])
+    agent.execute_tool("read_file", {"path": "acme/validators.py"})  # 覆盖已有文件前必须先读
 
     result = agent.execute_tool(
         "write_file",

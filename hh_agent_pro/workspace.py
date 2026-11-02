@@ -15,18 +15,17 @@ workspace必须知道
 """
 
 import subprocess
-import textwrap
 import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-MAX_TOOL_OUTPUT = 12000
-MAX_HISTORY = 12000
-# 这些文件最可能直接影响 agent 的行动方式。
-# 我们不会预加载整个仓库，只会先给模型一小份“导航包”。
-# 这是 workspace 快照会主动预读的文件白名单
-DOC_NAMES = ("CLAUDE.md","AGENTS.md", "README.md", "pyproject.toml", "package.json")
+# 单个工具结果的上限（字符，约 8k token）：足够一次读完几百行代码或一段完整测试输出。
+MAX_TOOL_OUTPUT = 30000
+# 项目指令文档：完整注入 system prompt。README 等普通文档不预加载，模型需要时自己读。
+INSTRUCTION_DOC_NAMES = ("AGENTS.md", "CLAUDE.md")
+# 单份指令文档的上限，只防异常大的文件；正常的指令文档远小于这个值。
+INSTRUCTION_DOC_CHAR_LIMIT = 40000
 # 这些目录不应该被 workspace 扫描
 IGNORED_PATH_NAMES = {".git", ".hh", "__pycache__", ".pytest_cache", ".ruff_cache", ".venv", "venv"}
 
@@ -42,6 +41,24 @@ def clip(text, limit=MAX_TOOL_OUTPUT):
     if len(text) <= limit:
         return text
     return text[:limit] + f"\n...[truncated {len(text) - limit} chars]"
+
+# 工具输出专用：头尾各留一半，保留换行。
+# 只留开头会丢掉最关键的结尾（pytest 的 FAILED 行和汇总、编译器最后的报错）。
+def clip_head_tail(text, limit=MAX_TOOL_OUTPUT):
+    text = str(text)
+    if len(text) <= limit:
+        return text
+    # 标记也计入 limit，保证调用方的上下文预算不被撑破。
+    # 用 len(text) 估算标记长度：省略字数不会超过它，位数只少不多。
+    marker_size = len(f"\n...[omitted {len(text)} chars from the middle]...\n")
+    keep = limit - marker_size
+    if keep < marker_size:
+        # 上限太小，放不下标记和有意义的头尾，退回到只截开头。
+        return text[:limit]
+    head = keep // 2
+    tail = keep - head
+    marker = f"\n...[omitted {len(text) - head - tail} chars from the middle]...\n"
+    return text[:head] + marker + text[-tail:]
 
 # 保留开头和结尾
 def middle(text, limit):
@@ -138,14 +155,14 @@ class WorkspaceContext:
         # 同时扫描 repo_root 和 cwd，这样在子目录启动时也能看到本地文档；
         # 但用相对路径做 key，避免同一份文档被重复收集。
         for base in (repo_root, cwd):
-            for name in DOC_NAMES:
+            for name in INSTRUCTION_DOC_NAMES:
                 path = base / name
-                if not path.exists():
+                if not path.is_file():
                     continue
                 key = str(path.relative_to(repo_root))
                 if key in docs:
                     continue
-                docs[key] = clip(path.read_text(encoding="utf-8", errors="replace"), 1200)
+                docs[key] = clip(path.read_text(encoding="utf-8-sig", errors="replace").strip(), INSTRUCTION_DOC_CHAR_LIMIT)
 
         # 返回值是项目背景说明
         return cls(
@@ -162,26 +179,19 @@ class WorkspaceContext:
         )
 
 
-    # workspace 对象转成模型能看的文本
     def text(self):
-        # 这段文本会被塞进 prompt prefix，作为相对稳定的基线上下文。
-        commits = "\n".join(f"- {line}" for line in self.recent_commits) or "- none"
-        docs = "\n".join(f"- {path}\n{snippet}" for path, snippet in self.project_docs.items()) or "- none"
-        return textwrap.dedent(
-            f"""\
-            Workspace:
-            - cwd: {self.cwd}
-            - repo_root: {self.repo_root}
-            - branch: {self.branch}
-            - default_branch: {self.default_branch}
-            - status:
-            {self.status}
-            - recent_commits:
-            {commits}
-            - project_docs:
-            {docs}
-            """
-        ).strip()
+        """环境快照：放进 system prompt，整个 Session 不更新（否则每次改文件都会让缓存失效）。"""
+        commits = "\n".join(f"  {line}" for line in self.recent_commits) or "  none"
+        return "\n".join([
+            "Environment (snapshot at session start; it does not update, run git yourself for the current state):",
+            f"- cwd: {self.cwd}",
+            f"- repo_root: {self.repo_root}",
+            f"- branch: {self.branch} (default: {self.default_branch})",
+            "- git status:",
+            "\n".join(f"  {line}" for line in self.status.splitlines()),
+            "- recent commits:",
+            commits,
+        ])
 
     # 把当前 workspace 快照变成一个 hash
     def fingerprint(self):

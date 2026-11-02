@@ -1,4 +1,4 @@
-﻿"""工具定义与执行辅助逻辑。
+"""工具定义与执行辅助逻辑。
 
 可以把这个文件看成 agent 的能力白名单：模型能申请哪些动作、这些动作
 如何做参数校验，以及最终如何执行，都是在这里定义的。
@@ -10,10 +10,21 @@ import os
 import re
 import shutil
 import subprocess
+import difflib
 import textwrap
 from functools import partial
 
-from .workspace import IGNORED_PATH_NAMES, clip
+from .workspace import IGNORED_PATH_NAMES, MAX_TOOL_OUTPUT
+
+# run_shell 单条命令的超时上限（秒）。装依赖、跑完整测试集常常要几分钟。
+MAX_SHELL_TIMEOUT = 600
+# read_file 默认读到第几行；输出过长时按行截断并提示从哪一行继续。
+DEFAULT_READ_END = 2000
+# 编辑后回显的 diff 最多几行，够模型确认改动即可。
+MAX_DIFF_LINES = 60
+# glob 最多返回多少个路径。
+MAX_GLOB_RESULTS = 200
+
 #
 # schema       参数说明
 # risky        是否需要危险操作审批
@@ -25,9 +36,9 @@ BASE_TOOL_SPECS = {
         "description": "List workspace files. Use this instead of shell dir/ls.",
     },
     "read_file": {
-        "schema": {"path": "str", "start": "int=1", "end": "int=200"},
+        "schema": {"path": "str", "start": "int=1", "end": f"int={DEFAULT_READ_END}"},
         "risky": False,
-        "description": "Read one UTF-8 workspace file. Use this instead of shell type/cat/Get-Content.",
+        "description": "Read one UTF-8 workspace file with line numbers. Long output is cut at a line boundary and says where to continue. Use this instead of shell type/cat/Get-Content.",
     },
     "read_files": {
         "schema": {"paths": "list[str]", "start": "int=1", "end": "int=300"},
@@ -39,8 +50,13 @@ BASE_TOOL_SPECS = {
         "risky": False,
         "description": "Search the workspace with rg or a simple fallback.",
     },
+    "glob": {
+        "schema": {"pattern": "str", "path": "str='.'"},
+        "risky": False,
+        "description": "Find files by glob pattern such as '**/*.py' or 'src/**/test_*.ts'; newest first.",
+    },
     "run_shell": {
-        "schema": {"command": "str", "timeout": "int=20", "background": "bool=False"},
+        "schema": {"command": "str", "timeout": "int=120", "background": "bool=False"},
         "risky": True,
         "description": "Run a repo-root shell command. Use only when no dedicated file/search tool fits; approval is conditional on mutation risk.",
     },
@@ -49,22 +65,38 @@ BASE_TOOL_SPECS = {
         "risky": False,
         "description": "Show redacted provider, model, OS, shell, cwd, and repo root without reading secret config files.",
     },
+    "todo_write": {
+        "schema": {"todos": "list[object]"},
+        "risky": False,
+        "description": (
+            "Replace the session todo list for multi-step work. Each item is "
+            "{content, status} with status pending, in_progress, or completed; "
+            "send the full list every time and keep one item in_progress."
+        ),
+    },
     "write_file": {
         "schema": {"path": "str", "content": "str"},
         "risky": True,
-        "description": "Write a text file.",
+        "description": "Write a text file. Overwriting an existing file requires reading it first; the result shows a diff.",
     },
     "patch_file": {
         "schema": {"path": "str", "old_text": "str", "new_text": "str"},
         "risky": True,
-        "description": "Replace one exact text block in a file.",
+        "description": "Replace one exact text block in a file. If the file changed since you read it, read it again first. The result shows a diff.",
     },
 }
 
+# 子 agent 有自己的 Session 与上下文：大范围的读代码、找调用链交给它，只把结论带回主上下文。
+DEFAULT_DELEGATE_STEPS = 20
+MAX_DELEGATE_STEPS = 30
 DELEGATE_TOOL_SPEC = {
-    "schema": {"task": "str", "max_steps": "int=3"},
+    "schema": {"task": "str", "max_steps": f"int={DEFAULT_DELEGATE_STEPS}"},
     "risky": False,
-    "description": "Ask a bounded read-only child agent to investigate.",
+    "description": (
+        "Hand a self-contained, read-only investigation (find where something is implemented, trace a call path, "
+        "survey how a module is used) to a child agent with its own context. It can list, glob, search and read "
+        "files but not edit or run commands. Describe exactly what to find and what to report back."
+    ),
 }
 
 TASK_TOOL_SPECS = {
@@ -212,12 +244,14 @@ TOOL_EXAMPLES = {
     "read_file": '<tool>{"name":"read_file","args":{"path":"README.md","start":1,"end":80}}</tool>',
     "read_files": '<tool>{"name":"read_files","args":{"paths":["a.py","b.py"],"start":1,"end":300}}</tool>',
     "search": '<tool>{"name":"search","args":{"pattern":"binary_search","path":"."}}</tool>',
+    "glob": '<tool>{"name":"glob","args":{"pattern":"**/*.py","path":"."}}</tool>',
+    "todo_write": '<tool>{"name":"todo_write","args":{"todos":[{"content":"Reproduce the bug","status":"completed"},{"content":"Fix parser","status":"in_progress"}]}}</tool>',
     "run_shell": '<tool>{"name":"run_shell","args":{"command":"uv run --with pytest python -m pytest -q","timeout":20}}</tool>',
     "run_shell_background": '<tool>{"name":"run_shell","args":{"command":"pytest -q","timeout":120,"background":true}}</tool>',
     "runtime_info": '<tool>{"name":"runtime_info","args":{}}</tool>',
     "write_file": '<tool name="write_file" path="binary_search.py"><content>def binary_search(nums, target):\n    return -1\n</content></tool>',
     "patch_file": '<tool name="patch_file" path="binary_search.py"><old_text>return -1</old_text><new_text>return mid</new_text></tool>',
-    "delegate": '<tool>{"name":"delegate","args":{"task":"inspect README.md","max_steps":3}}</tool>',
+    "delegate": '<tool>{"name":"delegate","args":{"task":"Find where session files are written and list the functions involved","max_steps":20}}</tool>',
     "create_task": '<tool>{"name":"create_task","args":{"subject":"Add tests","description":"Cover parser edge cases","acceptance_criteria":["pytest passes"]}}</tool>',
     "claim_task": '<tool>{"name":"claim_task","args":{"task_id":"task_123_aaaa","owner":"main-agent"}}</tool>',
     "complete_task": '<tool>{"name":"complete_task","args":{"task_id":"task_123_aaaa","evidence":["pytest: 12 passed"]}}</tool>',
@@ -362,12 +396,14 @@ def build_tool_registry(context):
         name: {**spec, "run": partial(_TOOL_RUNNERS[name], context)}
         for name, spec in BASE_TOOL_SPECS.items()
     }
-    tools.update({
-        name: {**spec, "run": partial(_TOOL_RUNNERS[name], context)}
-        for name, spec in TASK_TOOL_SPECS.items()
-    })
-    # 只有主 Agent 才能看到 Cron 工具
-    if context.depth == 0:
+    # 持久化 task 工具会写 .hh/tasks；调查型子 agent 不应修改父任务状态。
+    # core 工具集只保留编码工具，减少每轮暴露给模型的无关工具。
+    if context.depth == 0 and context.toolset == "full":
+        tools.update({
+            name: {**spec, "run": partial(_TOOL_RUNNERS[name], context)}
+            for name, spec in TASK_TOOL_SPECS.items()
+        })
+        # 只有主 Agent 才能看到 Cron 工具
         tools.update({
             name: {**spec, "run": partial(_TOOL_RUNNERS[name], context)}
             for name, spec in CRON_TOOL_SPECS.items()
@@ -409,9 +445,16 @@ def validate_tool(context, name, args):
         if not path.is_file():
             raise ValueError("path is not a file")
         start = int(args.get("start", 1))
-        end = int(args.get("end", 200))
+        end = int(args.get("end", DEFAULT_READ_END))
         if start < 1 or end < start:
             raise ValueError("invalid line range")
+        return
+
+    if name == "glob":
+        if not str(args.get("pattern", "")).strip():
+            raise ValueError("pattern must not be empty")
+        if not context.path(args.get("path", ".")).is_dir():
+            raise ValueError("path is not a directory")
         return
 
     if name == "read_files":
@@ -440,9 +483,9 @@ def validate_tool(context, name, args):
         command = str(args.get("command", "")).strip()
         if not command:
             raise ValueError("command must not be empty")
-        timeout = int(args.get("timeout", 20))
-        if timeout < 1 or timeout > 120:
-            raise ValueError("timeout must be in [1, 120]")
+        timeout = int(args.get("timeout", 120))
+        if timeout < 1 or timeout > MAX_SHELL_TIMEOUT:
+            raise ValueError(f"timeout must be in [1, {MAX_SHELL_TIMEOUT}]")
         return
 
     if name == "runtime_info":
@@ -490,6 +533,11 @@ def validate_tool(context, name, args):
             raise ValueError("task_id must not be empty")
         if not str(args.get("reason", "")).strip():
             raise ValueError("reason must not be empty")
+        return
+
+    if name == "todo_write":
+        if not isinstance(args.get("todos"), list):
+            raise ValueError("todos must be a list of {content, status} objects")
         return
 
     if name == "record_evidence":
@@ -609,6 +657,9 @@ def validate_tool(context, name, args):
             raise ValueError("task must not be empty")
         if context.depth >= context.max_depth:
             raise ValueError("delegate depth exceeded")
+        max_steps = int(args.get("max_steps", DEFAULT_DELEGATE_STEPS))
+        if max_steps < 1 or max_steps > MAX_DELEGATE_STEPS:
+            raise ValueError(f"max_steps must be in [1, {MAX_DELEGATE_STEPS}]")
         return
 
 
@@ -636,17 +687,33 @@ def tool_list_files(context, args):
     return "\n".join(lines) or "(empty)"
 
 
-def tool_read_file(context, args):
+def tool_read_file(context, args, char_limit=MAX_TOOL_OUTPUT - 300):
     path = context.path(args["path"])
     if not path.is_file():
         raise ValueError("path is not a file")
     start = int(args.get("start", 1))
-    end = int(args.get("end", 200))
+    end = int(args.get("end", DEFAULT_READ_END))
     if start < 1 or end < start:
         raise ValueError("invalid line range")
     lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
-    body = "\n".join(f"{number:>4}: {line}" for number, line in enumerate(lines[start - 1:end], start=start))
-    return f"# {path.relative_to(context.root)}\n{body}"
+    header = f"# {path.relative_to(context.root)}"
+    # 按整行截断：代码不能走头尾截断，否则中间几百行会悄悄消失。
+    out, used, last = [], len(header), start - 1
+    for number, line in enumerate(lines[start - 1:end], start=start):
+        rendered = f"{number:>4}: {line}"
+        if out and used + len(rendered) + 1 > char_limit:
+            break
+        out.append(rendered)
+        used += len(rendered) + 1
+        last = number
+    body = "\n".join(out)
+    shown_end = min(end, len(lines))
+    if last < shown_end:
+        body += (
+            f"\n...[showing lines {start}-{last} of {len(lines)}; "
+            f"call read_file with start={last + 1} to continue]"
+        )
+    return f"{header}\n{body}"
 
 
 def tool_read_files(context, args):
@@ -655,9 +722,8 @@ def tool_read_files(context, args):
     sections = []
     per_file_budget = max(800, 11000 // len(args["paths"]))
     for raw_path in args["paths"]:
-        sections.append(clip(
-            tool_read_file(context, {"path": raw_path, "start": start, "end": end}),
-            per_file_budget,
+        sections.append(tool_read_file(
+            context, {"path": raw_path, "start": start, "end": end}, char_limit=per_file_budget
         ))
     return "\n\n".join(sections)
 
@@ -701,13 +767,42 @@ def tool_search(context, args):
     return "\n".join(matches) or "(no matches)"
 
 
+def tool_glob(context, args):
+    pattern = str(args.get("pattern", "")).strip()
+    base = context.path(args.get("path", "."))
+    matches = []
+    for item in base.glob(pattern):
+        if not item.is_file():
+            continue
+        relative = item.relative_to(context.root)
+        if any(part in IGNORED_PATH_NAMES for part in relative.parts):
+            continue
+        matches.append((item.stat().st_mtime, str(relative)))
+    # 最近改过的文件最可能和当前任务有关，排在前面。
+    matches.sort(key=lambda pair: (-pair[0], pair[1]))
+    lines = [path for _, path in matches[:MAX_GLOB_RESULTS]]
+    if len(matches) > MAX_GLOB_RESULTS:
+        lines.append(f"...[{len(matches) - MAX_GLOB_RESULTS} more matches; narrow the pattern]")
+    return "\n".join(lines) or "(no matches)"
+
+
+def _edit_diff(relative_path, before, after):
+    diff = list(difflib.unified_diff(
+        before.splitlines(), after.splitlines(),
+        fromfile=f"a/{relative_path}", tofile=f"b/{relative_path}", lineterm="", n=2,
+    ))
+    if len(diff) > MAX_DIFF_LINES:
+        diff = diff[:MAX_DIFF_LINES] + [f"...[{len(diff) - MAX_DIFF_LINES} more diff lines]"]
+    return "\n".join(diff) or "(no textual change)"
+
+
 def tool_run_shell(context, args):
     command = str(args.get("command", "")).strip()
     if not command:
         raise ValueError("command must not be empty")
-    timeout = int(args.get("timeout", 20))
-    if timeout < 1 or timeout > 120:
-        raise ValueError("timeout must be in [1, 120]")
+    timeout = int(args.get("timeout", 120))
+    if timeout < 1 or timeout > MAX_SHELL_TIMEOUT:
+        raise ValueError(f"timeout must be in [1, {MAX_SHELL_TIMEOUT}]")
     if context.background_tasks and context.background_tasks.should_run_background("run_shell", args):
         clean_args = {**args, "background": False}
         background_id = context.background_tasks.start(
@@ -742,9 +837,13 @@ def tool_run_shell(context, args):
 def tool_write_file(context, args):
     path = context.path(args["path"])
     content = str(args["content"])
+    before = path.read_text(encoding="utf-8", errors="replace") if path.is_file() else None
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
-    return f"wrote {path.relative_to(context.root)} ({len(content)} chars)"
+    relative = path.relative_to(context.root)
+    if before is None:
+        return f"created {relative} ({len(content)} chars)"
+    return f"wrote {relative} ({len(content)} chars)\n" + _edit_diff(relative, before, content)
 
 
 def tool_patch_file(context, args):
@@ -760,8 +859,10 @@ def tool_patch_file(context, args):
     count = text.count(old_text)
     if count != 1:
         raise ValueError(f"old_text must occur exactly once, found {count}")
-    path.write_text(text.replace(old_text, str(args["new_text"]), 1), encoding="utf-8")
-    return f"patched {path.relative_to(context.root)}"
+    updated = text.replace(old_text, str(args["new_text"]), 1)
+    path.write_text(updated, encoding="utf-8")
+    relative = path.relative_to(context.root)
+    return f"patched {relative}\n" + _edit_diff(relative, text, updated)
 
 
 def tool_delegate(context, args):
@@ -805,6 +906,10 @@ def tool_fail_task(context, args):
 
 def tool_block_task(context, args):
     return context.task_store.block(str(args["task_id"]), str(args["reason"]))
+
+
+def tool_todo_write(context, args):
+    return context.task_state.set_todos(args["todos"])
 
 
 def tool_record_evidence(context, args):
@@ -919,6 +1024,8 @@ _TOOL_RUNNERS = {
     "read_file": tool_read_file,
     "read_files": tool_read_files,
     "search": tool_search,
+    "glob": tool_glob,
+    "todo_write": tool_todo_write,
     "run_shell": tool_run_shell,
     "runtime_info": tool_runtime_info,
     "write_file": tool_write_file,

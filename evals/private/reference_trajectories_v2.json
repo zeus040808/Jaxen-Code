@@ -5,48 +5,56 @@
     "coding_bugfix_discount_percent": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/pricing.py\"><old_text>def apply_discount(amount, percent):\n    return amount - percent</old_text><new_text>def apply_discount(amount, percent):\n    if not 0 <= percent <= 100:\n        raise ValueError('percent must be between 0 and 100')\n    return amount * (1 - percent / 100)</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.pricing import apply_discount; assert apply_discount(200,25)==150; import pytest; pytest.raises(ValueError, apply_discount, 10, 101)\\\"\",\"timeout\":20}}</tool>",
         "<final>Discounts now use percentage semantics with validation.</final>"
       ]
     },
     "coding_bugfix_find_user_missing": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/repository.py\"><old_text>    return users[0]</old_text><new_text>    return None</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.repository import find_user; users=[{'id':1}]; assert find_user(users,2) is None; assert find_user([],2) is None\\\"\",\"timeout\":20}}</tool>",
         "<final>Missing users now return None.</final>"
       ]
     },
     "coding_bugfix_page_limit": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/repository.py\"><old_text>return users[offset : offset + limit + 1]</old_text><new_text>return users[offset : offset + limit]</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.repository import page; xs=list(range(6)); assert page(xs,2,2)==[2,3]; assert page(xs,1,0)==[]\\\"\",\"timeout\":20}}</tool>",
         "<final>Pagination now respects the exact limit.</final>"
       ]
     },
     "coding_bugfix_parse_bool": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/text.py\"><old_text>def parse_bool(value):\n    return bool(value)</old_text><new_text>def parse_bool(value):\n    if isinstance(value, bool):\n        return value\n    if isinstance(value, str):\n        normalized = value.strip().lower()\n        if normalized in {'true', 'yes', '1'}:\n            return True\n        if normalized in {'false', 'no', '0'}:\n            return False\n    raise ValueError('unsupported boolean value')</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.text import parse_bool; assert parse_bool(True) is True; assert parse_bool(' YES ') is True; assert parse_bool('0') is False; import pytest; pytest.raises(ValueError, parse_bool, 'maybe')\\\"\",\"timeout\":20}}</tool>",
         "<final>Fixed parse_bool and verified its strict input contract.</final>"
       ]
     },
     "coding_bugfix_subtotal_quantity": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/pricing.py\"><old_text>return sum(item[\"price\"] for item in items)</old_text><new_text>return sum(item['price'] * item.get('quantity', 1) for item in items)</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.pricing import subtotal; assert subtotal([{'price':10,'quantity':3},{'price':2}]) == 32\\\"\",\"timeout\":20}}</tool>",
         "<final>Subtotal now accounts for quantity.</final>"
       ]
     },
     "coding_bugfix_truncate": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/text.py\"><old_text>def truncate(value, limit):\n    return value[:limit] + \"...\"</old_text><new_text>def truncate(value, limit):\n    if limit < 3:\n        raise ValueError('limit must be at least 3')\n    return value if len(value) <= limit else value[:limit - 3] + '...'</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.text import truncate; assert truncate('abc',3)=='abc'; assert truncate('abcdef',5)=='ab...'; import pytest; pytest.raises(ValueError, truncate, 'abc', 2)\\\"\",\"timeout\":20}}</tool>",
         "<final>Fixed truncate length and edge-case behavior.</final>"
       ]
     },
     "coding_bugfix_unique_words": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/text.py\"><old_text>def unique_words(values):\n    return list(set(values))</old_text><new_text>def unique_words(values):\n    return list(dict.fromkeys(values))</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.text import unique_words; assert unique_words(['b','a','b','c','a']) == ['b','a','c']\\\"\",\"timeout\":20}}</tool>",
         "<final>Preserved first-seen order while removing duplicates.</final>"
       ]
     },
     "coding_build_health_cli": {
       "outputs": [
         "<tool name=\"write_file\" path=\"acme/__main__.py\"><content>def main():\n    print('acme-service ok')\n\n\nif __name__ == '__main__':\n    main()\n</content></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"test \\\"$(python -m acme)\\\" = \\\"acme-service ok\\\"\",\"timeout\":20}}</tool>",
         "<final>Added and verified the package health CLI.</final>"
       ]
     },
@@ -55,6 +63,7 @@
         "<tool name=\"patch_file\" path=\"config.json\"><old_text>  \"features\": [\"users\", \"pricing\"]</old_text><new_text>  \"features\": [\"users\", \"pricing\"],\n  \"reports_v2\": false</new_text></tool>",
         "<tool name=\"patch_file\" path=\"acme/config.py\"><old_text>import os</old_text><new_text>import json\nimport os\nfrom pathlib import Path</new_text></tool>",
         "<tool name=\"patch_file\" path=\"acme/config.py\"><old_text>\n\nDEFAULT_TIMEOUT</old_text><new_text>\n\ndef load_config(path='config.json'):\n    return json.loads(Path(path).read_text(encoding='utf-8'))\n\nDEFAULT_TIMEOUT</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.config import load_config; assert load_config()['reports_v2'] is False\\\"\",\"timeout\":20}}</tool>",
         "<final>Added the feature flag and JSON config loader.</final>"
       ]
     },
@@ -67,30 +76,35 @@
     "coding_feature_chunked": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/text.py\"><old_text>\n\ndef truncate</old_text><new_text>\n\ndef chunked(values, size):\n    if size <= 0:\n        raise ValueError('size must be positive')\n    return [list(values[index:index + size]) for index in range(0, len(values), size)]\n\ndef truncate</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.text import chunked; assert chunked([1,2,3,4,5],2)==[[1,2],[3,4],[5]]; import pytest; pytest.raises(ValueError, chunked, [1], 0)\\\"\",\"timeout\":20}}</tool>",
         "<final>Added consecutive chunking with size validation.</final>"
       ]
     },
     "coding_feature_mask_email": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/text.py\"><old_text>\n\ndef parse_bool</old_text><new_text>\n\ndef mask_email(value):\n    if not isinstance(value, str) or value.count('@') != 1:\n        raise ValueError('invalid email')\n    local, domain = value.split('@')\n    if not local or not domain:\n        raise ValueError('invalid email')\n    return local[0] + '***@' + domain\n\ndef parse_bool</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.text import mask_email; assert mask_email('alice@example.com')=='a***@example.com'; import pytest; pytest.raises(ValueError, mask_email, 'bad')\\\"\",\"timeout\":20}}</tool>",
         "<final>Added and verified mask_email.</final>"
       ]
     },
     "coding_feature_render_table": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/report.py\"><old_text>\n\ndef render_users</old_text><new_text>\n\ndef render_table(users):\n    rows = ['id | name']\n    rows.extend(f\"{user['id']} | {user['name']}\" for user in users)\n    return '\\n'.join(rows)\n\ndef render_users</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.report import render_table; assert render_table([{'id':2,'name':'B'},{'id':1,'name':'A'}]) == 'id | name\\\\n2 | B\\\\n1 | A'\\\"\",\"timeout\":20}}</tool>",
         "<final>Added deterministic user table rendering.</final>"
       ]
     },
     "coding_feature_timeout_env": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/config.py\"><old_text>    value = os.environ.get(\"ACME_TIMEOUT\")\n    return value if value is not None else DEFAULT_TIMEOUT</old_text><new_text>    value = os.environ.get('ACME_TIMEOUT')\n    if value is None:\n        return DEFAULT_TIMEOUT\n    try:\n        timeout = int(value)\n    except ValueError as exc:\n        raise ValueError('ACME_TIMEOUT must be a positive integer') from exc\n    if timeout <= 0:\n        raise ValueError('ACME_TIMEOUT must be a positive integer')\n    return timeout</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"import os; from acme.config import timeout_from_env; os.environ['ACME_TIMEOUT']='45'; assert timeout_from_env()==45; os.environ['ACME_TIMEOUT']='0'; import pytest; pytest.raises(ValueError, timeout_from_env)\\\"\",\"timeout\":20}}</tool>",
         "<final>Environment timeout is now a validated positive integer.</final>"
       ]
     },
     "coding_feature_ttl_cache": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/cache.py\"><old_text>\n\nclass Cache</old_text><new_text>\n\nclass TTLCache:\n    def __init__(self, ttl_seconds, clock):\n        self.ttl_seconds = ttl_seconds\n        self.clock = clock\n        self._values = {}\n\n    def set(self, key, value):\n        self._values[key] = (value, self.clock())\n\n    def get(self, key):\n        item = self._values.get(key)\n        if item is None or self.clock() - item[1] >= self.ttl_seconds:\n            self._values.pop(key, None)\n            return None\n        return item[0]\n\nclass Cache</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.cache import TTLCache; now=[0]; c=TTLCache(5, clock=lambda:now[0]); c.set('x',1); assert c.get('x')==1; now[0]=6; assert c.get('x') is None\\\"\",\"timeout\":20}}</tool>",
         "<final>Added an injectable-clock TTL cache.</final>"
       ]
     },
@@ -99,6 +113,7 @@
         "<tool name=\"patch_file\" path=\"acme/models.py\"><old_text>def make_user(user_id, name, active=True):\n    return {\"id\": user_id, \"name\": name, \"active\": active}</old_text><new_text>def make_user(user_id, name, active=True, email=None):\n    return {'id': user_id, 'name': name, 'active': active, 'email': email}</new_text></tool>",
         "<tool name=\"patch_file\" path=\"acme/service.py\"><old_text>user = make_user(user_id, name)</old_text><new_text>user = make_user(user_id, name, email=email)</new_text></tool>",
         "<tool name=\"patch_file\" path=\"acme/repository.py\"><old_text>def active_users(users):\n    return users</old_text><new_text>def active_users(users):\n    return [user for user in users if user.get('active', False)]</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.service import register_user; from acme.repository import active_users; users=[]; u=register_user(users,1,'A','a@x.com'); assert u['email']=='a@x.com'; u['active']=False; assert active_users(users)==[]\\\"\",\"timeout\":20}}</tool>",
         "<final>Propagated email and fixed active-user filtering.</final>"
       ]
     },
@@ -107,6 +122,7 @@
         "<tool name=\"patch_file\" path=\"acme/models.py\"><old_text>\n\ndef make_user</old_text><new_text>\n\nclass DuplicateUserError(ValueError):\n    pass\n\ndef make_user</new_text></tool>",
         "<tool name=\"patch_file\" path=\"acme/service.py\"><old_text>from .models import make_user</old_text><new_text>from .models import DuplicateUserError, make_user</new_text></tool>",
         "<tool name=\"patch_file\" path=\"acme/service.py\"><old_text>def register_user(users, user_id, name, email):\n    if not is_email(email):</old_text><new_text>def register_user(users, user_id, name, email):\n    if any(user['id'] == user_id for user in users):\n        raise DuplicateUserError(user_id)\n    if not is_email(email):</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.service import register_user; from acme.models import DuplicateUserError; users=[]; register_user(users,1,'A','a@x.com'); import pytest; pytest.raises(DuplicateUserError, register_user, users,1,'B','b@x.com'); assert len(users)==1\\\"\",\"timeout\":20}}</tool>",
         "<final>Added duplicate-id protection before mutation.</final>"
       ]
     },
@@ -114,6 +130,7 @@
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/repository.py\"><old_text>return users[offset : offset + limit + 1]</old_text><new_text>return users[offset : offset + limit]</new_text></tool>",
         "<tool name=\"patch_file\" path=\"acme/api.py\"><old_text>return {\"items\": page(users, offset, limit), \"count\": len(users)}</old_text><new_text>return {'items': page(users, offset, limit), 'total': len(users), 'offset': offset, 'limit': limit}</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.api import list_users; r=list_users(list(range(5)),1,2); assert r=={'items':[1,2],'total':5,'offset':1,'limit':2}\\\"\",\"timeout\":20}}</tool>",
         "<final>Fixed pagination and added complete metadata.</final>"
       ]
     },
@@ -122,6 +139,7 @@
         "<tool name=\"patch_file\" path=\"config.json\"><old_text>  \"retries\": 3,</old_text><new_text>  \"retries\": 3,\n  \"tax_rate\": 0.2,</new_text></tool>",
         "<tool name=\"patch_file\" path=\"acme/pricing.py\"><old_text>return sum(item[\"price\"] for item in items)</old_text><new_text>return sum(item['price'] * item.get('quantity', 1) for item in items)</new_text></tool>",
         "<tool name=\"patch_file\" path=\"acme/pricing.py\"><old_text>\n\ndef apply_discount</old_text><new_text>\n\ndef total_with_tax(items, rate=0.2):\n    return subtotal(items) * (1 + rate)\n\ndef apply_discount</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"import json; from pathlib import Path; assert json.loads(Path('config.json').read_text())['tax_rate']==0.2\\\"\",\"timeout\":20}}</tool>",
         "<final>Added the tax configuration and quantity-aware pricing API.</final>"
       ]
     },
@@ -138,6 +156,7 @@
     "coding_refactor_email_validation": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/validators.py\"><old_text>return isinstance(value, str) and \"@\" in value</old_text><new_text>return (\n        isinstance(value, str)\n        and value.count('@') == 1\n        and all(value.split('@'))\n    )</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.validators import is_email; assert is_email('a@b'); assert not is_email('@b'); assert not is_email('a@@b'); from pathlib import Path; assert 'is_email(email)' in Path('acme/service.py').read_text()\\\"\",\"timeout\":20}}</tool>",
         "<final>Central email validation is stricter and still shared.</final>"
       ]
     },
@@ -146,6 +165,7 @@
         "<tool name=\"patch_file\" path=\"acme/models.py\"><old_text>\n\ndef make_user</old_text><new_text>\n\nclass ServiceError(Exception):\n    pass\n\n\nclass InvalidEmailError(ServiceError):\n    pass\n\ndef make_user</new_text></tool>",
         "<tool name=\"patch_file\" path=\"acme/service.py\"><old_text>from .models import make_user</old_text><new_text>from .models import InvalidEmailError, make_user</new_text></tool>",
         "<tool name=\"patch_file\" path=\"acme/service.py\"><old_text>    if not is_email(email):\n        return None</old_text><new_text>    if not is_email(email):\n        raise InvalidEmailError(email)</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.models import ServiceError, InvalidEmailError; assert issubclass(InvalidEmailError, ServiceError); from acme.service import register_user; import pytest; pytest.raises(InvalidEmailError, register_user, [],1,'A','bad')\\\"\",\"timeout\":20}}</tool>",
         "<final>Added a service exception hierarchy and explicit invalid-email failure.</final>"
       ]
     },
@@ -154,6 +174,7 @@
         "<tool name=\"patch_file\" path=\"acme/models.py\"><old_text>\"\"\"Domain models represented as plain dictionaries in the starter code.\"\"\"</old_text><new_text>\"\"\"Domain models.\"\"\"\n\nfrom dataclasses import dataclass\n\n\n@dataclass(frozen=True)\nclass Item:\n    name: str\n    price: float\n    quantity: int = 1</new_text></tool>",
         "<tool name=\"patch_file\" path=\"acme/models.py\"><old_text>def make_item(name, price, quantity=1):\n    return {\"name\": name, \"price\": price, \"quantity\": quantity}</old_text><new_text>def make_item(name, price, quantity=1):\n    return Item(name, price, quantity)</new_text></tool>",
         "<tool name=\"patch_file\" path=\"acme/pricing.py\"><old_text>def subtotal(items):\n    return sum(item[\"price\"] for item in items)</old_text><new_text>def subtotal(items):\n    def field(item, name, default=None):\n        return item.get(name, default) if isinstance(item, dict) else getattr(item, name)\n    return sum(field(item, 'price') * field(item, 'quantity', 1) for item in items)</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.models import Item, make_item; from acme.pricing import subtotal; x=make_item('x',4,3); assert isinstance(x,Item); assert subtotal([x,{'price':2,'quantity':2}])==16\\\"\",\"timeout\":20}}</tool>",
         "<final>Introduced immutable Item while preserving legacy pricing input.</final>"
       ]
     },
@@ -162,6 +183,7 @@
         "<tool name=\"patch_file\" path=\"acme/validators.py\"><old_text>\n\ndef is_positive_int</old_text><new_text>\n\ndef normalize_username(value):\n    return value.strip().casefold()\n\ndef is_positive_int</new_text></tool>",
         "<tool name=\"patch_file\" path=\"acme/repository.py\"><old_text>\"\"\"In-memory repository helpers.\"\"\"</old_text><new_text>\"\"\"In-memory repository helpers.\"\"\"\n\nfrom .validators import normalize_username</new_text></tool>",
         "<tool name=\"patch_file\" path=\"acme/repository.py\"><old_text>\n\ndef active_users</old_text><new_text>\n\ndef find_user_by_name(users, name):\n    wanted = normalize_username(name)\n    return next((user for user in users if normalize_username(user['name']) == wanted), None)\n\ndef active_users</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.repository import find_user_by_name; assert find_user_by_name([{'name':' Alice '}], 'ALICE')['name']==' Alice '; assert find_user_by_name([], 'x') is None\\\"\",\"timeout\":20}}</tool>",
         "<final>Extracted normalization and reused it in repository lookup.</final>"
       ]
     },
@@ -169,6 +191,7 @@
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/text.py\"><old_text>return value.lower().replace(\" \", \"-\")</old_text><new_text>return '-'.join(value.strip().lower().split())</new_text></tool>",
         "<tool name=\"write_file\" path=\"tests/test_text.py\"><content>from acme.text import slugify\n\n\ndef test_slugify_normalizes_whitespace():\n    assert slugify('  Hello   World ') == 'hello-world'\n</content></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -m pytest -q\",\"timeout\":20}}</tool>",
         "<final>Added the regression test, fixed slugify, and ran pytest.</final>"
       ]
     },
@@ -185,6 +208,7 @@
     "normal_add_port_validator": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"hhapp/text.py\"><old_text>\n\ndef slugify</old_text><new_text>\n\ndef is_valid_port(value):\n    return isinstance(value, int) and not isinstance(value, bool) and 1 <= value <= 65535\n\ndef slugify</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from hhapp.text import is_valid_port; assert is_valid_port(1); assert is_valid_port(65535); assert not is_valid_port(0); assert not is_valid_port(65536); assert not is_valid_port(True); assert not is_valid_port('80')\\\"\",\"timeout\":20}}</tool>",
         "<final>Added the strict port validator.</final>"
       ]
     },
@@ -196,6 +220,7 @@
     "normal_fix_slugify": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"hhapp/text.py\"><old_text>return value.lower().replace(\" \", \"-\")</old_text><new_text>return \"-\".join(value.strip().lower().split())</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -m unittest discover -s checks -p \\\"*_check.py\\\"\",\"timeout\":20}}</tool>",
         "<final>Fixed slugify and verified the tests.</final>"
       ]
     },
@@ -203,6 +228,7 @@
       "outputs": [
         "<tool name=\"patch_file\" path=\"hhapp/config.py\"><old_text>DEFAULT_TIMEOUT = 30</old_text><new_text>DEFAULT_TIMEOUT = 45</new_text></tool>",
         "<tool name=\"patch_file\" path=\"README.md\"><old_text>Runtime timeout: 60 seconds.</old_text><new_text>Runtime timeout: 45 seconds.</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from hhapp.config import DEFAULT_TIMEOUT; assert DEFAULT_TIMEOUT == 45\\\"\",\"timeout\":20}}</tool>",
         "<final>Updated source and README to 45 seconds.</final>"
       ]
     },
@@ -224,42 +250,49 @@
       "outputs": [
         "<tool>{\"name\":\"read_file\",\"args\":{\"path\":\"settings.py\",\"start\":1,\"end\":80}}</tool>",
         "<tool name=\"patch_file\" path=\"hhapp/config.py\"><old_text>DEFAULT_TIMEOUT = 30</old_text><new_text>DEFAULT_TIMEOUT = 50</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from hhapp.config import DEFAULT_TIMEOUT; assert DEFAULT_TIMEOUT == 50\\\"\",\"timeout\":20}}</tool>",
         "<final>Found the canonical setting, changed it to 50, and verified it.</final>"
       ]
     },
     "robust_find_user_direct": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/repository.py\"><old_text>    return users[0]</old_text><new_text>    return None</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.repository import find_user; assert find_user([{'id':1}],99) is None\\\"\",\"timeout\":20}}</tool>",
         "<final>Missing user ids now return None.</final>"
       ]
     },
     "robust_find_user_schema": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/repository.py\"><old_text>    return users[0]</old_text><new_text>    return None</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.repository import find_user; assert find_user([{'id':1}],99) is None\\\"\",\"timeout\":20}}</tool>",
         "<final>Missing user ids now return None.</final>"
       ]
     },
     "robust_find_user_symptom": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/repository.py\"><old_text>    return users[0]</old_text><new_text>    return None</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.repository import find_user; assert find_user([{'id':1}],99) is None\\\"\",\"timeout\":20}}</tool>",
         "<final>Missing user ids now return None.</final>"
       ]
     },
     "robust_port_direct": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/validators.py\"><old_text>\n\ndef is_positive_int</old_text><new_text>\n\ndef is_valid_port(value):\n    return isinstance(value, int) and not isinstance(value, bool) and 1 <= value <= 65535\n\ndef is_positive_int</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.validators import is_valid_port; assert is_valid_port(1) and is_valid_port(65535); assert not is_valid_port(True) and not is_valid_port('80')\\\"\",\"timeout\":20}}</tool>",
         "<final>Added the strict reusable port validator.</final>"
       ]
     },
     "robust_port_examples": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/validators.py\"><old_text>\n\ndef is_positive_int</old_text><new_text>\n\ndef is_valid_port(value):\n    return isinstance(value, int) and not isinstance(value, bool) and 1 <= value <= 65535\n\ndef is_positive_int</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.validators import is_valid_port; assert is_valid_port(1) and is_valid_port(65535); assert not is_valid_port(True) and not is_valid_port('80')\\\"\",\"timeout\":20}}</tool>",
         "<final>Added the strict reusable port validator.</final>"
       ]
     },
     "robust_port_schema": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/validators.py\"><old_text>\n\ndef is_positive_int</old_text><new_text>\n\ndef is_valid_port(value):\n    return isinstance(value, int) and not isinstance(value, bool) and 1 <= value <= 65535\n\ndef is_positive_int</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.validators import is_valid_port; assert is_valid_port(1) and is_valid_port(65535); assert not is_valid_port(True) and not is_valid_port('80')\\\"\",\"timeout\":20}}</tool>",
         "<final>Added the strict reusable port validator.</final>"
       ]
     },
@@ -281,36 +314,42 @@
     "robust_slugify_direct": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"hhapp/text.py\"><old_text>return value.lower().replace(\" \", \"-\")</old_text><new_text>return \"-\".join(value.strip().lower().split())</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from hhapp.text import slugify; assert slugify('  Hello   World ') == 'hello-world'\\\"\",\"timeout\":20}}</tool>",
         "<final>Fixed and verified whitespace-normalizing slugify.</final>"
       ]
     },
     "robust_slugify_noisy": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"hhapp/text.py\"><old_text>return value.lower().replace(\" \", \"-\")</old_text><new_text>return \"-\".join(value.strip().lower().split())</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from hhapp.text import slugify; assert slugify('  Hello   World ') == 'hello-world'\\\"\",\"timeout\":20}}</tool>",
         "<final>Fixed and verified whitespace-normalizing slugify.</final>"
       ]
     },
     "robust_slugify_ticket": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"hhapp/text.py\"><old_text>return value.lower().replace(\" \", \"-\")</old_text><new_text>return \"-\".join(value.strip().lower().split())</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from hhapp.text import slugify; assert slugify('  Hello   World ') == 'hello-world'\\\"\",\"timeout\":20}}</tool>",
         "<final>Fixed and verified whitespace-normalizing slugify.</final>"
       ]
     },
     "robust_subtotal_direct": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/pricing.py\"><old_text>return sum(item[\"price\"] for item in items)</old_text><new_text>return sum(item['price'] * item.get('quantity', 1) for item in items)</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.pricing import subtotal; assert subtotal([{'price':5,'quantity':3}]) == 15\\\"\",\"timeout\":20}}</tool>",
         "<final>Subtotal now honors quantity.</final>"
       ]
     },
     "robust_subtotal_example": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/pricing.py\"><old_text>return sum(item[\"price\"] for item in items)</old_text><new_text>return sum(item['price'] * item.get('quantity', 1) for item in items)</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.pricing import subtotal; assert subtotal([{'price':5,'quantity':3}]) == 15\\\"\",\"timeout\":20}}</tool>",
         "<final>Subtotal now honors quantity.</final>"
       ]
     },
     "robust_subtotal_noise": {
       "outputs": [
         "<tool name=\"patch_file\" path=\"acme/pricing.py\"><old_text>return sum(item[\"price\"] for item in items)</old_text><new_text>return sum(item['price'] * item.get('quantity', 1) for item in items)</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.pricing import subtotal; assert subtotal([{'price':5,'quantity':3}]) == 15\\\"\",\"timeout\":20}}</tool>",
         "<final>Subtotal now honors quantity.</final>"
       ]
     },
@@ -401,6 +440,7 @@
       "outputs": [
         "<needs_user_input>Which module and report function should I change?</needs_user_input>",
         "<tool name=\"patch_file\" path=\"acme/report.py\"><old_text>return \"\\n\".join(user[\"name\"] for user in users)</old_text><new_text>return 'Users:\\n' + '\\n'.join(user['name'] for user in users)</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.report import render_users; assert render_users([{'name':'A'}]) == 'Users:\\\\nA'\\\"\",\"timeout\":20}}</tool>",
         "<final>Applied the clarified header change in acme/report.py.</final>"
       ]
     },
@@ -408,6 +448,7 @@
       "outputs": [
         "<needs_user_input>What timeout value should I use?</needs_user_input>",
         "<tool name=\"patch_file\" path=\"acme/config.py\"><old_text>DEFAULT_TIMEOUT = 30</old_text><new_text>DEFAULT_TIMEOUT = 45</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.config import DEFAULT_TIMEOUT; assert DEFAULT_TIMEOUT == 45\\\"\",\"timeout\":20}}</tool>",
         "<final>Used the clarification, set DEFAULT_TIMEOUT to 45, and verified it.</final>"
       ]
     },
@@ -415,6 +456,7 @@
       "outputs": [
         "<needs_user_input>The values conflict. Which single retry value should be canonical?</needs_user_input>",
         "<tool name=\"patch_file\" path=\"acme/config.py\"><old_text>DEFAULT_RETRIES = 3</old_text><new_text>DEFAULT_RETRIES = 6</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from acme.config import DEFAULT_RETRIES; assert DEFAULT_RETRIES == 6\\\"\",\"timeout\":20}}</tool>",
         "<final>Resolved the conflict using 6 as the canonical retry value.</final>"
       ]
     },
@@ -436,6 +478,7 @@
       "outputs": [
         "<tool>{\"name\":\"patch_file\",\"args\":{}}</tool>",
         "<tool name=\"patch_file\" path=\"hhapp/config.py\"><old_text>DEFAULT_TIMEOUT = 30</old_text><new_text>DEFAULT_TIMEOUT = 51</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from hhapp.config import DEFAULT_TIMEOUT; assert DEFAULT_TIMEOUT == 51\\\"\",\"timeout\":20}}</tool>",
         "<final>Recovered from invalid arguments and set the timeout to 51.</final>"
       ]
     },
@@ -464,6 +507,7 @@
       "outputs": [
         "<tool>{\"name\":\"cat_file\",\"args\":{\"path\":\"hhapp/config.py\"}}</tool>",
         "<tool name=\"patch_file\" path=\"hhapp/config.py\"><old_text>DEFAULT_TIMEOUT = 30</old_text><new_text>DEFAULT_TIMEOUT = 52</new_text></tool>",
+        "<tool>{\"name\":\"run_shell\",\"args\":{\"command\":\"python -c \\\"from hhapp.config import DEFAULT_TIMEOUT; assert DEFAULT_TIMEOUT == 52\\\"\",\"timeout\":20}}</tool>",
         "<final>Recovered from the unknown tool and completed the edit.</final>"
       ]
     }

@@ -1,4 +1,7 @@
-﻿"""Agent control loop extracted from the runtime facade."""
+﻿"""一次 ask() 的控制循环：驱动模型决策、工具调用和停止条件。
+
+AgentLoop 不持有跨请求会话；它通过 CodingAgent 读取能力并回写状态。
+"""
 
 import time
 
@@ -8,18 +11,30 @@ from .run_state import (
     STOP_REASON_BLOCKED,
     STOP_REASON_EPISODE_TIMEOUT,
     STOP_REASON_REPEATED_FAILED_CALL,
+    STOP_REASON_INCOMPLETE_DELIVERY,
 )
 from . import tools as toolkit
+from .task_state import VERIFICATION_REPAIR_STEPS
 from .workspace import clip, now
 
-# 交付门禁最多驳回几次。驳回的意义是提醒模型"还有活没干完"，
-# 提醒两次还不动，再提醒也只是烧 token 和墙钟。
-MAX_DELIVERY_DEFERRALS = 2
+# 交付门禁只提醒一次，之后放行（未解决项照实写进答案）。
+# 实测强制驳回最常见的原因是"改了代码但没跑通测试"，反复驳回会逼模型
+# 自己写测试文件来过门禁，越出任务的改动范围。提醒一次足够让它补验证。
+MAX_DELIVERY_DEFERRALS = 1
+VERIFICATION_TOOLS = {"run_shell", "read_file", "read_files", "search", "patch_file", "write_file"}
 
 
 class AgentLoop:
+    """控制单次用户请求的生命周期；每次 CodingAgent.ask() 新建一个。"""
+
     def __init__(self, agent):
         self.agent = agent
+
+    @staticmethod
+    def _tool_limit(agent):
+        # 只在代码已修改且尚未通过检查时开放修复余量。
+        pending = agent.task_state.to_dict().get("verification_pending", False)
+        return agent.max_steps + (VERIFICATION_REPAIR_STEPS if pending else 0)
 
     @staticmethod
     def _partial_answer(agent, raw):
@@ -289,10 +304,6 @@ class AgentLoop:
         protocol_recoveries = 0
 
         # 这是 agent 的主循环，可以按“感知 -> 决策 -> 行动 -> 记录”来理解：
-        # 1. 感知：重新组 prompt，把当前状态整理给模型看
-        # 2. 决策：让模型返回一个工具调用，或一个最终答案
-        # 3. 行动：如果是工具调用，就执行工具
-        # 4. 记录：把结果写回 history / run_state / trace / memory
         # 然后进入下一轮，直到停机条件满足
         while attempts < max_attempts:
             if self._episode_timed_out(run_started_at):
@@ -313,10 +324,12 @@ class AgentLoop:
                 "status",
                 message=(
                     f"Thinking - decision {attempts}/{max_attempts} | "
-                    f"tools {tool_steps}/{agent.max_steps}{mode}"
+                    f"tools {tool_steps}/{self._tool_limit(agent)}{mode}"
                 ),
             )
-            prompt, prompt_metadata = agent._build_prompt_and_metadata(effective_user_message)
+            tools = None if agent.final_only_mode else toolkit.provider_tool_schemas(agent.tools)
+            request, prompt_metadata = agent.build_model_request(effective_user_message, tools=tools)
+            request.event_callback = lambda event: self._provider_event(run_state, event)
             # 更新元数据
             agent.last_prompt_metadata = prompt_metadata
             agent.emit_trace(
@@ -360,29 +373,16 @@ class AgentLoop:
                         "trigger": "workspace_mismatch",
                     },
                 )
-            # 局部分区按固定上限裁切是每轮都可能发生的常规整理，trace 中保留即可。
-            # 只有 prompt 总量超出全局预算、不得不再次淘汰上下文时，才创建恢复检查点。
-            # 否则一个普通问题的每次格式重试都会制造近乎相同的 checkpoint。
-            material_reductions = [
-                item
-                for item in prompt_metadata.get("budget_reductions", [])
-                if item.get("reason") == "total_budget"
-            ]
-            if material_reductions:
-                agent.emit_ui(
-                    "compaction",
-                    reason="total_budget",
-                    reductions=material_reductions,
-                )
+            # 上下文被压缩（轻压缩、摘要或兜底裁剪）时留一个可审计的恢复检查点。
+            compaction = prompt_metadata.get("compaction")
+            if compaction:
+                agent.emit_ui("compaction", **compaction)
                 checkpoint = agent.create_checkpoint(run_state, effective_user_message, trigger="context_reduction")
                 agent.run_store.write_run_state(run_state)
                 agent.emit_trace(
                     run_state,
                     "checkpoint_created",
-                    {
-                        "checkpoint_id": checkpoint["checkpoint_id"],
-                        "trigger": "context_reduction",
-                    },
+                    {"checkpoint_id": checkpoint["checkpoint_id"], "trigger": "context_reduction", **compaction},
                 )
             agent.emit_trace(
                 run_state,
@@ -390,44 +390,13 @@ class AgentLoop:
                 {
                     "attempts": run_state.attempts,
                     "tool_steps": run_state.tool_steps,
-                    "prompt_cache_key": prompt_metadata.get("prompt_cache_key"),
+                    "estimated_input_tokens": prompt_metadata.get("estimated_input_tokens"),
                 },
             )
-            prompt_cache_key = None
-            prompt_cache_retention = None
-            if getattr(agent.model_client, "supports_prompt_cache", False):
-                # 只有后端明确支持时，才把稳定前缀的 hash 作为 cache key 发出去。
-                prompt_cache_key = prompt_metadata.get("prompt_cache_key")
-                # 缓存策略
-                prompt_cache_retention = "in_memory"
             model_started_at = time.monotonic()
 
             try:
-                # 向模型发送请求，得到回答
-                if hasattr(agent.model_client, "complete_stream"):
-                    provider_kwargs = {}
-                    if bool(getattr(agent.model_client, "supports_native_tools", False)):
-                        provider_kwargs = agent.context_manager.provider_request(effective_user_message)
-                    raw = agent.model_client.complete_stream(
-                        prompt,
-                        agent.max_new_tokens,
-                        prompt_cache_key=prompt_cache_key,
-                        prompt_cache_retention=prompt_cache_retention,
-                        event_callback=lambda event: self._provider_event(run_state, event),
-                        tools=(
-                            None
-                            if agent.final_only_mode
-                            else toolkit.provider_tool_schemas(agent.tools)
-                        ),
-                        **provider_kwargs,
-                    )
-                else:
-                    raw = agent.model_client.complete(
-                        prompt,
-                        agent.max_new_tokens,
-                        prompt_cache_key=prompt_cache_key,
-                        prompt_cache_retention=prompt_cache_retention,
-                    )
+                raw = agent.model_client.complete(request)
                 completion_metadata = dict(getattr(agent.model_client, "last_completion_metadata", {}) or {})
                 native_assistant_message = dict(
                     getattr(agent.model_client, "last_native_assistant_message", {}) or {}
@@ -438,6 +407,7 @@ class AgentLoop:
                     prompt_metadata.update(completion_metadata)
                 agent.last_completion_metadata = completion_metadata
                 agent.last_prompt_metadata = prompt_metadata
+                agent.context_manager.observe_usage(completion_metadata)
                 if completion_metadata:
                     agent.emit_ui(
                         "usage",
@@ -572,8 +542,81 @@ class AgentLoop:
                 )
                 return final
 
+            if kind == "tool_batch":
+                actions = payload
+                names = [agent.canonical_tool_name(action["name"]) for action in actions]
+                remaining = agent.max_steps - tool_steps
+                if agent.final_only_mode or remaining < len(actions):
+                    agent.final_only_mode = True if remaining <= 0 else agent.final_only_mode
+                    agent.model_output_correction = (
+                        f"Only {max(0, remaining)} tool steps remain. "
+                        "Use a smaller read batch or return a final answer."
+                    )
+                    continue
+                if len(actions) > 4 or any(
+                    name not in agent.tool_executor.PARALLEL_READ_TOOLS for name in names
+                ):
+                    # 含写入/shell 的批次不再整批拒绝（那样白白多一轮往返），
+                    # 而是按模型给出的顺序逐个执行。
+                    executed, final = self._run_sequential_batch(
+                        run_state, actions, names, native_assistant_message,
+                        effective_user_message, run_started_at,
+                    )
+                    tool_steps += executed
+                    if final is not None:
+                        return final
+                    continue
+                for action, name in zip(actions, names):
+                    agent.emit_ui("tool_started", name=name, args=agent.redact_artifact(action["args"]))
+                try:
+                    results = agent.tool_executor.execute_read_batch(actions)
+                except ValueError as exc:
+                    agent.model_output_correction = f"Invalid read batch: {exc}. Correct the calls."
+                    continue
+                agent.record({
+                    "role": "assistant",
+                    "content": native_assistant_message.get("content") or "",
+                    "tool_calls": [
+                        {"id": action["id"], "name": name, "args": action["args"]}
+                        for action, name in zip(actions, names)
+                    ],
+                    "reasoning_content": str(native_assistant_message.get("reasoning_content", "") or ""),
+                    "created_at": now(),
+                })
+                for action, name, result in zip(actions, names, results):
+                    tool_steps += 1
+                    run_state.record_tool(name)
+                    agent.record({
+                        "role": "tool", "name": name, "args": action["args"],
+                        "content": result.prompt_content(), "tool_call_id": action["id"],
+                        "created_at": now(),
+                    })
+                    agent.source_evidence.record_action(
+                        name, action["args"], status=result.metadata.get("tool_status", "unknown")
+                    )
+                    agent.emit_trace(run_state, "tool_executed", {
+                        "name": name, "args": agent.redact_artifact(action["args"]),
+                        "result": clip(result.content, 500), "parallel_batch": True,
+                        **dict(result.metadata or {}),
+                    })
+                    agent.emit_ui("tool_finished", name=name, result=clip(result.content, 1200),
+                                  metadata=dict(result.metadata or {}))
+                agent.session["source_evidence"] = agent.source_evidence.to_dict()
+                agent.run_store.write_run_state(run_state)
+                agent.create_checkpoint(run_state, effective_user_message, trigger="tool_batch_executed")
+                continue
+
             if kind == "tool":
-                if agent.final_only_mode or tool_steps >= agent.max_steps:
+                name = agent.canonical_tool_name(payload.get("name", ""))
+                limit = self._tool_limit(agent)
+                if (tool_steps >= agent.max_steps and tool_steps < limit
+                        and name not in VERIFICATION_TOOLS):
+                    agent.model_output_correction = (
+                        "Only verification and repair tools remain: run_shell, read_file, "
+                        "read_files, search, patch_file, write_file."
+                    )
+                    continue
+                if agent.final_only_mode or tool_steps >= limit:
                     if not agent.final_only_mode:
                         agent.final_only_mode = True
                         notice = (
@@ -598,8 +641,6 @@ class AgentLoop:
                         run_started_at=run_started_at,
                     )
                     return final
-                name = payload.get("name", "")
-                name = agent.canonical_tool_name(name)
                 args = payload.get("args", {})
                 agent.emit_ui("tool_started", name=name, args=args)
                 tool_call_id = str(native_assistant_message.get("tool_call_id", "")).strip()
@@ -698,48 +739,10 @@ class AgentLoop:
                         "trigger": "tool_executed",
                     },
                 )
-                if tool_result.metadata.get("tool_status") == "waiting":
-                    input_request = dict(
-                        tool_result.metadata.get("input_request") or {}
-                    )
-                    final = str(
-                        input_request.get("question")
-                        or f"Approval is required before {name} can execute."
-                    )
-                    run_state.wait_for_user(final)
-                    agent.task_state.mark_waiting(final)
-                    agent.record(
-                        {"role": "assistant", "content": final, "created_at": now()}
-                    )
-                    self._finalize_run(
-                        run_state,
-                        effective_user_message,
-                        trigger="approval_requested",
-                        run_started_at=run_started_at,
-                    )
-                    return final
-                if tool_result.metadata.get("stop_run"):
-                    error_code = str(tool_result.metadata.get("tool_error_code", "") or STOP_REASON_BLOCKED)
-                    security_event = str(tool_result.metadata.get("security_event_type", ""))
-                    if error_code == "repeated_failed_call":
-                        stop_reason = STOP_REASON_REPEATED_FAILED_CALL
-                    elif security_event in {"approval_denied", "read_only_block", "path_escape"}:
-                        stop_reason = security_event
-                    else:
-                        stop_reason = error_code
-                    final = (
-                        f"Blocked safely: {result}\n"
-                        f"Next step: {tool_result.metadata.get('recommended_action', 'Choose a permitted action.')}"
-                    )
-                    run_state.finish_blocked(final, stop_reason=stop_reason)
-                    agent.task_state.mark_blocked(final)
-                    agent.record({"role": "assistant", "content": final, "created_at": now()})
-                    self._finalize_run(
-                        run_state,
-                        effective_user_message,
-                        trigger=run_state.stop_reason,
-                        run_started_at=run_started_at,
-                    )
+                final = self._terminal_after_tool(
+                    run_state, name, tool_result, effective_user_message, run_started_at
+                )
+                if final is not None:
                     return final
                 continue
 
@@ -829,13 +832,14 @@ class AgentLoop:
                 # （步数耗尽或进入 final-only）却仍要求先解决工具失败，就是死锁：
                 # 解决需要工具，而工具不会再给了 —— 模型只能反复交同一份答案，
                 # 直到 episode 超时。这条路径实测吃掉了 47% 的模型请求。
-                actionable = not agent.final_only_mode and tool_steps < agent.max_steps
+                actionable = not agent.final_only_mode and tool_steps < self._tool_limit(agent)
                 delivery_deferrals += 1
                 if actionable and delivery_deferrals <= MAX_DELIVERY_DEFERRALS:
                     notice = (
-                        "Runtime delivery check rejected the final answer because: "
+                        "Runtime delivery check (one-time reminder): before finishing, these items are open: "
                         + " | ".join(blockers[:6])
-                        + ". Resolve the blockers, use <needs_user_input>, or use <blocked>."
+                        + ". Resolve them with the existing tools if you can. If you cannot, "
+                        "return your final answer and state plainly what is unresolved."
                     )
                     agent.record({"role": "assistant", "content": notice, "created_at": now()})
                     agent.emit_trace(
@@ -874,15 +878,22 @@ class AgentLoop:
             if unresolved_blockers:
                 final = (
                     final
-                    + "\n\nUnresolved at delivery (no tool budget left to fix these):\n"
+                    + "\n\nUnresolved at delivery:\n"
                     + "\n".join(f"- {item}" for item in unresolved_blockers[:6])
                 )
             # 保存模型最终回答
             agent.record({"role": "assistant", "content": final, "created_at": now()})
-            run_state.finish_success(final)
-            agent.task_state.mark_completed(final)
-            agent.auto_capture_durable_memory(effective_user_message)
-            agent.auto_deposit_skill(effective_user_message, final, run_state)
+            if unresolved_blockers:
+                run_state.stop(STOP_REASON_INCOMPLETE_DELIVERY, final_answer=final)
+                agent.task_state.mark_paused(
+                    STOP_REASON_INCOMPLETE_DELIVERY,
+                    "Resolve the listed blockers before marking this task complete.",
+                )
+            else:
+                run_state.finish_success(final)
+                agent.task_state.mark_completed(final)
+                agent.auto_capture_durable_memory(effective_user_message)
+                agent.auto_deposit_skill(effective_user_message, final, run_state)
             self._finalize_run(run_state, effective_user_message, trigger="run_finished", run_started_at=run_started_at)
             return final
 
@@ -898,6 +909,105 @@ class AgentLoop:
             run_started_at=run_started_at,
         )
         return final
+
+    def _terminal_after_tool(self, run_state, name, tool_result, user_message, run_started_at):
+        """Finish the run when a tool waits for approval or must stop it; else None."""
+        agent = self.agent
+        if tool_result.metadata.get("tool_status") == "waiting":
+            input_request = dict(tool_result.metadata.get("input_request") or {})
+            final = str(
+                input_request.get("question")
+                or f"Approval is required before {name} can execute."
+            )
+            run_state.wait_for_user(final)
+            agent.task_state.mark_waiting(final)
+            agent.record({"role": "assistant", "content": final, "created_at": now()})
+            self._finalize_run(
+                run_state, user_message, trigger="approval_requested", run_started_at=run_started_at,
+            )
+            return final
+        if tool_result.metadata.get("stop_run"):
+            error_code = str(tool_result.metadata.get("tool_error_code", "") or STOP_REASON_BLOCKED)
+            security_event = str(tool_result.metadata.get("security_event_type", ""))
+            if error_code == "repeated_failed_call":
+                stop_reason = STOP_REASON_REPEATED_FAILED_CALL
+            elif security_event in {"approval_denied", "read_only_block", "path_escape"}:
+                stop_reason = security_event
+            else:
+                stop_reason = error_code
+            final = (
+                f"Blocked safely: {tool_result.content}\n"
+                f"Next step: {tool_result.metadata.get('recommended_action', 'Choose a permitted action.')}"
+            )
+            run_state.finish_blocked(final, stop_reason=stop_reason)
+            agent.task_state.mark_blocked(final)
+            agent.record({"role": "assistant", "content": final, "created_at": now()})
+            self._finalize_run(
+                run_state, user_message, trigger=run_state.stop_reason, run_started_at=run_started_at,
+            )
+            return final
+        return None
+
+    def _run_sequential_batch(self, run_state, actions, names, native_message, user_message, run_started_at):
+        """Run a batch one call at a time, in the order the model returned it.
+
+        Returns (effective tool steps used, terminal answer or None). When a call
+        waits for approval or stops the run, later calls are not executed but
+        still get a tool result, so every assistant tool_call keeps its pair.
+        """
+        agent = self.agent
+        agent.record({
+            "role": "assistant",
+            "content": native_message.get("content") or "",
+            "tool_calls": [
+                {"id": action["id"], "name": name, "args": action["args"]}
+                for action, name in zip(actions, names)
+            ],
+            "reasoning_content": str(native_message.get("reasoning_content", "") or ""),
+            "created_at": now(),
+        })
+        executed = 0
+        stopping = None  # (name, tool_result) of the call that ends the run
+        for action, name in zip(actions, names):
+            args = action["args"]
+            if stopping is not None:
+                agent.record({
+                    "role": "tool", "name": name, "args": args, "tool_call_id": action["id"],
+                    "content": f"not executed: earlier call {stopping[0]} in this batch ended the step",
+                    "created_at": now(),
+                })
+                continue
+            agent.emit_ui("tool_started", name=name, args=agent.redact_artifact(args))
+            started_at = time.monotonic()
+            tool_result = agent.execute_tool(name, args)
+            if bool(tool_result.metadata.get("effective_tool_step", True)):
+                executed += 1
+                run_state.record_tool(name)
+            agent.record({
+                "role": "tool", "name": name, "args": args, "tool_call_id": action["id"],
+                "content": tool_result.prompt_content(), "created_at": now(),
+            })
+            agent.source_evidence.record_action(
+                name, args, status=tool_result.metadata.get("tool_status", "unknown")
+            )
+            agent.emit_trace(run_state, "tool_executed", {
+                "name": name, "args": agent.redact_artifact(args),
+                "result": clip(tool_result.content, 500), "sequential_batch": True,
+                "duration_ms": int((time.monotonic() - started_at) * 1000),
+                **dict(tool_result.metadata or {}),
+            })
+            agent.emit_ui("tool_finished", name=name, result=clip(tool_result.content, 1200),
+                          metadata=dict(tool_result.metadata or {}))
+            if tool_result.metadata.get("tool_status") == "waiting" or tool_result.metadata.get("stop_run"):
+                stopping = (name, tool_result)
+        agent.session["source_evidence"] = agent.source_evidence.to_dict()
+        agent.run_store.write_run_state(run_state)
+        agent.create_checkpoint(run_state, user_message, trigger="tool_batch_executed")
+        if stopping is None:
+            return executed, None
+        return executed, self._terminal_after_tool(
+            run_state, stopping[0], stopping[1], user_message, run_started_at
+        )
 
     def _provider_event(self, run_state, event):
         """Render provider progress and persist a compact diagnostic trace."""

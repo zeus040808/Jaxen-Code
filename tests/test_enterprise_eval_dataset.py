@@ -7,7 +7,7 @@ from hh_agent_pro.evaluation.schema_v2 import (
     fixture_digest,
     load_task_suite_v2,
 )
-from scripts.build_enterprise_eval_v2 import build_payloads
+from scripts.eval.build_enterprise_dataset import build_payloads
 
 
 ROOT = Path(__file__).resolve().parents[1]

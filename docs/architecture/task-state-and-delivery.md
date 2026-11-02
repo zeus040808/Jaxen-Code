@@ -133,7 +133,11 @@ flowchart TD
     H --> C
 ```
 
-TaskState 被拼入 Memory section，因此模型每轮都能看到目标、子任务、未解决失败、未验证结论、开放问题和最近证据。
+TaskState 渲染进每轮请求末尾的 `<system-reminder>`，因此模型每轮都能看到目标、子任务、todo、未解决失败、未验证结论、开放问题，以及"改了代码是否已跑过测试"。
+
+> 2026-10-30：**"改了代码但没跑通测试"不再阻止交付**，只在提醒里显示 `Code verification: pending test`。
+> 原因：识别测试命令靠正则，复现脚本、仓库自定义命令、`cd … && pytest` 等合法验证会被误判（SWE-bench 冒烟实测误报）；
+> 硬门禁还会逼模型自己写测试文件来过关。可重试的工具失败、未完成子任务、未验证结论、后台任务仍是阻塞项。
 
 ## 7. 中断与恢复
 
@@ -153,7 +157,7 @@ python -m hh_agent_pro --resume latest
 恢复流程：
 
 1. SessionStore 读取同一 Session JSON。
-2. `HH.from_session()` 重建 Memory、TaskState 和 ProjectTaskStore。
+2. `CodingAgent.from_session()` 重建 Memory、TaskState 和 ProjectTaskStore。
 3. Checkpoint 检查关键文件 hash、工作区、模型和工具签名。
 4. 新的 Run ID 加入同一个 TaskState。
 5. 用户补充信息作为 `user_followup` 证据保存。

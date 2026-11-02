@@ -1,4 +1,4 @@
-﻿"""一次 ask() 运行过程中的状态机快照。
+"""一次 ask() 运行过程中的状态机快照。
 
 它回答的是：这次用户请求当前进行到哪了、调了多少次工具、最后为什么停下。
 这个对象会被不断写入 run_state.json，供运行中观察和运行后复盘。
@@ -20,11 +20,7 @@ STOP_REASON_FINAL_ANSWER_RETURNED = "final_answer_returned"
 STOP_REASON_STEP_LIMIT_REACHED = "step_limit_reached"
 STOP_REASON_RETRY_LIMIT_REACHED = "retry_limit_reached"
 STOP_REASON_MODEL_ERROR = "model_error"
-STOP_REASON_TOOL_TIMEOUT = "tool_timeout"
 STOP_REASON_APPROVAL_DENIED = "approval_denied"
-STOP_REASON_DELEGATE_FAILED = "delegate_failed"
-STOP_REASON_PERSISTENCE_ERROR = "persistence_error"
-STOP_REASON_RESUME_LOAD_ERROR = "resume_load_error"
 STOP_REASON_NEEDS_USER_INPUT = "needs_user_input"
 STOP_REASON_BLOCKED = "blocked"
 STOP_REASON_REPEATED_FAILED_CALL = "repeated_failed_call"
@@ -32,6 +28,7 @@ STOP_REASON_INTERRUPTED = "interrupted"
 STOP_REASON_OUTPUT_TRUNCATED = "output_truncated"
 STOP_REASON_MODEL_PROTOCOL_ERROR = "model_protocol_error"
 STOP_REASON_EPISODE_TIMEOUT = "episode_timeout"
+STOP_REASON_INCOMPLETE_DELIVERY = "incomplete_delivery"
 
 
 def _timestamp():

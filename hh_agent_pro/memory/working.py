@@ -103,5 +103,3 @@ class WorkingMemory:
 
     # Compatibility with callers while the public runtime attribute remains
     # ``agent.memory``. New code should call render().
-    def render_memory_text(self):
-        return self.render()

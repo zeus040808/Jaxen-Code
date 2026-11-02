@@ -12,14 +12,16 @@ __pycache__/
 .coverage
 htmlcov/
 .venv/
+.venv-swebench/
 venv/
 build/
 dist/
 *.egg-info/
 
-# Node（评测流水线）
+# Node（评测流水线，包管理器是 pnpm）
 node_modules/
 .pnpm-store/
+package-lock.json
 
 # IDE / OS
 .idea/
@@ -35,8 +37,8 @@ Thumbs.db
 
 # 评测运行时产物
 .niceeval/
-artifacts/reliability-runs/
-artifacts/archive/**/evidence/
 artifacts/eval-v2/**/evidence/
+artifacts/swebench/traces/
+artifacts/swebench/harness/
 *.ndjson
 *.hh-orig

@@ -2,5 +2,5 @@
 
 这些不是「可选特性」，而是若干工具（create_task / schedule_cron 等）
 共同依赖的后端：后台任务管理、定时任务调度、跨会话的项目任务存储。
-它们由 Runtime 创建、经 ToolContext 注入，工具函数不直接持有它们。
+它们由 CodingAgent 创建、经 ToolContext 注入，工具函数不直接持有它们。
 """

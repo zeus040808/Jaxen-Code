@@ -1,10 +1,10 @@
 # HH Agent Evaluation
 
 For a detailed Chinese beginner guide to methodology, metrics, manual testing, automation, and result interpretation, see
-[`HH_AGENT_EVALUATION_GUIDE_ZH.md`](HH_AGENT_EVALUATION_GUIDE_ZH.md).
+[`HH_AGENT_EVALUATION_GUIDE_ZH.md`](../learning/evaluation-guide.md).
 
 For the complete zero-to-interview textbook based on the current Reliability-v1 results, see
-[`HH_AGENT_EVALUATION_TEXTBOOK_ZH.md`](HH_AGENT_EVALUATION_TEXTBOOK_ZH.md).
+[`HH_AGENT_EVALUATION_TEXTBOOK_ZH.md`](../learning/evaluation-textbook.md).
 
 ## Evaluation Layers
 

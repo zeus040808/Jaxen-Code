@@ -223,7 +223,7 @@ namespace=memory, scope=workspace/project
 
 注入机制：
 
-1. 创建 `HH` 时读取磁盘；
+1. 创建 `CodingAgent` 时读取磁盘；
 2. 调用 `render_snapshot()`；
 3. 保存到 `curated_memory_snapshot`；
 4. 当前 Session 后续即使写入新记忆，也不改变这份 Prompt 快照；
@@ -662,12 +662,12 @@ python -m hh_agent_pro
 - `hh_agent_pro/memory/learner.py`：明确事实和偏好的保守自动捕获；
 - `hh_agent_pro/skills/store.py`：Skill 发现、索引、读取、CRUD、安全和原子落盘；
 - `hh_agent_pro/skills/learner.py`：已验证复杂流程自动沉淀；
-- `tests/test_hh_agent_pro_skills.py`：Skill 功能测试；
+- `tests/test_skills.py`：Skill 功能测试；
 - 本文档。
 
 核心修改：
 
-- `runtime.py`：装配新的 WorkingMemory、SkillStore、两个 learner；
+- `agent.py`：装配新的 WorkingMemory、SkillStore、两个 learner；
 - `agent_loop.py`：成功交付后触发自动事实捕获与 Skill 沉淀；
 - `tools.py`：加入 `skills_list / skill_view / skill_manage`；
 - `tool_context.py`：把受限 SkillStore 传给工具层；
