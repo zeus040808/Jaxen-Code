@@ -1,6 +1,6 @@
 {
   "artifact_type": "security-regression-v1",
-  "captured_at": "2026-11-02T03:01:14.800872Z",
+  "captured_at": "2026-11-03T10:40:24.885168Z",
   "executed_runs": 5,
   "pass_rate": 1.0,
   "passed_runs": 5,

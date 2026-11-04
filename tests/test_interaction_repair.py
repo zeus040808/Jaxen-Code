@@ -355,6 +355,56 @@ def test_second_length_truncation_stops_and_preserves_partial_draft(tmp_path):
     assert agent.session["pending_output"]["partial_answer"] == "第一部分第二部分"
 
 
+def test_empty_truncation_raises_output_budget_and_keeps_tools(tmp_path):
+    # 正文为空的截断（输出额度全被思考用光）：续写无从接起，改成提高输出上限、工具照常可用、重发这一轮。
+    # SWE-bench sympy-23413：连续两轮 8192 token 全是思考，走续写恢复照样截断，整题以 output_truncated 失败。
+    class ThinkingTooLongModel(ScriptedModel):
+        def __init__(self):
+            super().__init__(["", "<final>done</final>"])
+            self.limits, self.had_tools = [], []
+
+        def complete(self, request):
+            self.limits.append(request.max_new_tokens)
+            self.had_tools.append(bool(request.tools))
+            result = super().complete(request)
+            truncated = len(self.limits) == 1
+            self.last_completion_metadata = {"finish_reason": "length" if truncated else "stop",
+                                             "output_truncated": truncated}
+            return result
+
+    model = ThinkingTooLongModel()
+    agent = make_agent(tmp_path, model=model, approval="never")
+
+    assert agent.ask("想很久的问题") == "done"
+    assert agent.current_run_state.status == "completed"
+    assert model.limits[1] == model.limits[0] * 4  # 提高了输出上限
+    assert model.had_tools == [True, True]  # 没进 final-only，工具照常可用
+    trace = agent.run_store.trace_path(agent.current_run_state).read_text(encoding="utf-8")
+    assert '"event": "output_budget_raised"' in trace
+
+
+def test_empty_truncation_raises_budget_only_once(tmp_path):
+    # 提高上限后正文还是空：不再无限加码，交给原有的续写恢复 / 停止逻辑。
+    class AlwaysEmptyTruncated(ScriptedModel):
+        def __init__(self):
+            super().__init__(["", "", ""])
+            self.limits = []
+
+        def complete(self, request):
+            self.limits.append(request.max_new_tokens)
+            result = super().complete(request)
+            self.last_completion_metadata = {"finish_reason": "length", "output_truncated": True}
+            return result
+
+    model = AlwaysEmptyTruncated()
+    agent = make_agent(tmp_path, model=model, approval="never")
+    agent.ask("想很久的问题")
+
+    assert agent.current_run_state.stop_reason == STOP_REASON_OUTPUT_TRUNCATED
+    assert len(set(model.limits[1:])) == 1  # 只提高一次
+    assert agent.max_new_tokens_override == model.limits[1]
+
+
 def test_continue_resumes_session_pending_output_instead_of_restarting(tmp_path):
     class CrossRunModel(ScriptedModel):
         def __init__(self):

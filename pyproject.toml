@@ -31,6 +31,10 @@ packages = [
     "hh_agent_pro.evaluation",
 ]
 
+[tool.setuptools.package-data]
+# 内置 skill（如审查清单 code-review）是 Markdown 文件，安装时要随包带上
+"hh_agent_pro.skills" = ["builtin/*/SKILL.md"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 # 仓库根目录进 sys.path：测试要 import hh_agent_pro 与 scripts.eval（原先靠空的 tests/__init__.py 隐式实现）

@@ -16,7 +16,6 @@ import json
 import queue
 import subprocess
 import sys
-import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -86,7 +85,8 @@ def process(args, instance_id, results_path):
     started = time.monotonic()
     row = {"instance_id": instance_id}
 
-    gold = evaluate(args, instance_id, "gold", f"gold-{instance_id}")
+    # 运行编号带上运行名：两条流水线并行校验同一道题时，判分容器和报告不会互相覆盖
+    gold = evaluate(args, instance_id, "gold", f"gold-{args.run_name}-{instance_id}")
     row["gold_resolved"] = gold
     if not gold:
         row["outcome"] = "env_unusable"
@@ -95,10 +95,13 @@ def process(args, instance_id, results_path):
         command = [
             args.swe_python, "-I", str(ROOT / "scripts/swebench/run_hh_predictions.py"),
             "--instance-ids", instance_id, "--run-name", args.run_name, "--out-dir", str(out_dir),
-            "--model", args.model,
+            "--model", args.model, "--provider", args.provider,
+            "--review", args.review,
         ]
         if args.max_total_tokens:
             command += ["--max-total-tokens", str(args.max_total_tokens)]
+        if args.agent_src:
+            command += ["--agent-src", args.agent_src]
         output = subprocess.run(command, capture_output=True, text=True).stdout
         record = agent_record(out_dir / f"{args.run_name}.agent-runs.jsonl", instance_id)
         if "stop: token budget reached" in output or not record:
@@ -134,10 +137,14 @@ def main():
     parser.add_argument("--out-dir", required=True)
     parser.add_argument("--swe-python", required=True, help="Python interpreter with swebench and datasets installed.")
     parser.add_argument("--model", default="deepseek-flash")
+    parser.add_argument("--provider", choices=("deepseek", "anthropic"), default="deepseek")
+    parser.add_argument("--review", choices=("off", "auto", "always"), default="off",
+                        help="交付前审查子 agent：off / auto / always（默认 off，和之前的评测保持一致）")
     parser.add_argument("--pull-workers", type=int, default=2)
     parser.add_argument("--image-source", choices=sorted(IMAGE_SOURCES), default="dockerhub",
                         help="Where to pull instance images from; images are re-tagged with the official name.")
     parser.add_argument("--max-total-tokens", type=int, default=None)
+    parser.add_argument("--agent-src", default=None, help="传给 run_hh_predictions.py：挂进容器的 agent 代码目录")
     parser.add_argument("--pull-only", action="store_true",
                         help="Only download and tag images, then exit (no gold check, agent, or grading).")
     args = parser.parse_args()

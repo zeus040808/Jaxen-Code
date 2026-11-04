@@ -14,21 +14,22 @@ import textwrap
 import time
 
 from .config import load_project_env, provider_env
-from .providers import EvalScriptModelClient, OpenAIChatClient
+from .providers import AnthropicMessagesClient, EvalScriptModelClient, OpenAIChatClient
 from .agent import CodingAgent
 from .session_store import SessionStore
 from .terminal_ui import TerminalEventSink
 from .workspace import WorkspaceContext, middle
 
 
+# 对外名字是 Jaxen（界面与命令行显示用）；包名 hh_agent_pro、环境变量 HH_*、状态目录 .hh/ 保持不变。
 WELCOME_ART = (
-    "    __  __  __  __       ___                    __ ",
-    "   / / / / / / / /      / _ | ___ ____ ___  ___/ /_",
-    "  / /_/ / / /_/ /  ==  / __ |/ _ `/ -_) _ \\/ _  __/",
-    " / __  / / __  /      /_/ |_|\\_, /\\__/_//_/\\_,_/   ",
-    "/_/ /_/ /_/ /_/              /___/                  ",
+    r"       _____   _  __ ______ _   __",
+    r"      / /   | | |/ // ____// | / /",
+    r" __  / / /| | |   // __/  /  |/ / ",
+    r"/ /_/ / ___ |/   |/ /___ / /|  /  ",
+    r"\____/_/  |_/_/|_/_____//_/ |_/   ",
 )
-WELCOME_NAME = "HH AGENT PRO"
+WELCOME_NAME = "JAXEN"
 WELCOME_SUBTITLE = "OpenAI-compatible coding agent harness"
 WELCOME_STATUS = "workspace armed | tools gated | traces on"
 HELP_DETAILS = textwrap.dedent(
@@ -41,6 +42,7 @@ HELP_DETAILS = textwrap.dedent(
     /session Show the path to the saved session file.
     /tasks   Show durable project tasks.
     /crons   Show scheduled agent prompts.
+    /review  Review the uncommitted changes with a read-only reviewer (report only, no edits).
     /reset   Clear the current session history and memory.
     /exit    Exit the agent.
     """
@@ -51,8 +53,8 @@ DEFAULT_DEEPSEEK_MODEL = "deepseek-flash"
 DEFAULT_DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 SECRET_ENV_NAMES_VAR = "HH_SECRET_ENV_NAMES"
 # deepseek：DeepSeek 预设；openai：任意 OpenAI Chat Completions 兼容端点（通义、OpenAI 等）；
-# fake：仅限隔离评测的脚本化模型。
-PROVIDER_NAMES = ("deepseek", "openai", "fake")
+# anthropic：Anthropic Messages 兼容端点（如公司 LLM 网关上的 Claude）；fake：仅限隔离评测的脚本化模型。
+PROVIDER_NAMES = ("deepseek", "openai", "anthropic", "fake")
 # 每个 provider 从哪些环境变量取 key / base_url / model（按优先级）。
 PROVIDER_ENV = {
     "deepseek": {
@@ -64,6 +66,11 @@ PROVIDER_ENV = {
         "api_key": ("HH_OPENAI_API_KEY", "OPENAI_API_KEY"),
         "base_url": ("HH_OPENAI_API_BASE", "OPENAI_API_BASE"),
         "model": ("HH_OPENAI_MODEL", "OPENAI_MODEL"),
+    },
+    "anthropic": {
+        "api_key": ("HH_ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY"),
+        "base_url": ("HH_ANTHROPIC_API_BASE", "ANTHROPIC_BASE_URL"),
+        "model": ("HH_ANTHROPIC_MODEL", "ANTHROPIC_MODEL"),
     },
 }
 
@@ -83,7 +90,7 @@ def _effective_model(args, provider):
         return model
     if provider == "deepseek":
         return DEFAULT_DEEPSEEK_MODEL
-    raise RuntimeError("Set --model or HH_OPENAI_MODEL for the openai provider.")
+    raise RuntimeError(f"Set --model or {names[0]} for the {provider} provider.")
 
 # 需要加密的环境变量名
 DEFAULT_SECRET_ENV_NAMES = (
@@ -92,6 +99,8 @@ DEFAULT_SECRET_ENV_NAMES = (
     "HH_OPENAI_API_KEY",
     "OPENAI_API_KEY",
     "OPENAI_API_TOKEN",
+    "HH_ANTHROPIC_API_KEY",
+    "ANTHROPIC_API_KEY",
     "GITHUB_PAT",
     "GH_PAT",
 )
@@ -114,6 +123,14 @@ def _configured_secret_names(args):
     return sorted(configured_secret_names)
 
 
+def _review_mode(args):
+    """交付前审查：没指定时，真实模型默认 auto；脚本化假模型默认 off（它按固定脚本应答，多出的审查请求会打乱脚本）。"""
+    mode = getattr(args, "review", None)
+    if mode is None:
+        return "off" if getattr(args, "provider", "deepseek") == "fake" else "auto"
+    return mode
+
+
 def _build_model_client(args):
     provider = getattr(args, "provider", "deepseek")
     if provider == "fake":
@@ -126,15 +143,16 @@ def _build_model_client(args):
         env["base_url"][0], env["base_url"][1:], DEFAULT_DEEPSEEK_BASE_URL if provider == "deepseek" else ""
     )
     if not base_url:
-        raise RuntimeError("Set --base-url or HH_OPENAI_API_BASE for the openai provider.")
-    client = OpenAIChatClient(
+        raise RuntimeError(f"Set --base-url or {env['base_url'][0]} for the {provider} provider.")
+    client_class = AnthropicMessagesClient if provider == "anthropic" else OpenAIChatClient
+    client = client_class(
         model=_effective_model(args, provider),
         base_url=base_url,
         api_key=api_key,
         temperature=args.temperature,
         timeout=args.request_timeout,
         context_window=getattr(args, "context_window", None),
-        label="DeepSeek" if provider == "deepseek" else "Model",
+        label={"deepseek": "DeepSeek", "anthropic": "Claude"}.get(provider, "Model"),
     )
     client.provider = provider
     return client
@@ -288,6 +306,7 @@ def build_agent(args, event_sink=None, machine_mode=False):
             machine_mode=machine_mode,
             episode_timeout_ms=getattr(args, "episode_timeout_ms", 1_200_000),
             feature_flags={"skill_learning": not bool(getattr(args, "no_auto_skills", False))},
+        review_changes=_review_mode(args),
             toolset=getattr(args, "toolset", "core"),
         )
     # 没有恢复 ID 时，创建一个新 Agent。
@@ -304,6 +323,7 @@ def build_agent(args, event_sink=None, machine_mode=False):
         machine_mode=machine_mode,
         episode_timeout_ms=getattr(args, "episode_timeout_ms", 1_200_000),
         feature_flags={"skill_learning": not bool(getattr(args, "no_auto_skills", False))},
+        review_changes=_review_mode(args),
         toolset=getattr(args, "toolset", "core"),
     )
 
@@ -312,8 +332,9 @@ def build_arg_parser():
     # 这里创建一个命令行解析器
     parser = argparse.ArgumentParser(
         # 在 --help 里自动显示默认值
+        prog="jaxen",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        description="DeepSeek-default multi-model local coding agent harness.",
+        description="Jaxen: DeepSeek-default local coding agent.",
     )
     # 这是一个位置参数，不是 --xxx 形式
     # nargs="*" 的意思是：可以有 0 个、1 个、多个 prompt 片段
@@ -358,6 +379,11 @@ def build_arg_parser():
     parser.add_argument("--max-new-tokens", type=int, default=8192, help="Maximum model output tokens per step (default: 8192).")
     parser.add_argument("--episode-timeout-ms", type=int, default=1_200_000, help="Wall-clock budget for the complete episode (default: 20 min).")
     parser.add_argument("--jsonl", action="store_true", help="Read versioned machine requests from stdin and emit JSONL events/turns.")
+    parser.add_argument(
+        "--review", choices=("off", "auto", "always"), default=None,
+        help="Before delivering, have a read-only reviewer sub-agent check the changes once: off; auto = only when "
+             "non-test source code changed; always = any change (default: auto for real models, off for fake).",
+    )
     parser.add_argument("--no-auto-skills", action="store_true", help="Disable automatic SKILL.md deposition after verified complex runs.")
     parser.add_argument("--temperature", type=float, default=0.2, help="Sampling temperature.")
     return parser
@@ -439,7 +465,7 @@ def main(argv=None):
         # 交互模式：每次读取一条用户输入，交给同一个 agent，
         # 因此 session history 和 working memory 会跨轮延续。
         try:
-            prompt_label = "\nchoice> " if terminal.needs_input else "\nhh> "
+            prompt_label = "\nchoice> " if terminal.needs_input else "\njaxen> "
             user_input = input(prompt_label).strip()
         except (EOFError, KeyboardInterrupt):
             print("")

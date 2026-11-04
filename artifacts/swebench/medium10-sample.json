@@ -1,0 +1,32 @@
+{
+  "seed": 20261102,
+  "difficulty": "15 min - 1 hour",
+  "excluded_repos": [
+    "psf/requests"
+  ],
+  "pool_size": 259,
+  "instance_ids": [
+    "django__django-11790",
+    "scikit-learn__scikit-learn-15100",
+    "django__django-14238",
+    "django__django-13516",
+    "sphinx-doc__sphinx-8638",
+    "django__django-11265",
+    "django__django-15561",
+    "sphinx-doc__sphinx-8056",
+    "sympy__sympy-20154",
+    "django__django-15280"
+  ],
+  "images": {
+    "django__django-11790": "swebench/sweb.eval.x86_64.django_1776_django-11790:latest",
+    "scikit-learn__scikit-learn-15100": "swebench/sweb.eval.x86_64.scikit-learn_1776_scikit-learn-15100:latest",
+    "django__django-14238": "swebench/sweb.eval.x86_64.django_1776_django-14238:latest",
+    "django__django-13516": "swebench/sweb.eval.x86_64.django_1776_django-13516:latest",
+    "sphinx-doc__sphinx-8638": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-8638:latest",
+    "django__django-11265": "swebench/sweb.eval.x86_64.django_1776_django-11265:latest",
+    "django__django-15561": "swebench/sweb.eval.x86_64.django_1776_django-15561:latest",
+    "sphinx-doc__sphinx-8056": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-8056:latest",
+    "sympy__sympy-20154": "swebench/sweb.eval.x86_64.sympy_1776_sympy-20154:latest",
+    "django__django-15280": "swebench/sweb.eval.x86_64.django_1776_django-15280:latest"
+  }
+}

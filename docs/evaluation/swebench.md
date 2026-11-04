@@ -11,7 +11,7 @@ SWE-bench/SWE-bench_Verified 实例
    每个实例在它自己的官方镜像里跑 agent（/testbed 已在 base_commit，依赖环境已装好）
    agent 以 JSONL 协议运行，--toolset core，拿 git diff 作为补丁
 → <run>.predictions.jsonl  +  <run>.agent-runs.jsonl（token、请求数、stop_reason、耗时）
-   traces/<instance_id>/      （agent 的 trace/report，诊断用）
+   traces/<run-name>/<instance_id>/  （agent 的 trace/report/transcript，诊断用；transcript.jsonl 是逐轮完整对话。2026-11-03 之前的运行在旧布局 traces/<instance_id>/）
 → python -m swebench.harness.run_evaluation（官方判分）
 ```
 
@@ -44,6 +44,13 @@ SWE-bench/SWE-bench_Verified 实例
     --swe-python .venv-swebench/bin/python --max-total-tokens 12000000
 ```
 
+补跑个别实例（例如服务故障造成的 `model_error`）时注意两点（2026-11-03 踩过）：
+- 要把这道题从 `<run-name>.results.jsonl`、`.predictions.jsonl`、`.agent-runs.jsonl` **三个文件**里都删掉（先备份）。
+  只删 results 的话，预测脚本看到已有预测会跳过，流水线拿旧记录再判一次分。
+- `--max-total-tokens` 按整个运行名**累计**计算，补跑时上限要按累计值设，否则一开跑就触发预算停止。
+
+抽样：`.venv-swebench/bin/python -I scripts/swebench/make_sample.py --difficulty "15 min - 1 hour" --count 10 --seed 20261102 --out artifacts/swebench/medium10-sample.json`。
+
 也可以分步手动执行：
 
 ```bash
@@ -56,6 +63,42 @@ $SWE -I -m swebench.harness.run_evaluation -d SWE-bench/SWE-bench_Verified \
     -p artifacts/swebench/hh-flash-smoke-20261030.predictions.jsonl -id hh-flash-smoke
 ```
 
+## 定位指标
+
+判分只说明"修没修好"。为了看 agent 是怎么找到要改的代码的，用官方补丁涉及的文件作标准，从 trace 计算定位指标：
+
+```bash
+.venv-swebench/bin/python -I scripts/swebench/localization_metrics.py \
+    --run-name hh-flash-easy20 --out-dir artifacts/swebench
+```
+
+| 指标 | 含义 | easy20 基线 |
+|---|---|---|
+| found_gold | 读到过正确文件的题数 | 20/20 |
+| steps_to_gold（中位） | 第几次工具调用第一次读到正确文件 | 2 |
+| files_before_gold（中位） | 读到正确文件前读了几个无关文件 | 0 |
+| gold_read_recall | 应改文件中读过的比例 | 1.00 |
+| edit_recall / edit_precision | 应改文件中改了的比例 / 改了的文件中该改的比例 | 1.00 / 0.875 |
+
+精确率不到 1 来自 sphinx 镜像自带的 `setup.py`/`tox.ini` 改动（预测脚本已修）和 django-14608 顺手改的文档。
+结果写入 `artifacts/swebench/<run-name>.localization.json`。
+
+## 复盘汇总
+
+只读 results、trace 和判分日志，不调用模型：
+
+```bash
+python3 scripts/swebench/trace_report.py --run-name hh-flash-medium20d-review --out-dir artifacts/swebench
+```
+
+```bash
+python3 scripts/swebench/trace_report.py --run-name hh-flash-medium20d-review --out-dir artifacts/swebench --instance sympy__sympy-23413
+```
+
+第一条每题一行列出各模块的触发次数（工具失败按错误码、审查结论、交付拦截、截断、压缩、重试），写出 `<run-name>.trace-report.json`；
+第二条输出单题时间线：模型和代码版本、逐步工具调用（失败的标出错误码）、关键事件、没通过的隐藏测试、transcript 位置。
+要看模型每一轮收到了什么、想了什么，读那道题 run 目录里的 `transcript.jsonl`（按 `kept_messages` + `new_messages` 逐轮还原）。
+
 ## 结果
 
 | 运行 | 模型 | 实例 | 结果 | 说明 |
@@ -63,10 +106,17 @@ $SWE -I -m swebench.harness.run_evaluation -d SWE-bench/SWE-bench_Verified \
 | gold 校验 | 官方补丁 | `pytest-dev__pytest-7432` | resolved | 判分管线正常 |
 | gold 校验 | 官方补丁 | `psf__requests-2317` | unresolved | 联网测试失败，环境问题 |
 | smoke | deepseek-flash | `pytest-dev__pytest-7432`（<15 min） | **resolved** | 9 次请求、94k 输入 token、120 秒，约 ¥0.2 |
-| **easy20 基线** | deepseek-flash | 20 道 `<15 min fix`（Epoch 镜像） | **20/20 resolved** | 225 次请求、295 万输入 token（缓存 79%），约 ¥1.83，见 [2026-11-02-swebench-easy20.md](../results/2026-11-02-swebench-easy20.md) |
+| **easy20 基线** | deepseek-flash | 20 道 `<15 min fix`（Epoch 镜像） | **20/20 resolved** | 225 次请求、295 万输入 token（缓存 79%），约 ¥1.83，见 [2026-11-02-swebench-easy20.md](../results/2026-11-02-swebench-easy20.md)；**环境有泄露，结果无效** |
+| **medium10 验证** | deepseek-flash | 10 道 `15 min - 1 hour`（Epoch 镜像，种子 20261102） | **10/10 resolved** | 175 次请求、416 万输入 token（缓存 87%），约 ¥2（估算），见 [2026-11-02-swebench-medium10.md](../results/2026-11-02-swebench-medium10.md)；**环境有泄露，结果无效** |
+| **hard10 验证** | deepseek-flash | 10 道 `1-4 hours`（Epoch 镜像，种子 20261102） | **8/10 resolved** | 183 次请求、504 万输入 token（缓存 86%），约 ¥2.5（估算）；发现数据污染迹象，见 [2026-11-02-swebench-hard10.md](../results/2026-11-02-swebench-hard10.md)；**环境有泄露，结果无效** |
+| **隔离重跑（有效）** | deepseek-flash | 同样 40 题（简单 20、中等 10、难题 10） | **32/40**（19/20、8/10、5/10） | 隔离环境：无外网、git 历史重建；输入约 1612 万 token，约 ¥10（估算）；失败一半是多文件漏改，见 [2026-11-02-swebench-isolated.md](../results/2026-11-02-swebench-isolated.md) |
 
 smoke 的 agent 自报 `incomplete_delivery`（"code changed without a successful
 post-edit test"），但官方判分已解决：它跑的复现命令没被识别为测试。脚本已改为保存
 trace，批量跑时可以定位是哪条命令。
 
 单实例只能说明管线跑通，**不代表通过率**。
+
+**评测隔离（2026-11-02 起）**：agent 容器接入没有外网路由的 Docker 内网，唯一出口是只放行模型 API 的代理
+（`scripts/swebench/egress_proxy.py`）；agent 开始前 `/testbed` 的 git 历史重建为单个提交。此前的 easy20、medium10、hard10
+都在有泄露的环境里运行（镜像含未来的修复提交、容器可联网），**结果无效**，见 [评测环境泄露](../results/2026-11-02-swebench-leakage.md)。

@@ -1,6 +1,6 @@
 {
   "artifact_type": "tool-contract-v1",
-  "captured_at": "2026-11-02T03:01:14.466831Z",
+  "captured_at": "2026-11-03T10:40:24.516290Z",
   "executed_runs": 6,
   "pass_rate": 1.0,
   "passed_runs": 6,
@@ -25,7 +25,7 @@
       "tool_error_code": "",
       "tool_status": "ok",
       "workspace_changed": false,
-      "workspace_fingerprint": "f92b5fc0f901f4e398aea1cd0896b77046e5dafbf0c52e082fa0a1550c5ba2da"
+      "workspace_fingerprint": "61bb1cc8b9e03939a875fedfbf1c74ecc2e44e2942b82e03a8fbb84cd5e47ec0"
     },
     {
       "affected_paths": [],

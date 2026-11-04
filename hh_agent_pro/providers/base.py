@@ -12,6 +12,8 @@ from typing import Callable, Optional
 MODEL_LIMITS = {
     "deepseek-flash": {"context_window": 1_048_576, "max_output_tokens": 393_216},
     "deepseek-v4-pro": {"context_window": 1_048_576, "max_output_tokens": 393_216},
+    # 公司 LLM 网关上的 Claude Opus 4.8（Anthropic Messages 兼容）；按 Opus 系列的 200k 窗口登记。
+    "Claude-Opus-4.8-joybuilder": {"context_window": 200_000, "max_output_tokens": 64_000},
 }
 DEFAULT_MODEL_LIMITS = {"context_window": 128_000, "max_output_tokens": 16_384}
 

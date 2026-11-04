@@ -170,7 +170,9 @@ class JsonlEventSink:
 def _turn_payload(agent, final_answer, sink, request_id):
     run_state = agent.current_run_state
     status = "failed"
-    if run_state is not None and run_state.status == "completed":
+    if run_state is None and final_answer:
+        status = "completed"  # /review 这类命令不进主循环、没有运行状态，但有完整的回答
+    elif run_state is not None and run_state.status == "completed":
         status = "completed"
     elif run_state is not None and run_state.status == "waiting_for_user":
         status = "waiting"
@@ -218,6 +220,9 @@ def process_request(request, agent_factory, stream=None):
         )
     except RuntimeError as exc:
         final_answer = str(exc)
+    if agent.current_run_state is None and final_answer:
+        # 没走主循环（如 /review）：没有 run_finished 事件，这里补发回答，界面才显示得出来
+        sink.write({"type": "message", "role": "assistant", "content": agent.redact_text(str(final_answer))})
     turn = _turn_payload(agent, final_answer, sink, request["requestId"])
     print(json.dumps(turn, ensure_ascii=False, sort_keys=True), file=stream, flush=True)
     return turn

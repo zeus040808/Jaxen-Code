@@ -10,7 +10,7 @@ import json
 import re
 from pathlib import Path
 
-from .task_state import _check_kind
+from .task_state import _check_kind, superseded_by_progress
 from .workspace import clip_head_tail, file_freshness
 
 
@@ -71,7 +71,7 @@ def _metadata(
 
 class ToolExecutor:
     # 可以并行执行调用的函数名单
-    PARALLEL_READ_TOOLS = frozenset({"list_files", "read_file", "read_files", "search", "glob", "runtime_info"})
+    PARALLEL_READ_TOOLS = frozenset({"list_files", "read_file", "read_files", "search", "glob", "repo_map", "runtime_info"})
 
     # 防止模型凭记忆或过期内容改文件：
     # - write_file 覆盖已有文件前必须先读过（整文件盲写风险最大）；
@@ -240,7 +240,9 @@ class ToolExecutor:
         status = str(metadata.get("tool_status", ""))
         if status in {"ok", "waiting", "denied"}:
             previous = self._unresolved_failure
-            if previous and status == "ok" and previous.get("name") == name:
+            if previous and status == "ok" and superseded_by_progress(previous):
+                self._unresolved_failure = None  # 只读工具出错：之后有调用成功就算绕过去了
+            elif previous and status == "ok" and previous.get("name") == name:
                 previous_path = previous.get("path")
                 same_check = not previous.get("check_kind") or previous["check_kind"] == _check_kind((args or {}).get("command", ""))
                 if same_check and (not previous_path or previous_path == str((args or {}).get("path", ""))):
@@ -280,6 +282,7 @@ class ToolExecutor:
             "check_kind": _check_kind((args or {}).get("command", "")) if name == "run_shell" else "",
             "error_code": metadata.get("tool_error_code", error_code),
             "retryable": bool(metadata.get("retryable", False)),
+            "read_only": bool(metadata.get("read_only", False)),
             "recommended_action": metadata.get("recommended_action", ""),
         }
         return result
@@ -314,7 +317,9 @@ class ToolExecutor:
                     tool_error_code="unknown_tool",
                     risk_level="high",
                     read_only=False,
-                    retryable=True,
+                    # 同名重试必然再失败，也就永远不会被"同名工具成功"标为已解决；
+                    # 若记为可重试，会一直挂在交付阻塞里（SWE-bench django-11138 误报 incomplete_delivery）。
+                    retryable=False,
                     recommended_action="Choose one of the tools listed in the prompt.",
                 ),
             )
@@ -536,11 +541,22 @@ class ToolExecutor:
                 stop_run=bool(escaped_writes),
             )
             result = ToolExecutionResult(content=content, metadata=metadata)
+            # 真正执行过一次工具：重复读取的计数清零，只有原地连续重复才算死循环。
+            # 工作区有改动时清空读缓存：改过（哪怕又撤回成原样）之后再读是正常工作，要返回真实内容
+            # （django-12325：撤回后回头看代码只拿到"内容没变"的摘要，再读就被禁用了全部工具）。
+            self._read_cache_hits.clear()
+            if workspace_changed:
+                self._read_cache.clear()
             if tool_status == "ok":
                 self._successful_calls.add(call_fingerprint)
                 self._remember_files(name, args)
                 if cache_key:
                     self._read_cache[cache_key] = result
+                # 成功改过文件之后，再跑同一条失败过的命令是"改完验证"，不是死循环：失败计数清零
+                # （django-12754：改完代码重跑复现脚本，被判为重复失败，整个运行被停掉）。
+                # 只认成功的改动：失败命令自己顺带写了文件（partial_success）不算进展，否则真循环永远停不下来。
+                if workspace_changed:
+                    self._failure_counts.clear()
             return result
         except Exception as exc:
             after_snapshot = agent.capture_workspace_snapshot() if requires_approval else before_snapshot

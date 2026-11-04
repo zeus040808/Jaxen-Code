@@ -28,6 +28,18 @@ MAX_ATTEMPTS = 6
 BASE_DELAY_SECONDS = 1.0
 MAX_DELAY_SECONDS = 60.0
 TRANSIENT_ERRORS = (urllib.error.URLError, RemoteDisconnected, IncompleteRead, ConnectionError, socket.timeout, TimeoutError)
+# thinking 模式偶尔只返回推理、没有正文也没有工具调用（SWE-bench django-12406，整题因此失败）。
+# 请求没有副作用、输出有随机性，原样重发通常就能拿到正常结果；重发几次仍为空才报错。
+EMPTY_RESPONSE_RETRIES = 2
+
+
+def merge_usage(total, details):
+    """把多次请求（含空响应重试）的用量累加，预算统计不漏算。"""
+    merged = dict(details)
+    for key in ("input_tokens", "output_tokens", "total_tokens", "cached_tokens", "cache_write_tokens"):
+        merged[key] = int(total.get(key) or 0) + int(details.get(key) or 0)
+    merged["cache_hit"] = merged.get("cached_tokens", 0) > 0
+    return merged
 
 
 def _normalize_versioned_base_url(base_url):
@@ -75,13 +87,14 @@ class OpenAIChatClient:
         headers = {"Content-Type": "application/json", "Accept": "text/event-stream", "User-Agent": USER_AGENT}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
-        http_request = urllib.request.Request(
-            self.base_url + "/chat/completions",
-            data=json.dumps(payload).encode("utf-8"),
-            headers=headers,
-            method="POST",
-        )
+        request_body = json.dumps(payload).encode("utf-8")  # 别叫 body：下面 HTTPError 分支用 body 存错误响应
         for attempt in range(1, MAX_ATTEMPTS + 1):
+            # 每次重试都新建 Request：走代理时 urllib 会在 Request 上原地设置隧道，复用同一个对象的第二次请求
+            # 会退化成 type=http、隧道目标不带端口，变成 CONNECT host:80，于是第一次失败之后的重试全部失败
+            # （SWE-bench sympy-13551 等：503 之后的重试都被出口代理以 403 拒绝）。
+            http_request = urllib.request.Request(
+                self.base_url + "/chat/completions", data=request_body, headers=headers, method="POST",
+            )
             try:
                 # 流读到一半断开也走同一个重试：请求没有副作用，整次重发即可。
                 with urllib.request.urlopen(http_request, timeout=self.timeout) as response:
@@ -179,24 +192,40 @@ class OpenAIChatClient:
         callback = request.event_callback
         if callback:
             callback({"type": "provider_status", "message": f"{self.label} turn started"})
-        body_text, reasoning, tool_calls, usage, finish_reason = self._post(payload, callback)
+        usage_total = {}
+        for retry in range(EMPTY_RESPONSE_RETRIES + 1):
+            body_text, reasoning, tool_calls, usage, finish_reason = self._post(payload, callback)
+            usage_total = merge_usage(usage_total, _usage_details(usage))
+            # 空但被截断（finish_reason=length）不重发：交给 AgentLoop 的截断恢复
+            if body_text or tool_calls or finish_reason == "length" or retry == EMPTY_RESPONSE_RETRIES:
+                break
+            if callback:
+                callback({"type": "provider_status",
+                          "message": f"{self.label} returned an empty response (finish_reason={finish_reason or 'none'}); "
+                                     f"resending {retry + 1}/{EMPTY_RESPONSE_RETRIES}"})
         if callback:
             callback({"type": "provider_status", "message": f"{self.label} turn completed"})
 
+        # 思考内容不进 UI，但写进 run 的完整对话记录（transcript.jsonl），复盘时要知道模型为什么这么做。
+        self.last_reasoning_content = reasoning
         self.last_completion_metadata = {
             "finish_reason": finish_reason,
             "output_truncated": finish_reason == "length",
             "max_output_tokens_requested": int(request.max_new_tokens),
             "native_tool_calls_returned": len(tool_calls),
-            **_usage_details(usage),
+            "empty_response_retries": retry,
+            **usage_total,
         }
         # 被长度截断的 tool call 往往是半截 JSON：交回 AgentLoop 走截断恢复，而不是报成模型错误。
         if finish_reason == "length" and tool_calls:
             return body_text
         if not tool_calls:
-            if body_text:
+            if body_text or finish_reason == "length":
                 return body_text
-            raise RuntimeError("OpenAI-chat-compatible error: could not extract text from response")
+            raise RuntimeError(
+                "OpenAI-chat-compatible error: could not extract text from response "
+                f"(finish_reason={finish_reason or 'none'}, after {retry} resend(s))"
+            )
 
         calls = [tool_calls[index] for index in sorted(tool_calls)]
         # reasoning_content 必须原样回传，只用于协议重放，不进入 UI/trace。

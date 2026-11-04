@@ -270,7 +270,8 @@ class ContextManager:
         request = ModelRequest(
             system_prompt=system_prompt,
             messages=messages,
-            max_new_tokens=int(self.agent.max_new_tokens),
+            # 正文为空的截断之后，AgentLoop 会在本次运行内临时提高输出上限
+            max_new_tokens=int(getattr(self.agent, "max_new_tokens_override", 0) or self.agent.max_new_tokens),
             tools=tools,
         )
         state = self._state()

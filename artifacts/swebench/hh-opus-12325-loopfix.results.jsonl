@@ -1,0 +1,1 @@
+{"instance_id": "django__django-12325", "gold_resolved": true, "outcome": "unresolved", "agent_status": "failed", "stop_reason": "blocked", "usage": {"cacheReadTokens": 0, "cacheWriteTokens": 0, "inputTokens": 2243946, "outputTokens": 17320, "requests": 55}, "patch_lines": 44, "agent_latency_s": 567.4, "pipeline_latency_s": 652.4}

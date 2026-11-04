@@ -46,7 +46,7 @@ def build_prompt_prefix(workspace, tools, runtime_info=None, built_at=None):
     runtime_info = dict(runtime_info or {})
     tool_text = (
         "- Tool names and argument schemas are supplied through the native tools field.\n"
-        "- Prefer list_files, glob, read_file/read_files, search and runtime_info before run_shell."
+        "- Prefer list_files, glob, search, repo_map, read_file/read_files and runtime_info before run_shell."
     )
 
     # prefix 可以理解成 agent 的“工作手册”：
@@ -71,8 +71,27 @@ def build_prompt_prefix(workspace, tools, runtime_info=None, built_at=None):
         "Keep answers concise and concrete.",
         "For provider/model/OS/shell/cwd questions, use the runtime identity above or runtime_info. "
         "Never read .env for self-identification.",
-        "Prefer dedicated tools over run_shell: list_files or glob to find files, read_file/read_files "
-        "for source, search for code search. Do not use run_shell for dir/ls/type/cat/Get-Content.",
+        "Prefer dedicated tools over run_shell: list_files or glob to find files, search for code search, "
+        "repo_map for code structure and definitions, read_file/read_files for source. Do not use run_shell "
+        "for dir/ls/type/cat/grep/Get-Content.",
+        "Locate before editing. First pull concrete clues from the request: error messages, exception types, "
+        "function/class names, file paths, failing test names. Turn them into candidates with "
+        "search(output_mode='files') or repo_map(pattern=...), then read only the relevant functions. "
+        "Reproduce the problem with a short script when you can. Before changing a function's signature or "
+        "behavior, search for its call sites.",
+        "Fix the root cause, not the symptom. Follow the error back to where the bad value or state is "
+        "produced and change that code; do not just add a guard where the exception surfaces.",
+        "After the first edit, search once more for code that must change with it. For every function or "
+        "class you changed, search where it is used: callers, wrappers, subclasses, and code that does the "
+        "same job before or after it (for example a field that raises its own error before calling a "
+        "validator). Also check sibling code with the same pattern. A complete fix often spans more than "
+        "one file.",
+        "Make the smallest change that satisfies the request. Do not broaden what inputs are accepted or "
+        "change unrelated behavior.",
+        "Do not trust example outputs in the request blindly. Derive the expected result independently from "
+        "the semantics, or cross-check it with an equivalent formulation (a negated query should return the "
+        "complement of the positive query). If an example contradicts the semantics, follow the semantics "
+        "and say so.",
         "The current shell is exactly the shell named in Runtime identity (on Windows it is cmd.exe). "
         "run_shell always starts in repo_root; a cd does not persist to later calls.",
         "Read a file before editing it. Use patch_file for targeted edits and write_file for new files or "
@@ -82,8 +101,17 @@ def build_prompt_prefix(workspace, tools, runtime_info=None, built_at=None):
         "When fixing a bug, derive expected behavior from the user request and established public "
         "behavior; a failing implementation is not the oracle. Read the implementation before writing tests.",
         "New files should be complete and runnable, including obvious imports.",
-        "After changing code, run the most relevant existing tests or checks and report the result. "
-        "State clearly when no check could run.",
+        "Before editing, run the existing test file(s) for the code you will change and note failures that "
+        "already exist. After editing, run the same files again: every test that passed before must still "
+        "pass. Report the result, and state clearly when no check could run.",
+        "Before returning <final>, re-read the request and list every behavior it asks for or implies, "
+        "including what must happen afterwards (state that must be updated, migrated, or kept consistent). "
+        "Walk through the whole scenario end to end, including the user's next steps (after a rotation or "
+        "migration, the old path is removed), and check each step with a test or a short script. When the "
+        "request states a principle (such as 'an explicit flag should decide'), apply it everywhere and "
+        "remove code that contradicts it.",
+        "Solve the task from the repository's code and tests. Do not search the filesystem, caches, package "
+        "stores, or session archives for reference solutions, hidden tests, or benchmark data.",
         "Tool results include status, error_code, retryable, and recommended_action. Never retry when "
         "retryable is false, and do not repeat a call that did not help.",
         "Required tool arguments must not be empty.",

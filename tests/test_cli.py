@@ -30,15 +30,18 @@ def _clear_provider_env(monkeypatch):
         "HH_DEEPSEEK_API_BASE", "DEEPSEEK_API_BASE",
         "HH_OPENAI_MODEL", "OPENAI_MODEL", "HH_OPENAI_API_KEY", "OPENAI_API_KEY",
         "HH_OPENAI_API_BASE", "OPENAI_API_BASE",
+        "HH_ANTHROPIC_MODEL", "ANTHROPIC_MODEL", "HH_ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY",
+        "HH_ANTHROPIC_API_BASE", "ANTHROPIC_BASE_URL",
     ):
         monkeypatch.delenv(name, raising=False)
 
 
-def test_only_openai_compatible_providers_and_flash_default(monkeypatch):
+def test_providers_and_flash_default(monkeypatch):
     _clear_provider_env(monkeypatch)
     args = build_arg_parser().parse_args([])
 
-    assert PROVIDER_NAMES == ("deepseek", "openai", "fake")
+    # anthropic：Anthropic Messages 兼容端点（公司 LLM 网关上的 Claude），2026-11-02 新增
+    assert PROVIDER_NAMES == ("deepseek", "openai", "anthropic", "fake")
     assert args.provider == "deepseek"
     assert _effective_model(args, "deepseek") == "deepseek-flash"
     assert args.max_steps == 50
@@ -235,3 +238,17 @@ def test_agent_loop_streams_needs_user_input(tmp_path):
     assert "请选择" in answer
     needs_event = next(event for event in events if event["type"] == "needs_user_input")
     assert "1. 修改现有文件" in needs_event["question"]
+
+
+def test_anthropic_provider_builds_messages_client(monkeypatch):
+    from hh_agent_pro.cli import _build_model_client
+    from hh_agent_pro.providers import AnthropicMessagesClient
+
+    _clear_provider_env(monkeypatch)
+    monkeypatch.setenv("HH_ANTHROPIC_API_KEY", "k")
+    monkeypatch.setenv("HH_ANTHROPIC_API_BASE", "http://gw.local/anthropic")
+    monkeypatch.setenv("HH_ANTHROPIC_MODEL", "Claude-Opus-4.8-joybuilder")
+    client = _build_model_client(build_arg_parser().parse_args(["--provider", "anthropic"]))
+    assert isinstance(client, AnthropicMessagesClient)
+    assert client.model == "Claude-Opus-4.8-joybuilder" and client.base_url == "http://gw.local/anthropic"
+    assert client.context_window == 200_000

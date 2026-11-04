@@ -1,0 +1,134 @@
+{
+  "summary": {
+    "instances": 10,
+    "found_gold": 10,
+    "median_steps_to_gold": 3.0,
+    "median_files_before_gold": 0.0,
+    "mean_gold_read_recall": 1.0,
+    "mean_edit_recall": 0.95,
+    "mean_edit_precision": 1.0
+  },
+  "rows": [
+    {
+      "instance_id": "django__django-11265",
+      "gold_files": [
+        "django/db/models/sql/query.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 16
+    },
+    {
+      "instance_id": "django__django-11790",
+      "gold_files": [
+        "django/contrib/auth/forms.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 34
+    },
+    {
+      "instance_id": "django__django-13516",
+      "gold_files": [
+        "django/core/management/base.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 8
+    },
+    {
+      "instance_id": "django__django-14238",
+      "gold_files": [
+        "django/db/models/fields/__init__.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 6
+    },
+    {
+      "instance_id": "django__django-15280",
+      "gold_files": [
+        "django/db/models/fields/related_descriptors.py"
+      ],
+      "steps_to_gold": 5,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 23
+    },
+    {
+      "instance_id": "django__django-15561",
+      "gold_files": [
+        "django/db/backends/base/schema.py",
+        "django/db/models/fields/__init__.py"
+      ],
+      "steps_to_gold": 5,
+      "files_before_gold": 1,
+      "gold_read_recall": 1.0,
+      "edit_recall": 0.5,
+      "edit_precision": 1.0,
+      "tool_calls": 26
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-15100",
+      "gold_files": [
+        "sklearn/feature_extraction/text.py"
+      ],
+      "steps_to_gold": 2,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 5
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-8056",
+      "gold_files": [
+        "sphinx/ext/napoleon/docstring.py"
+      ],
+      "steps_to_gold": 5,
+      "files_before_gold": 1,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 32
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-8638",
+      "gold_files": [
+        "sphinx/domains/python.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 50
+    },
+    {
+      "instance_id": "sympy__sympy-20154",
+      "gold_files": [
+        "sympy/utilities/iterables.py"
+      ],
+      "steps_to_gold": 2,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 13
+    }
+  ]
+}

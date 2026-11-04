@@ -16,7 +16,7 @@ from hh_agent_pro.session_store import SessionStore
 from hh_agent_pro.workspace import WorkspaceContext
 
 CORE = {
-    "list_files", "read_file", "read_files", "search", "glob", "runtime_info",
+    "list_files", "read_file", "read_files", "search", "glob", "repo_map", "runtime_info",
     "run_shell", "write_file", "patch_file", "todo_write", "delegate",
 }
 

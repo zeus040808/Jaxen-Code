@@ -3,7 +3,6 @@
 import tempfile
 import threading
 import unittest
-import json
 from pathlib import Path
 from unittest.mock import patch
 
@@ -124,6 +123,92 @@ class CoreCapacityTests(unittest.TestCase):
         })
         self.assertFalse(any("patch_file" in item for item in agent.delivery_blockers()))
 
+    def test_unknown_tool_name_does_not_block_delivery(self):
+        # 模型把 run_shell 写成 shell：提示它换工具，但这次失败不该一直挂在交付阻塞里。
+        agent = self.agent()
+        result = agent.execute_tool("shell", {"command": "ls"})
+        self.assertEqual(result.metadata["tool_error_code"], "unknown_tool")
+        self.assertIn("unknown tool", result.content)
+        self.assertEqual(agent.delivery_blockers(), [])
+
+    def test_reread_after_edit_and_revert_returns_real_content(self):
+        # 改了又撤回（内容恢复原样）之后再读：是正常工作，要返回真实内容，也不算"重复读取"。
+        # SWE-bench django-12325（Opus）：撤回后回头看代码，只拿到"内容没变"的摘要，再读一次就被禁用了全部工具。
+        agent = self.agent()
+        agent.execute_tool("read_file", {"path": "a.txt"})
+        agent.execute_tool("patch_file", {"path": "a.txt", "old_text": "alpha", "new_text": "ALPHA"})
+        agent.execute_tool("patch_file", {"path": "a.txt", "old_text": "ALPHA", "new_text": "alpha"})
+        reread = agent.execute_tool("read_file", {"path": "a.txt"})
+        self.assertNotIn("cached observation", reread.content)
+        self.assertIn("alpha", reread.content)
+        self.assertFalse(reread.metadata.get("cache_hit", False))
+
+    def test_repeat_count_resets_after_real_progress(self):
+        # 读 → 跑别的工具 → 再读：中间有进展，不累计成"连续重复"。
+        agent = self.agent()
+        agent.execute_tool("read_file", {"path": "a.txt"})
+        first = agent.execute_tool("read_file", {"path": "a.txt"})
+        self.assertEqual(first.metadata["cache_hit_count"], 1)
+        agent.execute_tool("read_file", {"path": "b.txt"})
+        again = agent.execute_tool("read_file", {"path": "a.txt"})
+        self.assertEqual(again.metadata["cache_hit_count"], 1)
+
+    def test_rejected_arguments_do_not_block_delivery(self):
+        # 读了一个不存在的路径（参数校验没过，什么都没执行），之后换对路径继续：
+        # 同一个错误路径永远不会成功，这次失败不该一直挂到交付（SWE-bench django-11265 误报 incomplete_delivery）。
+        agent = self.agent()
+        result = agent.execute_tool("read_file", {"path": "no/such/file.py"})
+        self.assertEqual(result.metadata["tool_error_code"], "invalid_arguments")
+        self.assertTrue(result.metadata["retryable"])  # 仍告诉模型"改好参数可以重试"
+        agent.execute_tool("read_file", {"path": "b.txt"})
+        self.assertEqual(agent.delivery_blockers(), [])
+
+    def test_failed_read_only_search_does_not_block_delivery(self):
+        # search 一个不存在的文件是运行时出错（tool_failed），不是参数校验失败；之后有调用成功同样算绕过去了。
+        # SWE-bench sphinx-8638：猜错文件名搜了一次，交付被拦、强制交付成 incomplete_delivery。
+        agent = self.agent()
+        result = agent.execute_tool("search", {"pattern": "alpha", "path": "no/such/module.py"})
+        self.assertNotEqual(result.metadata["tool_status"], "ok")
+        self.assertTrue(result.metadata["read_only"])
+        self.assertTrue(agent.delivery_blockers())  # 失败之后一次成功都没有，仍然拦下
+        agent.execute_tool("read_file", {"path": "b.txt"})
+        self.assertEqual(agent.delivery_blockers(), [])
+
+    def test_failed_shell_check_still_blocks_delivery(self):
+        # 会改东西的 shell 命令（测试）失败，不能被随便一次成功的读取"绕过去"。
+        agent = self.agent()
+        agent.tools["run_shell"]["run"] = lambda args: "exit_code: 1\nFAILED\n"
+        result = agent.execute_tool("run_shell", {"command": "python -m pytest -q", "timeout": 20})
+        self.assertEqual(result.metadata["tool_error_code"], "tool_failed")
+        self.assertFalse(result.metadata["read_only"])
+        agent.execute_tool("read_file", {"path": "b.txt"})
+        self.assertTrue(agent.delivery_blockers())
+
+    def test_rerunning_failed_command_after_edit_is_not_a_loop(self):
+        # 复现脚本失败 → 改代码 → 再跑同一个脚本：是"改完验证"，不该被判成重复失败停掉整个运行。
+        # SWE-bench django-12754：补丁其实已经对了，运行却以 repeated_failed_call 结束。
+        agent = self.agent()
+        agent.tools["run_shell"]["run"] = lambda args: "exit_code: 1\nTraceback\n"
+        command = {"command": "python repro.py", "timeout": 20}
+        first = agent.execute_tool("run_shell", command)
+        self.assertEqual(first.metadata["tool_error_code"], "tool_failed")
+        agent.execute_tool("read_file", {"path": "a.txt"})
+        agent.execute_tool("patch_file", {"path": "a.txt", "old_text": "alpha", "new_text": "ALPHA"})
+        again = agent.execute_tool("run_shell", command)
+        self.assertEqual(again.metadata["tool_error_code"], "tool_failed")
+        self.assertFalse(again.metadata.get("stop_run", False))
+
+    def test_rerunning_failed_command_without_progress_still_stops(self):
+        # 中间什么都没改就原样重跑同一条失败命令：仍然是死循环，照旧停下。
+        agent = self.agent()
+        agent.tools["run_shell"]["run"] = lambda args: "exit_code: 1\nTraceback\n"
+        command = {"command": "python repro.py", "timeout": 20}
+        agent.execute_tool("run_shell", command)
+        agent.execute_tool("read_file", {"path": "a.txt"})
+        again = agent.execute_tool("run_shell", command)
+        self.assertEqual(again.metadata["tool_error_code"], "repeated_failed_call")
+        self.assertTrue(again.metadata["stop_run"])
+
     def test_unresolved_failure_is_delivered_as_incomplete(self):
         model = ScriptedNative([
             '<tool>{"name":"patch_file","args":{"path":"a.txt","old_text":"absent","new_text":"new"}}</tool>',
@@ -233,9 +318,11 @@ class CoreCapacityTests(unittest.TestCase):
     def test_delegate_returns_status_and_cannot_mutate_project_tasks(self):
         agent = self.agent(ScriptedNative(["<final>child answer</final>"]))
         result = agent.spawn_delegate({"task": "inspect a.txt", "max_steps": 2})
-        payload = json.loads(result.removeprefix("delegate_result:\n"))
-        self.assertEqual(payload["status"], "completed")
-        self.assertEqual(payload["answer"], "child answer")
+        # 信封格式（subagent.py）：状态、结果、用量都在固定标签里
+        self.assertTrue(result.startswith("<subagent-result>"))
+        self.assertIn("<status>completed</status>", result)
+        self.assertIn("<result>child answer</result>", result)
+        self.assertIn("<tool-uses>0</tool-uses>", result)
         child = CodingAgent(
             model_client=ScriptedNative(["<final>done</final>"]),
             workspace=WorkspaceContext.build(self.root, repo_root_override=self.root),

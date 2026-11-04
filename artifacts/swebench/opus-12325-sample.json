@@ -1,0 +1,9 @@
+{
+  "source": "\u9632\u6b7b\u5faa\u73af\u89c4\u5219\u4fee\u590d\u540e\u590d\u6d4b",
+  "instance_ids": [
+    "django__django-12325"
+  ],
+  "images": {
+    "django__django-12325": "swebench/sweb.eval.x86_64.django_1776_django-12325:latest"
+  }
+}

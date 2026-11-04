@@ -1,0 +1,254 @@
+{
+  "summary": {
+    "instances": 20,
+    "found_gold": 20,
+    "median_steps_to_gold": 3.0,
+    "median_files_before_gold": 0.0,
+    "mean_gold_read_recall": 0.975,
+    "mean_edit_recall": 0.975,
+    "mean_edit_precision": 1.0
+  },
+  "rows": [
+    {
+      "instance_id": "django__django-11066",
+      "gold_files": [
+        "django/contrib/contenttypes/management/__init__.py"
+      ],
+      "steps_to_gold": 1,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 6
+    },
+    {
+      "instance_id": "django__django-11119",
+      "gold_files": [
+        "django/template/engine.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 9
+    },
+    {
+      "instance_id": "django__django-11490",
+      "gold_files": [
+        "django/db/models/sql/compiler.py"
+      ],
+      "steps_to_gold": 1,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 9
+    },
+    {
+      "instance_id": "django__django-11603",
+      "gold_files": [
+        "django/db/models/aggregates.py"
+      ],
+      "steps_to_gold": 2,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 20
+    },
+    {
+      "instance_id": "django__django-12209",
+      "gold_files": [
+        "django/db/models/base.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 51
+    },
+    {
+      "instance_id": "django__django-13410",
+      "gold_files": [
+        "django/core/files/locks.py"
+      ],
+      "steps_to_gold": 1,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 6
+    },
+    {
+      "instance_id": "django__django-14404",
+      "gold_files": [
+        "django/contrib/admin/sites.py"
+      ],
+      "steps_to_gold": 5,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 16
+    },
+    {
+      "instance_id": "django__django-14539",
+      "gold_files": [
+        "django/utils/html.py"
+      ],
+      "steps_to_gold": 4,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 10
+    },
+    {
+      "instance_id": "django__django-14608",
+      "gold_files": [
+        "django/forms/formsets.py"
+      ],
+      "steps_to_gold": 5,
+      "files_before_gold": 1,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 12
+    },
+    {
+      "instance_id": "django__django-14787",
+      "gold_files": [
+        "django/utils/decorators.py"
+      ],
+      "steps_to_gold": 2,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 10
+    },
+    {
+      "instance_id": "django__django-14855",
+      "gold_files": [
+        "django/contrib/admin/helpers.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 11
+    },
+    {
+      "instance_id": "django__django-15315",
+      "gold_files": [
+        "django/db/models/fields/__init__.py"
+      ],
+      "steps_to_gold": 2,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 11
+    },
+    {
+      "instance_id": "django__django-15863",
+      "gold_files": [
+        "django/template/defaultfilters.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 11
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-13989",
+      "gold_files": [
+        "lib/matplotlib/axes/_axes.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 15
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5262",
+      "gold_files": [
+        "src/_pytest/capture.py"
+      ],
+      "steps_to_gold": 2,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 11
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-13142",
+      "gold_files": [
+        "sklearn/mixture/base.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 8
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-7462",
+      "gold_files": [
+        "sphinx/domains/python.py",
+        "sphinx/pycode/ast.py"
+      ],
+      "steps_to_gold": 1,
+      "files_before_gold": 0,
+      "gold_read_recall": 0.5,
+      "edit_recall": 0.5,
+      "edit_precision": 1.0,
+      "tool_calls": 5
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-8459",
+      "gold_files": [
+        "sphinx/ext/autodoc/typehints.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 42
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-9698",
+      "gold_files": [
+        "sphinx/domains/python.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 6
+    },
+    {
+      "instance_id": "sympy__sympy-24562",
+      "gold_files": [
+        "sympy/core/numbers.py"
+      ],
+      "steps_to_gold": 5,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 9
+    }
+  ]
+}

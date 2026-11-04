@@ -1,0 +1,254 @@
+{
+  "summary": {
+    "instances": 20,
+    "found_gold": 19,
+    "median_steps_to_gold": 3,
+    "median_files_before_gold": 0.0,
+    "mean_gold_read_recall": 0.95,
+    "mean_edit_recall": 0.925,
+    "mean_edit_precision": 0.9
+  },
+  "rows": [
+    {
+      "instance_id": "django__django-11728",
+      "gold_files": [
+        "django/contrib/admindocs/utils.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 13
+    },
+    {
+      "instance_id": "django__django-12143",
+      "gold_files": [
+        "django/contrib/admin/options.py"
+      ],
+      "steps_to_gold": null,
+      "files_before_gold": 0,
+      "gold_read_recall": 0.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 11
+    },
+    {
+      "instance_id": "django__django-12754",
+      "gold_files": [
+        "django/db/migrations/autodetector.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 0.5,
+      "tool_calls": 22
+    },
+    {
+      "instance_id": "django__django-13033",
+      "gold_files": [
+        "django/db/models/sql/compiler.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 20
+    },
+    {
+      "instance_id": "django__django-14725",
+      "gold_files": [
+        "django/forms/models.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 0.5,
+      "tool_calls": 37
+    },
+    {
+      "instance_id": "django__django-16662",
+      "gold_files": [
+        "django/db/migrations/writer.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 14
+    },
+    {
+      "instance_id": "django__django-16877",
+      "gold_files": [
+        "django/template/defaultfilters.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 10
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-20826",
+      "gold_files": [
+        "lib/matplotlib/axis.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 47
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7490",
+      "gold_files": [
+        "src/_pytest/skipping.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 18
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-10297",
+      "gold_files": [
+        "sklearn/linear_model/ridge.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 16
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-12973",
+      "gold_files": [
+        "sklearn/linear_model/least_angle.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 10
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-25747",
+      "gold_files": [
+        "sklearn/utils/_set_output.py"
+      ],
+      "steps_to_gold": 1,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 25
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-10466",
+      "gold_files": [
+        "sphinx/builders/gettext.py"
+      ],
+      "steps_to_gold": 1,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 16
+    },
+    {
+      "instance_id": "sympy__sympy-13551",
+      "gold_files": [
+        "sympy/concrete/products.py"
+      ],
+      "steps_to_gold": 2,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 25
+    },
+    {
+      "instance_id": "sympy__sympy-13757",
+      "gold_files": [
+        "sympy/polys/polytools.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 41
+    },
+    {
+      "instance_id": "sympy__sympy-15599",
+      "gold_files": [
+        "sympy/core/mod.py"
+      ],
+      "steps_to_gold": 1,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 29
+    },
+    {
+      "instance_id": "sympy__sympy-15976",
+      "gold_files": [
+        "sympy/printing/mathml.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 18
+    },
+    {
+      "instance_id": "sympy__sympy-17318",
+      "gold_files": [
+        "sympy/simplify/radsimp.py",
+        "sympy/simplify/sqrtdenest.py"
+      ],
+      "steps_to_gold": 1,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 0.5,
+      "edit_precision": 1.0,
+      "tool_calls": 19
+    },
+    {
+      "instance_id": "sympy__sympy-21596",
+      "gold_files": [
+        "sympy/sets/handlers/intersection.py"
+      ],
+      "steps_to_gold": 6,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 21
+    },
+    {
+      "instance_id": "sympy__sympy-23413",
+      "gold_files": [
+        "sympy/polys/matrices/normalforms.py"
+      ],
+      "steps_to_gold": 4,
+      "files_before_gold": 1,
+      "gold_read_recall": 1.0,
+      "edit_recall": 0.0,
+      "edit_precision": null,
+      "tool_calls": 10
+    }
+  ]
+}

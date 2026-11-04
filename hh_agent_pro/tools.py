@@ -8,9 +8,10 @@ import json
 import locale
 import os
 import re
-import shutil
 import subprocess
+import ast
 import difflib
+import fnmatch
 import textwrap
 from functools import partial
 
@@ -24,6 +25,11 @@ DEFAULT_READ_END = 2000
 MAX_DIFF_LINES = 60
 # glob 最多返回多少个路径。
 MAX_GLOB_RESULTS = 200
+# search：默认/最多返回多少条结果；跳过超过这个大小的文件（数据、打包产物）。
+DEFAULT_SEARCH_RESULTS = 100
+MAX_SEARCH_RESULTS = 500
+MAX_SEARCH_FILE_BYTES = 2_000_000
+SEARCH_MODES = ("content", "files", "count")
 
 #
 # schema       参数说明
@@ -46,9 +52,27 @@ BASE_TOOL_SPECS = {
         "description": "Read up to 8 UTF-8 workspace files in one call for comparison or synthesis.",
     },
     "search": {
-        "schema": {"pattern": "str", "path": "str='.'"},
+        "schema": {
+            "pattern": "str", "path": "str='.'", "glob": "str=''", "output_mode": "str='content'",
+            "context": "int=0", "ignore_case": "bool=False", "max_results": f"int={DEFAULT_SEARCH_RESULTS}",
+        },
         "risky": False,
-        "description": "Search the workspace with rg or a simple fallback.",
+        "description": (
+            "Regex search over file contents. glob limits files (e.g. '*.py', 'django/db/**/*.py'). "
+            "output_mode: 'files' lists matching files (start here to narrow down), 'count' gives matches per file, "
+            "'content' shows matching lines (default) with optional context lines. Case-insensitive when the "
+            "pattern is all lowercase unless ignore_case is set."
+        ),
+    },
+    "repo_map": {
+        "schema": {"path": "str='.'", "pattern": "str=''"},
+        "risky": False,
+        "description": (
+            "Python code structure without reading whole files. Without pattern: classes, methods and function "
+            "signatures with line numbers for every .py file under path (use a subdirectory on large repos). "
+            "With pattern (regex on names, e.g. 'floatformat' or '^save$'): only the matching definitions, "
+            "i.e. a go-to-definition across the repository."
+        ),
     },
     "glob": {
         "schema": {"pattern": "str", "path": "str='.'"},
@@ -243,8 +267,9 @@ TOOL_EXAMPLES = {
     "list_files": '<tool>{"name":"list_files","args":{"path":".","recursive":false}}</tool>',
     "read_file": '<tool>{"name":"read_file","args":{"path":"README.md","start":1,"end":80}}</tool>',
     "read_files": '<tool>{"name":"read_files","args":{"paths":["a.py","b.py"],"start":1,"end":300}}</tool>',
-    "search": '<tool>{"name":"search","args":{"pattern":"binary_search","path":"."}}</tool>',
+    "search": '<tool>{"name":"search","args":{"pattern":"def floatformat","glob":"*.py","output_mode":"files"}}</tool>',
     "glob": '<tool>{"name":"glob","args":{"pattern":"**/*.py","path":"."}}</tool>',
+    "repo_map": '<tool>{"name":"repo_map","args":{"pattern":"^floatformat$"}}</tool>',
     "todo_write": '<tool>{"name":"todo_write","args":{"todos":[{"content":"Reproduce the bug","status":"completed"},{"content":"Fix parser","status":"in_progress"}]}}</tool>',
     "run_shell": '<tool>{"name":"run_shell","args":{"command":"uv run --with pytest python -m pytest -q","timeout":20}}</tool>',
     "run_shell_background": '<tool>{"name":"run_shell","args":{"command":"pytest -q","timeout":120,"background":true}}</tool>',
@@ -450,6 +475,15 @@ def validate_tool(context, name, args):
             raise ValueError("invalid line range")
         return
 
+    if name == "repo_map":
+        if not context.path(args.get("path", ".")).exists():
+            raise ValueError("path does not exist")
+        try:
+            re.compile(str(args.get("pattern", "") or ""))
+        except re.error as exc:
+            raise ValueError(f"invalid regex: {exc}") from exc
+        return
+
     if name == "glob":
         if not str(args.get("pattern", "")).strip():
             raise ValueError("pattern must not be empty")
@@ -476,7 +510,17 @@ def validate_tool(context, name, args):
         pattern = str(args.get("pattern", "")).strip()
         if not pattern:
             raise ValueError("pattern must not be empty")
+        try:
+            re.compile(pattern)
+        except re.error as exc:
+            raise ValueError(f"invalid regex: {exc}") from exc
         context.path(args.get("path", "."))
+        if str(args.get("output_mode", "content")) not in SEARCH_MODES:
+            raise ValueError(f"output_mode must be one of {list(SEARCH_MODES)}")
+        if not 0 <= int(args.get("context", 0)) <= 10:
+            raise ValueError("context must be in [0, 10]")
+        if not 1 <= int(args.get("max_results", DEFAULT_SEARCH_RESULTS)) <= MAX_SEARCH_RESULTS:
+            raise ValueError(f"max_results must be in [1, {MAX_SEARCH_RESULTS}]")
         return
 
     if name == "run_shell":
@@ -735,55 +779,159 @@ def tool_runtime_info(context, args):
     return "\n".join(f"{key}: {info.get(key, '')}" for key in keys)
 
 
-def tool_search(context, args):
-    pattern = str(args.get("pattern", "")).strip()
-    if not pattern:
-        raise ValueError("pattern must not be empty")
-    path = context.path(args.get("path", "."))
+def _project_files(context, base):
+    """base 下属于项目的文件。
 
-    if shutil.which("rg"):
-        # 优先用 rg，因为搜索会非常频繁，搜索延迟会直接影响 agent 控制循环。
-        result = subprocess.run(
-            ["rg", "-n", "--smart-case", "--max-count", "200", pattern, str(path)],
-            cwd=context.root,
-            capture_output=True,
-            text=False,
-        )
-        stdout = _decode_output(result.stdout).strip()
-        stderr = _decode_output(result.stderr).strip()
-        return stdout or stderr or "(no matches)"
-
-    matches = []
-    files = [path] if path.is_file() else [
-        item for item in path.rglob("*")
+    git 仓库里用 `git ls-files`（含未跟踪文件，遵守 .gitignore），和 rg 一样跳过依赖目录与构建产物；
+    不是 git 仓库时遍历目录，只跳过固定的几个目录。
+    """
+    listed = subprocess.run(["git", "ls-files", "-co", "--exclude-standard", "-z"], cwd=base, capture_output=True)
+    if listed.returncode == 0:
+        names = [name for name in listed.stdout.decode("utf-8", errors="replace").split("\0") if name]
+        return [base / name for name in sorted(names) if (base / name).is_file()]
+    return [
+        item for item in sorted(base.rglob("*"))
         if item.is_file() and not any(part in IGNORED_PATH_NAMES for part in item.relative_to(context.root).parts)
     ]
-    for file_path in files:
-        for number, line in enumerate(file_path.read_text(encoding="utf-8", errors="replace").splitlines(), start=1):
-            if pattern.lower() in line.lower():
-                matches.append(f"{file_path.relative_to(context.root)}:{number}:{line}")
-                if len(matches) >= 200:
-                    return "\n".join(matches)
-    return "\n".join(matches) or "(no matches)"
+
+
+def _search_files(context, base, glob):
+    if base.is_file():
+        return [base]
+    return [
+        item for item in _project_files(context, base)
+        # rg 的语义：'*.py' 匹配任意层级的文件名，含 '/' 的模式匹配相对路径。
+        if (not glob or fnmatch.fnmatch(item.name, glob) or fnmatch.fnmatch(str(item.relative_to(base)), glob))
+        and item.stat().st_size <= MAX_SEARCH_FILE_BYTES
+    ]
+
+
+def tool_search(context, args):
+    pattern = str(args["pattern"]).strip()
+    # smart-case：全小写的模式不区分大小写，含大写时区分（与 rg/Claude Code 一致）。
+    ignore_case = bool(args["ignore_case"]) if "ignore_case" in args else pattern == pattern.lower()
+    regex = re.compile(pattern, re.IGNORECASE if ignore_case else 0)
+    mode = str(args.get("output_mode", "content"))
+    around = int(args.get("context", 0))
+    limit = int(args.get("max_results", DEFAULT_SEARCH_RESULTS))
+    lines_out, total = [], 0
+    for file_path in _search_files(context, context.path(args.get("path", ".")), str(args.get("glob", "") or "")):
+        raw = file_path.read_bytes()
+        if b"\0" in raw[:1024]:
+            continue  # 二进制文件
+        lines = raw.decode("utf-8", errors="replace").splitlines()
+        hits = [index for index, line in enumerate(lines) if regex.search(line)]
+        if not hits:
+            continue
+        relative = file_path.relative_to(context.root)
+        if mode != "content":
+            total += 1
+            if total <= limit:
+                lines_out.append(str(relative) if mode == "files" else f"{relative}:{len(hits)}")
+            continue
+        for index in hits:
+            total += 1
+            if total > limit:
+                continue
+            if not around:
+                lines_out.append(f"{relative}:{index + 1}:{lines[index]}")
+                continue
+            # 带上下文：匹配行用 ':'，上下文行用 '-'，块之间用 '--' 分隔（与 grep 一致）。
+            for number in range(max(0, index - around), min(len(lines), index + around + 1)):
+                mark = ":" if number == index else "-"
+                lines_out.append(f"{relative}{mark}{number + 1}{mark}{lines[number]}")
+            lines_out.append("--")
+    if total > limit:
+        lines_out.append(f"...[{total - limit} more results; narrow with path/glob or use output_mode='files']")
+    return "\n".join(lines_out) or "(no matches)"
+
+
+def _glob_match(relative, pattern):
+    """Path.glob 的语义：不含 '/' 的模式只匹配当前目录；'**/' 可以匹配零层或多层目录。"""
+    if "/" not in pattern:
+        return "/" not in relative and fnmatch.fnmatch(relative, pattern)
+    return fnmatch.fnmatch(relative, pattern) or fnmatch.fnmatch(relative, pattern.replace("**/", ""))
 
 
 def tool_glob(context, args):
     pattern = str(args.get("pattern", "")).strip()
     base = context.path(args.get("path", "."))
     matches = []
-    for item in base.glob(pattern):
-        if not item.is_file():
-            continue
-        relative = item.relative_to(context.root)
-        if any(part in IGNORED_PATH_NAMES for part in relative.parts):
-            continue
-        matches.append((item.stat().st_mtime, str(relative)))
+    for item in _project_files(context, base):
+        if _glob_match(str(item.relative_to(base)), pattern):
+            matches.append((item.stat().st_mtime, str(item.relative_to(context.root))))
     # 最近改过的文件最可能和当前任务有关，排在前面。
     matches.sort(key=lambda pair: (-pair[0], pair[1]))
     lines = [path for _, path in matches[:MAX_GLOB_RESULTS]]
     if len(matches) > MAX_GLOB_RESULTS:
         lines.append(f"...[{len(matches) - MAX_GLOB_RESULTS} more matches; narrow the pattern]")
     return "\n".join(lines) or "(no matches)"
+
+
+# 文件路径 -> (修改时间, 符号列表)。同一进程里重复调用 repo_map 不必重新解析。
+_SYMBOL_CACHE = {}
+
+
+def _python_symbols(file_path):
+    """[(行号, 缩进层级, 名字, 签名)]：顶层类与函数，以及类里的方法。"""
+    mtime = file_path.stat().st_mtime
+    cached = _SYMBOL_CACHE.get(file_path)
+    if cached and cached[0] == mtime:
+        return cached[1]
+    try:
+        tree = ast.parse(file_path.read_text(encoding="utf-8", errors="replace"))
+    except (SyntaxError, ValueError):
+        symbols = []
+    else:
+        symbols = []
+        for node in tree.body:
+            symbols += _describe(node, 0)
+            if isinstance(node, ast.ClassDef):
+                for child in node.body:
+                    symbols += _describe(child, 1)
+    _SYMBOL_CACHE[file_path] = (mtime, symbols)
+    return symbols
+
+
+def _describe(node, level):
+    if isinstance(node, ast.ClassDef):
+        bases = ", ".join(ast.unparse(base) for base in node.bases)
+        return [(node.lineno, level, node.name, f"class {node.name}({bases})" if bases else f"class {node.name}")]
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        prefix = "async def" if isinstance(node, ast.AsyncFunctionDef) else "def"
+        return [(node.lineno, level, node.name, f"{prefix} {node.name}({ast.unparse(node.args)})")]
+    return []
+
+
+def tool_repo_map(context, args):
+    base = context.path(args.get("path", "."))
+    pattern = str(args.get("pattern", "") or "")
+    regex = re.compile(pattern) if pattern else None
+    files = [base] if base.is_file() else _project_files(context, base)
+    files = [item for item in files if item.suffix == ".py"]
+    if not files:
+        return "(no Python files here; repo_map only understands Python, use search for other languages)"
+    out, used, skipped = [], 0, 0
+    budget = MAX_TOOL_OUTPUT - 300
+    for file_path in files:
+        relative = file_path.relative_to(context.root)
+        symbols = _python_symbols(file_path)
+        if regex:
+            # 查定义：每个匹配一行，带路径，方便直接 read_file 跳过去。
+            block = [f"{relative}:{line}: {signature}" for line, _, name, signature in symbols if regex.search(name)]
+        else:
+            block = [str(relative)] + [f"{'    ' * (level + 1)}{line}: {signature}" for line, level, _, signature in symbols]
+        if not block:
+            continue
+        size = sum(len(item) + 1 for item in block)
+        if used + size > budget:
+            skipped += 1
+            continue
+        out += block
+        used += size
+    if skipped:
+        out.append(f"...[{skipped} more files not shown; narrow path or add a pattern]")
+    return "\n".join(out) or "(no matching definitions)"
 
 
 def _edit_diff(relative_path, before, after):
@@ -1025,6 +1173,7 @@ _TOOL_RUNNERS = {
     "read_files": tool_read_files,
     "search": tool_search,
     "glob": tool_glob,
+    "repo_map": tool_repo_map,
     "todo_write": tool_todo_write,
     "run_shell": tool_run_shell,
     "runtime_info": tool_runtime_info,

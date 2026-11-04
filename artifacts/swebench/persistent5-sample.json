@@ -1,0 +1,17 @@
+{
+  "source": "隔离基线、第一版规则、第二版规则三次都失败的题",
+  "instance_ids": [
+    "django__django-16631",
+    "django__django-13212",
+    "django__django-12325",
+    "pylint-dev__pylint-4551",
+    "astropy__astropy-14369"
+  ],
+  "images": {
+    "django__django-16631": "swebench/sweb.eval.x86_64.django_1776_django-16631:latest",
+    "django__django-13212": "swebench/sweb.eval.x86_64.django_1776_django-13212:latest",
+    "django__django-12325": "swebench/sweb.eval.x86_64.django_1776_django-12325:latest",
+    "pylint-dev__pylint-4551": "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4551:latest",
+    "astropy__astropy-14369": "swebench/sweb.eval.x86_64.astropy_1776_astropy-14369:latest"
+  }
+}

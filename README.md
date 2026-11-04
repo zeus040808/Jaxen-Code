@@ -1,4 +1,7 @@
-# HH Agent Pro
+# Jaxen
+
+> 原名 HH Agent Pro。对外名字（命令行欢迎界面、`jaxen>` 提示符、`--help`、网页界面）已改为 **Jaxen**；
+> 代码里的包名 `hh_agent_pro` / `hh_agent_ui`、环境变量 `HH_*`、状态目录 `.hh/` 和历史文档保持不变，避免影响已有功能与评测记录。
 
 一个从零实现的本地 coding agent harness——跑在终端里，作用于本地代码仓库，
 并配套一套可复现的企业式评测体系。

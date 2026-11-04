@@ -9,6 +9,7 @@ import hashlib
 import os
 import platform
 import re
+import time
 import uuid
 from datetime import datetime
 from pathlib import Path, PurePosixPath
@@ -28,7 +29,7 @@ from .run_store import RunStore
 from .session_store import SessionStore
 from .tool_context import ToolContext
 from .tool_executor import ToolExecutor
-from .streaming import NullEventSink
+from .streaming import NullEventSink, UsageForwardingSink
 from .task_state import TaskState, default_task_state
 from . import tools as toolkit
 from .workspace import IGNORED_PATH_NAMES, WorkspaceContext, now
@@ -38,6 +39,9 @@ DEFAULT_SHELL_ENV_ALLOWLIST = (
     "COMSPEC", "HOME", "LANG", "LC_ALL", "LC_CTYPE", "LOGNAME", "PATH", "PATHEXT",
     "PWD", "SHELL", "SYSTEMROOT", "TERM", "TMPDIR", "TMP", "TEMP", "USER",
     "USERPROFILE", "WINDIR",
+    # 代理：公司网络里 pip/curl 要靠它出网；评测里 shell 命令也得经过出口代理，被拒绝的上网尝试才会被计数
+    # （之前 shell 不带代理，请求在内网直接 DNS 失败，egress_denied 一直是 0）
+    "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "no_proxy",
 )
 
 TOOLSETS = {"core", "full"}
@@ -82,6 +86,7 @@ class CodingAgent:
         event_sink=None,
         machine_mode=False,
         episode_timeout_ms=1_200_000,
+        review_changes=False,
     ):
         self.model_client = model_client
         self.workspace = workspace
@@ -94,6 +99,8 @@ class CodingAgent:
         self.max_new_tokens = max_new_tokens
         self.depth = depth
         self.max_depth = max_depth
+        # 子 agent 记下派它的父 run，trace 里能直接配对（不用再按时间猜）
+        self.parent_run_id = ""
         self.read_only = read_only
         # 评测反复观测到「范围蔓延」：只让改 validators.py，模型顺手把
         # tests/test_smoke.py 也改了。提示词管不住它，所以升级成运行时约束。
@@ -113,6 +120,11 @@ class CodingAgent:
         self.toolset = toolset
         self.event_sink = event_sink or NullEventSink()
         self.machine_mode = bool(machine_mode)
+        # 交付前审查（review.py）：off / auto（改了非测试源代码才审）/ always。也接受 True/False（= always/off）。
+        # Python API 默认 off，CLI 对真实模型默认 auto。
+        self.review_mode = self._normalize_review_mode(review_changes)
+        # 本次运行的截止时间（AgentLoop 开始时设置）；子 agent 只能用剩下的时间。
+        self.run_deadline = None
         self.episode_timeout_ms = int(episode_timeout_ms)
         if self.episode_timeout_ms < 1:
             raise ValueError("episode_timeout_ms must be positive")
@@ -578,6 +590,10 @@ class CodingAgent:
     # Agent 对外的主入口；单次请求的生命周期交给 AgentLoop。
     def ask(self, user_message, responses=None, request_id=None):
         from .agent_loop import AgentLoop
+        # `/review [说明]`：CLI、JSONL（界面）都走这里；不进主循环，不改代码
+        message = str(user_message or "").strip()
+        if message == "/review" or message.startswith("/review "):
+            return self.review_workspace(message[len("/review"):].strip())
         # 调用agent loop中的run
         return AgentLoop(self).run(
             user_message,
@@ -707,40 +723,65 @@ class CodingAgent:
             toolset=self.toolset,
         )
 
-    def spawn_delegate(self, args):
-        task = str(args.get("task", "")).strip()
-        # 分派子agent
+    @staticmethod
+    def _normalize_review_mode(value):
+        from .review import REVIEW_MODES
+
+        if isinstance(value, bool) or value is None:
+            return "always" if value else "off"
+        if value not in REVIEW_MODES:
+            raise ValueError(f"review mode must be one of {REVIEW_MODES}")
+        return value
+
+    def remaining_time_ms(self):
+        """本次运行剩余的毫秒数；还没开始运行时就是完整时长。"""
+        if self.run_deadline is None:
+            return self.episode_timeout_ms
+        return max(1_000, int((self.run_deadline - time.monotonic()) * 1000))
+
+    def readonly_child(self, max_steps):
+        """只读子 agent：调查（delegate）和审查（review）共用。只能读和搜，不能改文件、不能执行命令。
+
+        子 agent 的事件只把 token 用量转给父 agent：预算统计要算上它花的钱，
+        但它的工具卡片和回答不该混进父 agent 的界面。
+        """
         child = CodingAgent(
             model_client=self.model_client,
             workspace=self.workspace,
             session_store=self.session_store,
             run_store=self.run_store,
             approval_policy="never",
-            max_steps=int(args.get("max_steps", toolkit.DEFAULT_DELEGATE_STEPS)),
+            max_steps=int(max_steps),
             max_new_tokens=self.max_new_tokens,
-            episode_timeout_ms=self.episode_timeout_ms,
+            # 同步执行，父 agent 在等：子 agent 只能用父 agent 剩下的时间，不能把总时长撑破
+            episode_timeout_ms=self.remaining_time_ms(),
             depth=self.depth + 1,
             max_depth=self.max_depth,
             read_only=True,
-            allowed_tools=("list_files", "read_file", "read_files", "search", "glob", "runtime_info"),
+            allowed_tools=("list_files", "read_file", "read_files", "search", "glob", "repo_map", "runtime_info"),
             secret_env_names=self.secret_env_names,
             shell_env_allowlist=self.shell_env_allowlist,
+            event_sink=UsageForwardingSink(self.event_sink),
         )
-        # 子 agent 只调查。父 agent 根据结构化状态和文件证据决定是否采纳结论。
-        child.memory.set_task_summary(task)
-        child.session["memory"] = child.memory.to_dict()
-        answer = child.ask(task)
-        state = child.current_run_state
-        evidence = child.source_evidence.to_dict().get("files", {})
-        return "delegate_result:\n" + json.dumps({
-            "status": state.status,
-            "stop_reason": state.stop_reason,
-            "answer": answer,
-            "files": [
-                {"path": item["path"], "summary": item["summary"]}
-                for item in list(evidence.values())[:12]
-            ],
-        }, ensure_ascii=False)
+        child.parent_run_id = str(getattr(getattr(self, "current_run_state", None), "run_id", "") or "")
+        return child
+
+    def review_workspace(self, request):
+        """`/review`：审查当前工作区的未提交改动，只出报告、不改代码。"""
+        from .review import review_report, run_review, workspace_diff
+
+        diff = workspace_diff(self.root)
+        if not diff.strip():
+            return "## Code review\n\nNo uncommitted changes to review."
+        return review_report(run_review(self, request or "Review the uncommitted changes in this workspace.", diff))
+
+    def spawn_delegate(self, args):
+        """调查子 agent：同步运行，结果装进信封返回给父 agent（见 subagent.py）。"""
+        from .subagent import envelope, run_child
+
+        task = str(args.get("task", "")).strip()
+        _, report = run_child(self, "delegate", task, int(args.get("max_steps", toolkit.DEFAULT_DELEGATE_STEPS)))
+        return envelope(report)
 
     def auto_deposit_skill(self, user_message, final_answer, run_state):
         if not self.feature_enabled("skills") or not self.feature_enabled("skill_learning"):

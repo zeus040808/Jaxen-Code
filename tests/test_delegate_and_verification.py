@@ -65,7 +65,7 @@ def test_child_has_its_own_session_and_cannot_edit(tmp_path):
 
     result = agent.execute_tool("delegate", {"task": "change A", "max_steps": 3})
 
-    assert "delegate_result" in result.content
+    assert "<subagent-result>" in result.content and "<kind>delegate</kind>" in result.content
     assert (agent.root / "a.py").read_text(encoding="utf-8") == "A = 1\n"
     # 子 agent 的会话独立：主会话的历史里看不到它的工具调用。
     assert not any(item.get("name") == "write_file" for item in agent.session["history"])

@@ -31,6 +31,10 @@ class RunStore:
     def trace_path(self, run_id):
         return self.run_dir(run_id) / "trace.jsonl"
 
+    # 完整对话记录：每轮发给模型的内容和模型的原始返回（trace 里只有截断后的摘要）
+    def transcript_path(self, run_id):
+        return self.run_dir(run_id) / "transcript.jsonl"
+
     def report_path(self, run_id):
         return self.run_dir(run_id) / "report.json"
 
@@ -52,12 +56,18 @@ class RunStore:
 
     # 添加trace（不覆盖旧事件）
     def append_trace(self, run_state, event):
-        path = self.trace_path(run_state)
-        path.parent.mkdir(parents=True, exist_ok=True)
         # trace 采用 jsonl 追加写入，原因是 agent 运行过程是流式事件序列，
         # 逐条落盘比“最后一次性写整份 trace”更稳，也更适合调试。
+        return self._append_jsonl(self.trace_path(run_state), event)
+
+    def append_transcript(self, run_state, entry):
+        return self._append_jsonl(self.transcript_path(run_state), entry)
+
+    @staticmethod
+    def _append_jsonl(path, payload):
+        path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(event, sort_keys=True, ensure_ascii=False))
+            handle.write(json.dumps(payload, sort_keys=True, ensure_ascii=False))
             handle.write("\n")
         return path
 

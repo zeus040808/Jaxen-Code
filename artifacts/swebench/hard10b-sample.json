@@ -1,0 +1,37 @@
+{
+  "seed": 20261103,
+  "difficulty": "1-4 hours",
+  "excluded_repos": [
+    "psf/requests"
+  ],
+  "excluded_samples": [
+    "artifacts/swebench/easy20-sample.json",
+    "artifacts/swebench/medium10-sample.json",
+    "artifacts/swebench/hard10-sample.json"
+  ],
+  "pool_size": 32,
+  "instance_ids": [
+    "django__django-12708",
+    "django__django-11885",
+    "sympy__sympy-18199",
+    "sympy__sympy-16597",
+    "django__django-13128",
+    "pylint-dev__pylint-8898",
+    "sphinx-doc__sphinx-9461",
+    "sympy__sympy-17630",
+    "astropy__astropy-13579",
+    "django__django-15957"
+  ],
+  "images": {
+    "django__django-12708": "swebench/sweb.eval.x86_64.django_1776_django-12708:latest",
+    "django__django-11885": "swebench/sweb.eval.x86_64.django_1776_django-11885:latest",
+    "sympy__sympy-18199": "swebench/sweb.eval.x86_64.sympy_1776_sympy-18199:latest",
+    "sympy__sympy-16597": "swebench/sweb.eval.x86_64.sympy_1776_sympy-16597:latest",
+    "django__django-13128": "swebench/sweb.eval.x86_64.django_1776_django-13128:latest",
+    "pylint-dev__pylint-8898": "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-8898:latest",
+    "sphinx-doc__sphinx-9461": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-9461:latest",
+    "sympy__sympy-17630": "swebench/sweb.eval.x86_64.sympy_1776_sympy-17630:latest",
+    "astropy__astropy-13579": "swebench/sweb.eval.x86_64.astropy_1776_astropy-13579:latest",
+    "django__django-15957": "swebench/sweb.eval.x86_64.django_1776_django-15957:latest"
+  }
+}

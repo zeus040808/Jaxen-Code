@@ -3,7 +3,10 @@
 AgentLoop 不持有跨请求会话；它通过 CodingAgent 读取能力并回写状态。
 """
 
+import functools
+import hashlib
 import time
+from pathlib import Path
 
 from .checkpoint import CHECKPOINT_NONE_STATUS, CHECKPOINT_PARTIAL_STALE_STATUS, CHECKPOINT_WORKSPACE_MISMATCH_STATUS
 from .run_state import (
@@ -24,11 +27,69 @@ MAX_DELIVERY_DEFERRALS = 1
 VERIFICATION_TOOLS = {"run_shell", "read_file", "read_files", "search", "patch_file", "write_file"}
 
 
+@functools.lru_cache(maxsize=1)
+def agent_source_hash():
+    """agent 代码的内容哈希（hh_agent_pro 下全部 .py）。
+
+    不用 git 提交号：评测时代码挂进容器，没有 .git；而且未提交的改动也要能区分开。
+    """
+    digest = hashlib.sha256()
+    package = Path(__file__).resolve().parent
+    for path in sorted(package.rglob("*.py")):
+        digest.update(str(path.relative_to(package)).encode("utf-8"))
+        digest.update(path.read_bytes())
+    return digest.hexdigest()[:12]
+
+
 class AgentLoop:
     """控制单次用户请求的生命周期；每次 CodingAgent.ask() 新建一个。"""
 
     def __init__(self, agent):
         self.agent = agent
+        # 完整对话记录（transcript.jsonl）的增量状态：上一轮已经写过的消息和 system 的哈希
+        self._sent_messages = []
+        self._sent_system_hash = ""
+
+    def _transcript_request(self, run_state, request):
+        """把这一轮发给模型的完整内容写进 transcript.jsonl。
+
+        历史只追加，所以每轮只写和上一轮不同的部分：kept_messages 条沿用上一轮，后面是 new_messages。
+        压缩改写了前面的消息时，kept 会变小、改写后的消息重新写一遍。按这个规则能逐轮还原模型看到的全部内容
+        （工具结果全文、注入的运行时提示、摘要），而文件大小随轮数线性增长，不是平方增长。
+        """
+        agent = self.agent
+        messages = agent.redact_artifact(list(request.messages))
+        kept = 0
+        for old, new in zip(self._sent_messages, messages):
+            if old != new:
+                break
+            kept += 1
+        entry = {
+            "kind": "request",
+            "attempt": run_state.attempts,
+            "kept_messages": kept,
+            "new_messages": messages[kept:],
+            "tools": [str((tool.get("function") or tool).get("name", "")) for tool in request.tools or []],
+            "max_new_tokens": request.max_new_tokens,
+        }
+        system_hash = hashlib.sha256(request.system_prompt.encode("utf-8")).hexdigest()[:16]
+        entry["system_hash"] = system_hash
+        if system_hash != self._sent_system_hash:
+            entry["system_prompt"] = agent.redact_text(request.system_prompt)
+            self._sent_system_hash = system_hash
+        self._sent_messages = messages
+        agent.run_store.append_transcript(run_state, entry)
+
+    def _transcript_response(self, run_state, raw, completion_metadata):
+        agent = self.agent
+        agent.run_store.append_transcript(run_state, {
+            "kind": "response",
+            "attempt": run_state.attempts,
+            "raw": agent.redact_text(raw or ""),
+            "reasoning_content": agent.redact_text(getattr(agent.model_client, "last_reasoning_content", "") or ""),
+            "finish_reason": completion_metadata.get("finish_reason"),
+            "output_tokens": completion_metadata.get("output_tokens"),
+        })
 
     @staticmethod
     def _tool_limit(agent):
@@ -96,6 +157,12 @@ class AgentLoop:
                 "run_duration_ms": int((time.monotonic() - run_started_at) * 1000),
             },
         )
+        agent.run_store.append_transcript(run_state, {
+            "kind": "final",
+            "status": run_state.status,
+            "stop_reason": run_state.stop_reason,
+            "final_answer": agent.redact_text(run_state.final_answer or ""),
+        })
         agent.run_store.write_report(run_state, agent.redact_artifact(agent.build_report(run_state)))
         agent.emit_ui(
             "run_finished",
@@ -146,6 +213,7 @@ class AgentLoop:
     def run(self, user_message, responses=None, request_id=None):
         agent = self.agent
         run_started_at = time.monotonic()
+        agent.run_deadline = run_started_at + agent.episode_timeout_ms / 1000  # 子 agent 只能用剩下的时间
         agent.last_prompt_metadata = {}
         agent.last_completion_metadata = {}
         pending_output = agent.session.get("pending_output", {})
@@ -167,6 +235,7 @@ class AgentLoop:
         agent.last_auto_memory = {"status": "idle"}
         agent.tool_executor.reset_run_state()
         agent.final_only_mode = bool(resume_partial)
+        agent.max_new_tokens_override = 0  # 正文为空的截断会临时提高输出上限，只在本次运行内有效
 
         # 创建一个run状态（每轮对话）
         run_state = RunState.create(
@@ -185,6 +254,20 @@ class AgentLoop:
             {
                 "request_id": run_state.request_id,
                 "user_request": clip(user_message, 300),
+                # 0 = 主 agent，1 = 子 agent（调查/审查）。子 agent 的 run 和主 agent 存在同一个目录里，分析时靠它区分
+                "depth": agent.depth,
+                "parent_run_id": agent.parent_run_id or None,
+                # 版本和配置：不同版本跑出的 trace 混在一起时，单看 trace 就能认出来
+                "provider": type(agent.model_client).__name__,
+                "model": str(getattr(agent.model_client, "model", "") or ""),
+                "agent_version": agent_source_hash(),
+                "config": {
+                    "max_steps": agent.max_steps,
+                    "max_new_tokens": agent.max_new_tokens,
+                    "episode_timeout_ms": agent.episode_timeout_ms,
+                    "review_mode": agent.review_mode,
+                    "toolset": agent.toolset,
+                },
             },
         )
         agent.emit_ui("run_started", request=user_message)
@@ -195,6 +278,9 @@ class AgentLoop:
         )
         resolution_status = pending_resolution.get("status")
         effective_user_message = str(pending_resolution.get("text", user_message))
+        # 审查要对照用户的完整原始需求：审批续跑时下面会把 effective_user_message 换成"已批准"提示，
+        # task_state 里的 goal 又被截断到 1000 字，所以在这里留一份原文。
+        review_request = effective_user_message or str(agent.task_state.to_dict().get("goal", ""))
         if resolution_status == "approved":
             action = pending_resolution["action"]
             safe_args = agent.redact_artifact(action["args"])
@@ -301,6 +387,7 @@ class AgentLoop:
         truncation_recoveries = 0
         delivery_deferrals = 0
         unresolved_blockers = []
+        reviewed = False  # 每次运行最多审查一轮
         protocol_recoveries = 0
 
         # 这是 agent 的主循环，可以按“感知 -> 决策 -> 行动 -> 记录”来理解：
@@ -394,10 +481,13 @@ class AgentLoop:
                 },
             )
             model_started_at = time.monotonic()
+            self._transcript_request(run_state, request)
 
             try:
+                agent.model_client.last_reasoning_content = ""
                 raw = agent.model_client.complete(request)
                 completion_metadata = dict(getattr(agent.model_client, "last_completion_metadata", {}) or {})
+                self._transcript_response(run_state, raw, completion_metadata)
                 native_assistant_message = dict(
                     getattr(agent.model_client, "last_native_assistant_message", {}) or {}
                 )
@@ -439,6 +529,10 @@ class AgentLoop:
                 raise
             except Exception as exc:
                 error_detail = agent.redact_text(str(exc))
+                agent.run_store.append_transcript(run_state, {
+                    "kind": "model_error", "attempt": run_state.attempts,
+                    "error_type": exc.__class__.__name__, "error": error_detail,
+                })
                 final = f"Model request failed: {error_detail}"
                 run_state.stop_model_error(final)
                 agent.task_state.mark_paused(run_state.stop_reason, "Retry the model request or resume this task.")
@@ -491,6 +585,24 @@ class AgentLoop:
 
             if kind == "truncated":
                 partial_piece = self._partial_answer(agent, raw)
+                # 正文一个字都没有就被截断：输出额度全花在思考（或半截的工具调用）上了，"接着写草稿"无从接起
+                # （SWE-bench sympy-23413：连续两轮 8192 个输出 token 全是思考，续写恢复照样截断，整题失败）。
+                # 改成提高输出上限、工具照常可用、重发这一轮；只提一次，按实际用量计费，上限高不额外花钱。
+                current_limit = int(getattr(agent, "max_new_tokens_override", 0) or agent.max_new_tokens)
+                model_limit = int(getattr(agent.model_client, "max_output_tokens", 0) or current_limit * 4)
+                raised_limit = min(model_limit, current_limit * 4)
+                already_raised = bool(getattr(agent, "max_new_tokens_override", 0))
+                if (not partial_piece.strip() and not agent.output_recovery_active
+                        and not already_raised and raised_limit > current_limit):
+                    agent.max_new_tokens_override = raised_limit
+                    max_attempts += 1
+                    agent.emit_trace(
+                        run_state,
+                        "output_budget_raised",
+                        {"from_tokens": current_limit, "to_tokens": raised_limit,
+                         "finish_reason": completion_metadata.get("finish_reason")},
+                    )
+                    continue
                 partial = self._merge_continuation(agent.output_recovery_draft, partial_piece)
                 run_state.partial_answer = partial
                 agent.run_store.write_run_state(run_state)
@@ -863,6 +975,30 @@ class AgentLoop:
                         "deferrals": delivery_deferrals,
                     },
                 )
+
+            # 交付前的独立审查（review.py）：改过代码、还能动手时，派只读子 agent 按清单复查一轮。
+            # 有问题就把意见交回主 agent 继续改；它可以不采纳，但要在答案里说明理由。
+            if (agent.review_mode != "off" and not reviewed and not unresolved_blockers
+                    and not agent.final_only_mode and tool_steps < self._tool_limit(agent)):
+                from .review import feedback_notice, needs_review, run_review, workspace_diff
+
+                diff = workspace_diff(agent.root)
+                if needs_review(agent.review_mode, diff):
+                    reviewed = True
+                    agent.emit_ui("tool_started", name="code_review", args={"diff_lines": diff.count("\n")})
+                    review = run_review(agent, review_request, diff)
+                    agent.emit_ui(
+                        "tool_finished", name="code_review",
+                        result=f"verdict: {review['verdict']}\n" + "\n".join(f"- {i}" for i in review["issues"]),
+                        metadata={"tool_status": "ok"},
+                    )
+                    agent.emit_trace(run_state, "review_completed", {
+                        "mode": agent.review_mode, "verdict": review["verdict"], "issues": review["issues"],
+                        "parsed": review["parsed"], "status": review["status"], "usage": review["usage"],
+                    })
+                    if review["verdict"] == "issues":
+                        agent.record({"role": "assistant", "content": feedback_notice(review), "created_at": now()})
+                        continue
 
             final = (payload or raw).strip()
             if agent.output_recovery_active:

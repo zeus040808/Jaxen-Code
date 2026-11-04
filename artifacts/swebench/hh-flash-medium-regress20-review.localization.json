@@ -1,0 +1,257 @@
+{
+  "summary": {
+    "instances": 20,
+    "found_gold": 20,
+    "median_steps_to_gold": 3.0,
+    "median_files_before_gold": 0.0,
+    "mean_gold_read_recall": 1.0,
+    "mean_edit_recall": 0.95,
+    "mean_edit_precision": 1.0
+  },
+  "rows": [
+    {
+      "instance_id": "astropy__astropy-8707",
+      "gold_files": [
+        "astropy/io/fits/card.py",
+        "astropy/io/fits/header.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 36
+    },
+    {
+      "instance_id": "django__django-11265",
+      "gold_files": [
+        "django/db/models/sql/query.py"
+      ],
+      "steps_to_gold": 5,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 47
+    },
+    {
+      "instance_id": "django__django-11276",
+      "gold_files": [
+        "django/utils/html.py"
+      ],
+      "steps_to_gold": 1,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 30
+    },
+    {
+      "instance_id": "django__django-11790",
+      "gold_files": [
+        "django/contrib/auth/forms.py"
+      ],
+      "steps_to_gold": 5,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 19
+    },
+    {
+      "instance_id": "django__django-11999",
+      "gold_files": [
+        "django/db/models/fields/__init__.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 13
+    },
+    {
+      "instance_id": "django__django-12050",
+      "gold_files": [
+        "django/db/models/sql/query.py"
+      ],
+      "steps_to_gold": 2,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 8
+    },
+    {
+      "instance_id": "django__django-12406",
+      "gold_files": [
+        "django/db/models/fields/related.py",
+        "django/forms/models.py"
+      ],
+      "steps_to_gold": 5,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 52
+    },
+    {
+      "instance_id": "django__django-13028",
+      "gold_files": [
+        "django/db/models/sql/query.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 12
+    },
+    {
+      "instance_id": "django__django-13516",
+      "gold_files": [
+        "django/core/management/base.py"
+      ],
+      "steps_to_gold": 1,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 10
+    },
+    {
+      "instance_id": "django__django-14238",
+      "gold_files": [
+        "django/db/models/fields/__init__.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 12
+    },
+    {
+      "instance_id": "django__django-15280",
+      "gold_files": [
+        "django/db/models/fields/related_descriptors.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 49
+    },
+    {
+      "instance_id": "django__django-15561",
+      "gold_files": [
+        "django/db/backends/base/schema.py",
+        "django/db/models/fields/__init__.py"
+      ],
+      "steps_to_gold": 4,
+      "files_before_gold": 1,
+      "gold_read_recall": 1.0,
+      "edit_recall": 0.5,
+      "edit_precision": 1.0,
+      "tool_calls": 39
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-24026",
+      "gold_files": [
+        "lib/matplotlib/stackplot.py"
+      ],
+      "steps_to_gold": 1,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 22
+    },
+    {
+      "instance_id": "pydata__xarray-6744",
+      "gold_files": [
+        "xarray/core/rolling.py"
+      ],
+      "steps_to_gold": 2,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 16
+    },
+    {
+      "instance_id": "pydata__xarray-6938",
+      "gold_files": [
+        "xarray/core/dataset.py",
+        "xarray/core/variable.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 0.5,
+      "edit_precision": 1.0,
+      "tool_calls": 18
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-15100",
+      "gold_files": [
+        "sklearn/feature_extraction/text.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 8
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-8056",
+      "gold_files": [
+        "sphinx/ext/napoleon/docstring.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 36
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-8638",
+      "gold_files": [
+        "sphinx/domains/python.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 48
+    },
+    {
+      "instance_id": "sympy__sympy-12419",
+      "gold_files": [
+        "sympy/matrices/expressions/matexpr.py"
+      ],
+      "steps_to_gold": 6,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 47
+    },
+    {
+      "instance_id": "sympy__sympy-20154",
+      "gold_files": [
+        "sympy/utilities/iterables.py"
+      ],
+      "steps_to_gold": 2,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 14
+    }
+  ]
+}

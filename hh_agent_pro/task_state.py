@@ -39,6 +39,18 @@ STATIC_COMMAND = re.compile(
 LEADING_CD = re.compile(r"^(?:cd\s+(?:\"[^\"]+\"|'[^']+'|\S+)\s*&&\s*)+")
 
 
+def superseded_by_progress(failure):
+    """只读工具出错（读了不存在的路径、搜索参数不对、搜索的文件不存在）：之后任意一次工具调用成功就算已解决。
+
+    按"同一动作后来成功才算解决"，错误的参数永远不会成功，这次失败会一直挂到交付
+    （SWE-bench django-11265：读错路径后改对、改完代码、测试通过，仍报 incomplete_delivery；
+    sphinx-8638：search 一个不存在的文件是运行时出错 tool_failed，同样一直挂到交付）。
+    但失败之后一次成功都没有就说"完成"，仍然拦下。修改类工具和会改东西的 shell 命令不适用：
+    patch_file 找不到原文、测试命令失败，那是该做的事没做成，必须由同一个动作成功来解决。
+    """
+    return failure.get("error_code") in {"invalid_arguments", "tool_failed"} and bool(failure.get("read_only"))
+
+
 def _check_kind(command):
     command = str(command).strip()
     # 开头的 `cd 目录 &&` 是安全的：&& 会把失败传下去，退出码由后面的检查命令决定。
@@ -232,7 +244,7 @@ class TaskState:
                 )
                 if name == "run_shell" and failure.get("check_kind"):
                     same_action = same_action and failure["check_kind"] == _check_kind((args or {}).get("command", ""))
-                if failure.get("retryable") and not failure.get("resolved") and same_action:
+                if failure.get("retryable") and not failure.get("resolved") and (same_action or superseded_by_progress(failure)):
                     failure["resolved"] = True
                     failure["resolved_at"] = now()
                     failure["resolution"] = f"corrected by successful {name}"
@@ -247,6 +259,7 @@ class TaskState:
                     "error_code": error_code or status,
                     "fingerprint": fingerprint,
                     "retryable": bool(metadata.get("retryable", False)),
+                    "read_only": bool(metadata.get("read_only", False)),
                     "resolved": False,
                     "summary": clip(str(result), 350),
                     "created_at": now(),
