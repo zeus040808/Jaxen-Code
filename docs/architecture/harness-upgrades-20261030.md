@@ -224,3 +224,16 @@ trace 完整性的其余补充：
 | 补丁、失败测试、trace 分散三处 | `scripts/swebench/trace_report.py`：整批每题一行的模块触发统计（写出 `<运行名>.trace-report.json`）；`--instance` 输出单题时间线（版本配置、逐步工具调用、关键事件、失败的隐藏测试、transcript 位置） | 测试 `tests/test_trace_report.py` |
 
 验证（第五轮全部改动）：`pytest` 321 passed、4 skipped；确定性回归均 100%；pyflakes 干净。
+
+## 第六轮：故障注入发现的问题（2026-11-05）
+
+模块评测第一项（[故障注入评测](../evaluation/fault-injection.md)）发现：原生 tool_calls 的参数是半截 JSON 时，
+`OpenAIChatClient` 直接抛 `RuntimeError`，整轮以 `model_error` 结束；同样坏掉的文本格式工具调用却会让模型重来。
+
+改法（`providers/openai_chat.py`）：解析失败时不抛错，交回一个同样解析不了的文本工具调用，`agent.parse` 返回
+`retry`，AgentLoop 追加纠正提示、让模型重来；同时清空 `last_native_assistant_message`，这次回复不进历史，
+后续请求里不会出现没有工具结果的 tool_call id（真实 API 会因此返回 400）。completion metadata 记
+`malformed_native_tool_arguments`，复盘时可查。
+
+验证：故障注入场景 `bad_native_tool_args` 由 model_error 变为救回；核对了之后每次请求都没有孤立的 tool_call id；
+回归测试 `tests/test_model_retry.py::test_malformed_native_tool_arguments_become_a_retry_not_a_model_error`。

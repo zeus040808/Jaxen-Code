@@ -34,6 +34,7 @@
 | [jsonl-protocol.md](evaluation/jsonl-protocol.md) | 非交互机器接口协议 |
 | [runbook.md](evaluation/runbook.md) | 企业评测执行手册 |
 | [swebench.md](evaluation/swebench.md) | SWE-bench Verified 评测流程与结果 |
+| [fault-injection.md](evaluation/fault-injection.md) | 错误恢复的故障注入评测：23 个场景、假模型 + 真 harness，22 通过、静默失败 0；发现并修复原生工具参数坏 JSON 会整轮失败 |
 
 ## results — 评测报告
 

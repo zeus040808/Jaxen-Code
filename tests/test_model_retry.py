@@ -172,3 +172,25 @@ def test_empty_but_truncated_response_goes_to_truncation_recovery(monkeypatch):
     client, calls, _ = _client(monkeypatch, [_stream(finish="length")])
     assert client.complete(ModelRequest("s", [{"role": "user", "content": "go"}], 100)) == ""
     assert client.last_completion_metadata["output_truncated"] is True and len(calls) == 1
+
+
+def test_malformed_native_tool_arguments_become_a_retry_not_a_model_error(monkeypatch):
+    # 2026-11-05 故障注入发现：原生 tool_calls 的参数是半截 JSON 时 provider 直接抛错，整轮以 model_error 结束。
+    # 现在交回一个解析不了的文本工具调用，AgentLoop 让模型重来；原生协议状态清空，不留下没有结果的 tool_call id。
+    import json as _json
+    from hh_agent_pro.agent import CodingAgent
+
+    call = {"index": 0, "id": "call_1", "function": {"name": "patch_file", "arguments": '{"path": "calc.py",'}}
+    stream = Response([
+        ("data: " + _json.dumps({"choices": [{"delta": {"reasoning_content": "t", "tool_calls": [call]},
+                                              "finish_reason": "tool_calls"}]}) + "\n").encode(),
+        b"data: [DONE]\n",
+    ])
+    client, calls, _ = _client(monkeypatch, [stream])
+    raw = client.complete(ModelRequest("s", [{"role": "user", "content": "go"}], 100))
+
+    kind, notice = CodingAgent.parse(raw)
+    assert kind == "retry" and "malformed tool JSON" in notice
+    assert client.last_native_assistant_message == {}
+    assert client.last_completion_metadata["malformed_native_tool_arguments"] is True
+    assert len(calls) == 1  # 不重发请求：让模型在下一轮按纠正提示重来

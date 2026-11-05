@@ -236,10 +236,16 @@ class OpenAIChatClient:
         }
         actions = []
         for call in calls:
+            raw_arguments = "".join(call["arguments"]) or "{}"
             try:
-                arguments = json.loads("".join(call["arguments"]) or "{}")
-            except json.JSONDecodeError as exc:
-                raise RuntimeError(f"{self.label} returned malformed native tool arguments") from exc
+                arguments = json.loads(raw_arguments)
+            except json.JSONDecodeError:
+                # 参数是半截 JSON：原来直接抛错，整轮以 model_error 结束（2026-11-05 故障注入发现）。
+                # 改成交回一个同样解析不了的文本工具调用，AgentLoop 走"格式错了、让模型重来"那条路；
+                # 清掉原生协议状态，这次回复不进历史，不会留下没有工具结果的 tool_call id（真实 API 会报 400）。
+                self.last_native_assistant_message = {}
+                self.last_completion_metadata["malformed_native_tool_arguments"] = True
+                return "<tool>" + json.dumps({"name": call["name"]})[:-1] + ', "args": ' + raw_arguments + "}</tool>"
             actions.append({"id": str(call.get("id", "")), "name": call["name"], "args": arguments})
         if len(actions) == 1:
             return "<tool>" + json.dumps({"name": actions[0]["name"], "args": actions[0]["args"]}, ensure_ascii=False) + "</tool>"

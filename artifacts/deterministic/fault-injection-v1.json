@@ -1,0 +1,732 @@
+{
+  "schema_version": "fault-injection-v1",
+  "summary": {
+    "scenarios": 23,
+    "passed": 22,
+    "silent_failures": 0,
+    "misfires": [
+      "test_runner_missing_then_script_check"
+    ],
+    "control_misfires": [
+      "test_runner_missing_then_script_check"
+    ],
+    "known_issues_reproduced": [
+      "test_runner_missing_then_script_check"
+    ],
+    "regular_failures": [],
+    "by_layer": {
+      "network": {
+        "scenarios": 8,
+        "passed": 8
+      },
+      "model_output": {
+        "scenarios": 9,
+        "passed": 9
+      },
+      "tool": {
+        "scenarios": 3,
+        "passed": 3
+      },
+      "delivery": {
+        "scenarios": 3,
+        "passed": 2
+      }
+    },
+    "project_repo_unchanged": true
+  },
+  "rows": [
+    {
+      "id": "baseline",
+      "layer": "network",
+      "control": true,
+      "note": "无故障基线",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "recovered",
+      "stop_reason": "final_answer_returned",
+      "expected": {
+        "outcome": "recovered",
+        "stop_reason": "final_answer_returned",
+        "trace": [],
+        "no_trace": [
+          "request failed ("
+        ]
+      },
+      "task_correct": true,
+      "changed_files": [
+        "calc.py"
+      ],
+      "trace_markers": {
+        "request failed (": false
+      },
+      "model_requests": 4,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": ""
+    },
+    {
+      "id": "net_503_once",
+      "layer": "network",
+      "control": false,
+      "note": "",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "recovered",
+      "stop_reason": "final_answer_returned",
+      "expected": {
+        "outcome": "recovered",
+        "stop_reason": "final_answer_returned",
+        "trace": [
+          "request failed ("
+        ],
+        "no_trace": []
+      },
+      "task_correct": true,
+      "changed_files": [
+        "calc.py"
+      ],
+      "trace_markers": {
+        "request failed (": true
+      },
+      "model_requests": 5,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": ""
+    },
+    {
+      "id": "net_429_retry_after",
+      "layer": "network",
+      "control": false,
+      "note": "",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "recovered",
+      "stop_reason": "final_answer_returned",
+      "expected": {
+        "outcome": "recovered",
+        "stop_reason": "final_answer_returned",
+        "trace": [
+          "request failed ("
+        ],
+        "no_trace": []
+      },
+      "task_correct": true,
+      "changed_files": [
+        "calc.py"
+      ],
+      "trace_markers": {
+        "request failed (": true
+      },
+      "model_requests": 5,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": ""
+    },
+    {
+      "id": "net_timeout",
+      "layer": "network",
+      "control": false,
+      "note": "",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "recovered",
+      "stop_reason": "final_answer_returned",
+      "expected": {
+        "outcome": "recovered",
+        "stop_reason": "final_answer_returned",
+        "trace": [
+          "request failed ("
+        ],
+        "no_trace": []
+      },
+      "task_correct": true,
+      "changed_files": [
+        "calc.py"
+      ],
+      "trace_markers": {
+        "request failed (": true
+      },
+      "model_requests": 5,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": ""
+    },
+    {
+      "id": "net_broken_stream",
+      "layer": "network",
+      "control": false,
+      "note": "",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "recovered",
+      "stop_reason": "final_answer_returned",
+      "expected": {
+        "outcome": "recovered",
+        "stop_reason": "final_answer_returned",
+        "trace": [
+          "request failed ("
+        ],
+        "no_trace": []
+      },
+      "task_correct": true,
+      "changed_files": [
+        "calc.py"
+      ],
+      "trace_markers": {
+        "request failed (": true
+      },
+      "model_requests": 5,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": ""
+    },
+    {
+      "id": "net_503_twice_behind_proxy",
+      "layer": "network",
+      "control": false,
+      "note": "假服务器拒绝复用的 Request 对象（模拟代理把第二次请求变成 CONNECT host:80）",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "recovered",
+      "stop_reason": "final_answer_returned",
+      "expected": {
+        "outcome": "recovered",
+        "stop_reason": "final_answer_returned",
+        "trace": [
+          "request failed ("
+        ],
+        "no_trace": []
+      },
+      "task_correct": true,
+      "changed_files": [
+        "calc.py"
+      ],
+      "trace_markers": {
+        "request failed (": true
+      },
+      "model_requests": 6,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": ""
+    },
+    {
+      "id": "net_503_exhausted",
+      "layer": "network",
+      "control": false,
+      "note": "",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "stopped",
+      "stop_reason": "model_error",
+      "expected": {
+        "outcome": "stopped",
+        "stop_reason": "model_error",
+        "trace": [],
+        "no_trace": []
+      },
+      "task_correct": false,
+      "changed_files": [],
+      "trace_markers": {},
+      "model_requests": 6,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": "RuntimeError: Model request failed: OpenAI-chat-compatible request failed with HTTP 503: {\"error\":\"fault\"}"
+    },
+    {
+      "id": "net_401",
+      "layer": "network",
+      "control": false,
+      "note": "",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "stopped",
+      "stop_reason": "model_error",
+      "expected": {
+        "outcome": "stopped",
+        "stop_reason": "model_error",
+        "trace": [],
+        "no_trace": [
+          "request failed ("
+        ]
+      },
+      "task_correct": false,
+      "changed_files": [],
+      "trace_markers": {
+        "request failed (": false
+      },
+      "model_requests": 1,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": "RuntimeError: Model request failed: OpenAI-chat-compatible request failed with HTTP 401: {\"error\":\"fault\"} Check the API key for this provider."
+    },
+    {
+      "id": "empty_once",
+      "layer": "model_output",
+      "control": false,
+      "note": "",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "recovered",
+      "stop_reason": "final_answer_returned",
+      "expected": {
+        "outcome": "recovered",
+        "stop_reason": "final_answer_returned",
+        "trace": [
+          "resending"
+        ],
+        "no_trace": []
+      },
+      "task_correct": true,
+      "changed_files": [
+        "calc.py"
+      ],
+      "trace_markers": {
+        "resending": true
+      },
+      "model_requests": 5,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": ""
+    },
+    {
+      "id": "empty_persistent",
+      "layer": "model_output",
+      "control": false,
+      "note": "",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "stopped",
+      "stop_reason": "model_error",
+      "expected": {
+        "outcome": "stopped",
+        "stop_reason": "model_error",
+        "trace": [],
+        "no_trace": []
+      },
+      "task_correct": false,
+      "changed_files": [],
+      "trace_markers": {},
+      "model_requests": 3,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": "RuntimeError: Model request failed: OpenAI-chat-compatible error: could not extract text from response (finish_reason=stop, after 2 resend(s))"
+    },
+    {
+      "id": "truncated_with_text",
+      "layer": "model_output",
+      "control": false,
+      "note": "",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "recovered",
+      "stop_reason": "final_answer_returned",
+      "expected": {
+        "outcome": "recovered",
+        "stop_reason": "final_answer_returned",
+        "trace": [
+          "model_output_truncated",
+          "output_recovery_started"
+        ],
+        "no_trace": []
+      },
+      "task_correct": true,
+      "changed_files": [
+        "calc.py"
+      ],
+      "trace_markers": {
+        "model_output_truncated": true,
+        "output_recovery_started": true
+      },
+      "model_requests": 5,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": ""
+    },
+    {
+      "id": "truncated_empty",
+      "layer": "model_output",
+      "control": false,
+      "note": "fix7：正文为空的截断提高输出上限重发",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "recovered",
+      "stop_reason": "final_answer_returned",
+      "expected": {
+        "outcome": "recovered",
+        "stop_reason": "final_answer_returned",
+        "trace": [
+          "output_budget_raised"
+        ],
+        "no_trace": []
+      },
+      "task_correct": true,
+      "changed_files": [
+        "calc.py"
+      ],
+      "trace_markers": {
+        "output_budget_raised": true
+      },
+      "model_requests": 5,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024,
+        4096
+      ],
+      "error": ""
+    },
+    {
+      "id": "truncated_twice",
+      "layer": "model_output",
+      "control": false,
+      "note": "",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "stopped",
+      "stop_reason": "output_truncated",
+      "expected": {
+        "outcome": "stopped",
+        "stop_reason": "output_truncated",
+        "trace": [],
+        "no_trace": []
+      },
+      "task_correct": true,
+      "changed_files": [
+        "calc.py"
+      ],
+      "trace_markers": {},
+      "model_requests": 5,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": ""
+    },
+    {
+      "id": "bad_text_tool_json",
+      "layer": "model_output",
+      "control": false,
+      "note": "",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "recovered",
+      "stop_reason": "final_answer_returned",
+      "expected": {
+        "outcome": "recovered",
+        "stop_reason": "final_answer_returned",
+        "trace": [
+          "model_output_rejected"
+        ],
+        "no_trace": []
+      },
+      "task_correct": true,
+      "changed_files": [
+        "calc.py"
+      ],
+      "trace_markers": {
+        "model_output_rejected": true
+      },
+      "model_requests": 5,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": ""
+    },
+    {
+      "id": "bad_native_tool_args",
+      "layer": "model_output",
+      "control": false,
+      "note": "原生 tool_calls 的参数 JSON 坏了：像文本格式一样让模型重来（2026-11-05 发现后修复：原来整轮以 model_error 结束）",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "recovered",
+      "stop_reason": "final_answer_returned",
+      "expected": {
+        "outcome": "recovered",
+        "stop_reason": "final_answer_returned",
+        "trace": [
+          "model_output_rejected"
+        ],
+        "no_trace": []
+      },
+      "task_correct": true,
+      "changed_files": [
+        "calc.py"
+      ],
+      "trace_markers": {
+        "model_output_rejected": true
+      },
+      "model_requests": 5,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": ""
+    },
+    {
+      "id": "dsml_once",
+      "layer": "model_output",
+      "control": false,
+      "note": "",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "recovered",
+      "stop_reason": "final_answer_returned",
+      "expected": {
+        "outcome": "recovered",
+        "stop_reason": "final_answer_returned",
+        "trace": [
+          "internal_tool_protocol_rejected"
+        ],
+        "no_trace": []
+      },
+      "task_correct": true,
+      "changed_files": [
+        "calc.py"
+      ],
+      "trace_markers": {
+        "internal_tool_protocol_rejected": true
+      },
+      "model_requests": 5,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": ""
+    },
+    {
+      "id": "dsml_twice",
+      "layer": "model_output",
+      "control": false,
+      "note": "",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "stopped",
+      "stop_reason": "model_protocol_error",
+      "expected": {
+        "outcome": "stopped",
+        "stop_reason": "model_protocol_error",
+        "trace": [],
+        "no_trace": []
+      },
+      "task_correct": false,
+      "changed_files": [],
+      "trace_markers": {},
+      "model_requests": 3,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": ""
+    },
+    {
+      "id": "repeat_failing_test_no_progress",
+      "layer": "tool",
+      "control": false,
+      "note": "",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "stopped",
+      "stop_reason": "repeated_failed_call",
+      "expected": {
+        "outcome": "stopped",
+        "stop_reason": "repeated_failed_call",
+        "trace": [
+          "repeated_failed_call"
+        ],
+        "no_trace": []
+      },
+      "task_correct": false,
+      "changed_files": [],
+      "trace_markers": {
+        "repeated_failed_call": true
+      },
+      "model_requests": 3,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": ""
+    },
+    {
+      "id": "rerun_failed_test_after_edit",
+      "layer": "tool",
+      "control": true,
+      "note": "fix6：改完代码后重跑之前失败的测试不是死循环",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "recovered",
+      "stop_reason": "final_answer_returned",
+      "expected": {
+        "outcome": "recovered",
+        "stop_reason": "final_answer_returned",
+        "trace": [],
+        "no_trace": [
+          "repeated_failed_call"
+        ]
+      },
+      "task_correct": true,
+      "changed_files": [
+        "calc.py"
+      ],
+      "trace_markers": {
+        "repeated_failed_call": false
+      },
+      "model_requests": 5,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": ""
+    },
+    {
+      "id": "search_missing_path_then_continue",
+      "layer": "tool",
+      "control": true,
+      "note": "fix5：只读搜索出错之后有成功调用，不应卡交付",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "recovered",
+      "stop_reason": "final_answer_returned",
+      "expected": {
+        "outcome": "recovered",
+        "stop_reason": "final_answer_returned",
+        "trace": [],
+        "no_trace": [
+          "completion_deferred"
+        ]
+      },
+      "task_correct": true,
+      "changed_files": [
+        "calc.py"
+      ],
+      "trace_markers": {
+        "completion_deferred": false
+      },
+      "model_requests": 5,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": ""
+    },
+    {
+      "id": "deliver_without_test",
+      "layer": "delivery",
+      "control": false,
+      "note": "按设计不拦：改了代码没跑测试只在交付前那一轮提醒模型（正则认不全所有合法的验证方式）",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "recovered",
+      "stop_reason": "final_answer_returned",
+      "expected": {
+        "outcome": "recovered",
+        "stop_reason": "final_answer_returned",
+        "trace": [
+          "Code verification: pending test"
+        ],
+        "no_trace": [
+          "completion_deferred"
+        ]
+      },
+      "task_correct": true,
+      "changed_files": [
+        "calc.py"
+      ],
+      "trace_markers": {
+        "Code verification: pending test": true,
+        "completion_deferred": false
+      },
+      "model_requests": 3,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": ""
+    },
+    {
+      "id": "deliver_after_failed_test",
+      "layer": "delivery",
+      "control": false,
+      "note": "",
+      "known_issue": "",
+      "verdict": "pass",
+      "outcome": "stopped",
+      "stop_reason": "incomplete_delivery",
+      "expected": {
+        "outcome": "stopped",
+        "stop_reason": "incomplete_delivery",
+        "trace": [
+          "completion_deferred"
+        ],
+        "no_trace": []
+      },
+      "task_correct": false,
+      "changed_files": [
+        "calc.py"
+      ],
+      "trace_markers": {
+        "completion_deferred": true
+      },
+      "model_requests": 5,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": ""
+    },
+    {
+      "id": "test_runner_missing_then_script_check",
+      "layer": "delivery",
+      "control": true,
+      "note": "",
+      "known_issue": "测试命令因环境问题失败（这里模拟没装 pytest）后用脚本验证通过，门禁仍会拦（SWE-bench astropy-8707、django-16662）",
+      "verdict": "misfire",
+      "outcome": "stopped",
+      "stop_reason": "incomplete_delivery",
+      "expected": {
+        "outcome": "recovered",
+        "stop_reason": "final_answer_returned",
+        "trace": [],
+        "no_trace": [
+          "completion_deferred"
+        ]
+      },
+      "task_correct": true,
+      "changed_files": [
+        "calc.py"
+      ],
+      "trace_markers": {
+        "completion_deferred": true
+      },
+      "model_requests": 6,
+      "script_exhausted": false,
+      "max_tokens_requested": [
+        1024
+      ],
+      "error": ""
+    }
+  ]
+}
