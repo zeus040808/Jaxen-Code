@@ -237,3 +237,14 @@ trace 完整性的其余补充：
 
 验证：故障注入场景 `bad_native_tool_args` 由 model_error 变为救回；核对了之后每次请求都没有孤立的 tool_call id；
 回归测试 `tests/test_model_retry.py::test_malformed_native_tool_arguments_become_a_retry_not_a_model_error`。
+
+另外两项（同日，压缩评测与 transcript 复盘发现）：
+
+- **search / glob / repo_map 会搜到 agent 自己的 `.hh/`**：git 仓库里用 `git ls-files -co` 列文件，未跟踪文件也会列出，
+  目标仓库的 `.gitignore` 不认识 `.hh`。SWE-bench transcript 里出现过 search 结果是 `.hh/runs/.../run_state.json`。
+  改为对 git 列出的文件也按忽略名单过滤（`tools._project_files`）；回归测试 `tests/test_code_search.py::test_search_glob_and_repo_map_skip_the_agent_state_dir_in_git_repos`。
+- **兜底裁剪丢掉长请求的后半段**：见 [压缩评测](../evaluation/context-compaction.md)。裁剪后请求全文不在了，留出位置重新裁一次，
+  把全文放回末尾提醒（`context_manager.prepare`）。
+- **摘要请求被模型当成对话接着写**：真实模型评测 28 次摘要只有 50% 合格，29% 输出工具调用和假的文件内容却被当成摘要接受。
+  改为原文包标签 + 结尾指令、输出上限 16384、输出校验、同一运行失败后不重试；复测 28/28 合格。见 [压缩评测](../evaluation/context-compaction.md)。
+

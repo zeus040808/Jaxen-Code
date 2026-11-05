@@ -35,6 +35,7 @@
 | [runbook.md](evaluation/runbook.md) | 企业评测执行手册 |
 | [swebench.md](evaluation/swebench.md) | SWE-bench Verified 评测流程与结果 |
 | [fault-injection.md](evaluation/fault-injection.md) | 错误恢复的故障注入评测：23 个场景、假模型 + 真 harness，22 通过、静默失败 0；发现并修复原生工具参数坏 JSON 会整轮失败 |
+| [context-compaction.md](evaluation/context-compaction.md) | 上下文压缩模块评测：14 个场景检查预算、协议、目标、历史等不变量，全部通过；发现并修复兜底裁剪丢掉长请求后半段；真实模型摘要合格率从 50% 修到 100%（原来 29% 把对话接着往下写也被接受） |
 
 ## results — 评测报告
 

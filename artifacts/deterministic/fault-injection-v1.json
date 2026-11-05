@@ -239,12 +239,12 @@
       "task_correct": false,
       "changed_files": [],
       "trace_markers": {},
-      "model_requests": 6,
+      "model_requests": 5,
       "script_exhausted": false,
       "max_tokens_requested": [
         1024
       ],
-      "error": "RuntimeError: Model request failed: OpenAI-chat-compatible request failed with HTTP 503: {\"error\":\"fault\"}"
+      "error": "RuntimeError: Model request failed: Could not reach the OpenAI-chat-compatible backend after 6 attempts.\nBase URL: https://fake.invalid/v1\nModel: deepseek-flash\nLast error: <urlopen error proxy rejected CONNECT host:80 (reused Request object)>"
     },
     {
       "id": "net_401",

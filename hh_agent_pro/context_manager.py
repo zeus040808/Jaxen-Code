@@ -38,7 +38,9 @@ KEEP_RECENT_TOOL_RESULTS = 8
 CLEARABLE_TOOL_RESULT_CHARS = 800
 # 摘要压缩时，最近的轮次原样保留，最多占预算的这一比例。
 SUMMARY_KEEP_RECENT_RATIO = 0.25
-SUMMARY_MAX_TOKENS = 4096
+# 思考模型的思考也算输出：4096 时 deepseek-flash 有 21% 的摘要被思考用光、空着或写到一半（2026-11-05 真实模型评测）。
+# 按实际用量计费，上限高不额外花钱。
+SUMMARY_MAX_TOKENS = 16384
 # 单条文本消息的上限：工具结果在执行时已按 MAX_TOOL_OUTPUT 截断，这里只防极端情况。
 MESSAGE_CHAR_LIMIT = MAX_TOOL_OUTPUT
 
@@ -54,6 +56,41 @@ Do not invent anything. Use exactly these sections:
 3. Files read or changed, and what was learned or done
 4. Errors encountered and how they were resolved
 5. Current state and next steps"""
+
+# 对话原文放在最后时，真实模型有 29% 会把自己当成 agent 接着往下写（工具调用、假的工具结果、DSML）。
+# 所以原文用标签包起来，结尾再给一次明确指令；输出还要过校验，不合格就当摘要失败。
+SUMMARY_INSTRUCTION = (
+    "The conversation above is finished. Do not continue it, do not call tools, and do not write tool calls "
+    "or tool results. Write the summary now, using exactly the five numbered sections."
+)
+_SUMMARY_SECTION = re.compile(r"^[#*\s]*(\d)\.", re.M)
+_TOOL_PROTOCOL_MARKERS = ("[assistant tool call]", "[tool result", "<tool_result", "<tool>", "DSML", "<｜")
+
+
+def summary_problem(summary, finish_reason=""):
+    """摘要不合格的原因；合格返回空串。被截断、缺第 1 或第 5 段、像工具调用协议，都不合格。"""
+    text = str(summary or "").strip()
+    if not text:
+        return "empty"
+    if finish_reason == "length":
+        return "truncated"
+    lowered = text.lower()
+    if any(marker.lower() in lowered for marker in _TOOL_PROTOCOL_MARKERS):
+        return "continued_conversation"
+    sections = set(_SUMMARY_SECTION.findall(text))
+    if not {"1", "5"} <= sections:
+        return "missing_sections"
+    return ""
+
+
+def build_summary_request(older_items, previous_summary=""):
+    transcript = "\n\n".join(ContextManager._render_for_summary(item) for item in older_items)
+    previous = f"Existing summary of even earlier turns:\n{previous_summary}\n\n" if previous_summary else ""
+    content = (previous + "Conversation to summarize:\n<conversation>\n" + transcript
+               + "\n</conversation>\n\n" + SUMMARY_INSTRUCTION)
+    return ModelRequest(system_prompt=SUMMARY_SYSTEM_PROMPT, messages=[{"role": "user", "content": content}],
+                        max_new_tokens=SUMMARY_MAX_TOKENS)
+
 
 _CJK = re.compile(r"[⺀-鿿가-힯豈-﫿＀-￯]")
 
@@ -84,6 +121,8 @@ class ContextManager:
         # 本地估算 × calibration ≈ API 返回的真实 prompt_tokens。
         self.calibration = 1.0
         self._last_estimate = 0
+        # 本次运行里摘要失败过就不再尝试（否则每轮都多一次失败请求，5xx 时还要先走完 provider 的退避重试）
+        self._summary_failed_run = None
 
     # ---- 预算 ---------------------------------------------------------------
 
@@ -253,7 +292,8 @@ class ContextManager:
         compaction = None
         if self.agent.feature_enabled("context_reduction"):
             total = self.estimate(system_prompt, self._with_reminder(user_message))
-            if total > self.compact_ratio * budget and self.agent.feature_enabled("context_summary"):
+            if (total > self.compact_ratio * budget and self.agent.feature_enabled("context_summary")
+                    and not self._summary_failed_this_run()):
                 compaction = self._summarize(budget)
             elif total > self.light_ratio * budget:
                 compaction = self._clear_old_tool_results()
@@ -263,6 +303,15 @@ class ContextManager:
             # 兜底：摘要不可用或仍超出时，从最旧的轮次开始丢弃，保证请求不超出窗口。
             before = (compaction or {}).get("before_tokens", total)
             messages = self._trim_oldest(messages, budget - estimate_tokens(system_prompt))
+            # 用户请求是最旧的消息，最先被丢；提醒里的任务目标只留前 1000 字符。超过 1000 字符的请求
+            # （SWE-bench 的 issue 常见）后半段会就此消失（2026-11-05 压缩评测发现）。请求全文不在了，
+            # 就留出它的位置重新裁一次，再把全文放回末尾提醒。
+            request_text = str(user_message or "").strip()
+            if request_text and not any(request_text in str(message.get("content") or "") for message in messages):
+                note = "<system-reminder>\nCurrent user request (older turns were trimmed):\n" + request_text + "\n</system-reminder>"
+                messages = self._trim_oldest(self._with_reminder(user_message),
+                                             budget - estimate_tokens(system_prompt) - estimate_tokens(note) - 8)
+                messages = self._append_reminder(messages, note)
             total = self.estimate(system_prompt, messages)
             kind = f"{compaction['kind']}+trim" if compaction else "trim"
             compaction = {**(compaction or {}), "kind": kind, "before_tokens": before, "after_tokens": total}
@@ -287,6 +336,19 @@ class ContextManager:
             "compaction": compaction,
         }
         return request, metadata
+
+    def _current_run_id(self):
+        run_state = getattr(self.agent, "current_run_state", None)
+        return getattr(run_state, "run_id", None)
+
+    def _summary_failed_this_run(self):
+        return self._summary_failed_run is not None and self._summary_failed_run == self._current_run_id()
+
+    def _summary_rejected(self, reason):
+        self._summary_failed_run = self._current_run_id()
+        self.agent.emit_ui("status", message=f"Context summary rejected ({reason}); clearing old tool output instead.")
+        fallback = self._clear_old_tool_results()
+        return {**(fallback or {"kind": "light", "cleared": 0}), "summary_rejected": reason}
 
     def _clear_old_tool_results(self):
         state = self._state()
@@ -337,22 +399,16 @@ class ContextManager:
             return self._clear_old_tool_results()
 
         before = self.estimate(self.system_prompt(), self.transcript_messages())
-        transcript = "\n\n".join(self._render_for_summary(item) for item in older)
-        previous = f"Existing summary of even earlier turns:\n{state['summary']}\n\n" if state["summary"] else ""
-        request = ModelRequest(
-            system_prompt=SUMMARY_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": previous + "Conversation to summarize:\n\n" + transcript}],
-            max_new_tokens=SUMMARY_MAX_TOKENS,
-        )
+        request = build_summary_request(older, state["summary"])
         try:
             summary = str(self.agent.model_client.complete(request) or "").strip()
         except Exception as exc:  # 摘要失败不能让任务失败：退回轻压缩 + 兜底裁剪
-            self.agent.emit_ui("status", message=f"Context summary failed ({exc}); clearing old tool output instead.")
-            return self._clear_old_tool_results()
+            return self._summary_rejected(f"request failed: {str(exc)[:200]}")
         summary = summary.removeprefix("<final>").removesuffix("</final>").strip()
-        if not summary:
-            return self._clear_old_tool_results()
         usage = dict(getattr(self.agent.model_client, "last_completion_metadata", {}) or {})
+        problem = summary_problem(summary, str(usage.get("finish_reason") or ""))
+        if problem:
+            return self._summary_rejected(problem)
         if usage:
             self.agent.emit_ui(
                 "usage",

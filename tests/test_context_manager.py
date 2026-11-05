@@ -213,3 +213,98 @@ def test_compaction_during_a_run_leaves_an_auditable_checkpoint(tmp_path):
 
     trace = agent.run_store.trace_path(agent.current_run_state).read_text(encoding="utf-8")
     assert '"trigger": "context_reduction"' in trace
+
+
+def test_trim_fallback_keeps_a_long_user_request_in_full(tmp_path):
+    # 摘要失败后兜底裁剪会先丢最旧的消息，也就是用户请求；提醒里的任务目标只留前 1000 字符。
+    # 2026-11-05 压缩评测发现：超过 1000 字符的请求（SWE-bench 的 issue 常见）后半段会消失。
+    agent = _build_agent(tmp_path, outputs=())  # 没有可用输出：摘要请求失败
+    request = "Fix the parser. " + "Details about the bug. " * 120 + "END-OF-REQUEST-MARKER"
+    agent.task_state.begin(request, "run_test")
+    agent.record({"role": "user", "content": request})
+    for index in range(30):
+        _tool_exchange(agent, index, "x" * 3000)
+    _set_transcript_budget(agent, 6000)
+
+    request_obj, metadata = agent.context_manager.prepare(request)
+
+    assert "trim" in metadata["compaction"]["kind"]
+    assert any(request in str(message.get("content") or "") for message in request_obj.messages)
+    assert metadata["estimated_input_tokens"] <= metadata["budget_tokens"]
+    assert _tool_pairs_intact(request_obj.messages)
+
+
+class _SummaryModel:
+    """摘要请求返回固定文本，并可设置 finish_reason；记录收到的请求。"""
+
+    model = "fake"
+    context_window = 128_000
+    max_output_tokens = 16_384
+
+    def __init__(self, text, finish_reason="stop"):
+        self.text, self.finish_reason, self.requests = text, finish_reason, []
+        self.last_completion_metadata = {}
+
+    def complete(self, request):
+        self.requests.append(request)
+        self.last_completion_metadata = {"finish_reason": self.finish_reason}
+        return self.text
+
+
+def _over_summary_threshold(tmp_path, model):
+    import types
+    agent = _build_agent(tmp_path)
+    agent.model_client = model
+    agent.current_run_state = types.SimpleNamespace(run_id="run_1", attempts=1, tool_steps=0)
+    agent.record({"role": "user", "content": "fix it"})
+    for index in range(12):
+        _tool_exchange(agent, index, f"RESULT_{index} " + "y" * 3000)
+    _set_transcript_budget(agent, 2000)
+    return agent
+
+
+# 2026-11-05 真实模型评测：28 次摘要里 29% 把对话接着往下写、7% 被截断，原来都会被当成摘要接受。
+def test_summary_that_continues_the_conversation_is_rejected(tmp_path):
+    model = _SummaryModel('[assistant tool call] read_file({"path": "a.py"})\n\n[tool result: read_file]\n 1: INVENTED_CONTENT')
+    agent = _over_summary_threshold(tmp_path, model)
+
+    request, metadata = agent.context_manager.prepare("fix it")
+
+    assert metadata["compaction"]["summary_rejected"] == "continued_conversation"
+    assert agent.session["context"]["summary"] == ""
+    assert "INVENTED_CONTENT" not in request.text()
+
+
+def test_truncated_summary_is_rejected(tmp_path):
+    model = _SummaryModel("1. User request and goals\nfix it\n2. Key decisions", finish_reason="length")
+    agent = _over_summary_threshold(tmp_path, model)
+
+    _, metadata = agent.context_manager.prepare("fix it")
+
+    assert metadata["compaction"]["summary_rejected"] == "truncated"
+    assert agent.session["context"]["summary"] == ""
+
+
+def test_summary_is_not_retried_in_the_same_run_after_a_failure(tmp_path):
+    model = _SummaryModel("")
+    agent = _over_summary_threshold(tmp_path, model)
+
+    agent.context_manager.prepare("fix it")
+    _tool_exchange(agent, 99, "w" * 3000)
+    agent.context_manager.prepare("fix it")
+
+    assert len(model.requests) == 1
+
+
+def test_summary_request_wraps_the_transcript_and_ends_with_the_instruction(tmp_path):
+    model = _SummaryModel("1. User request and goals\nfix it\n5. Current state and next steps\ndone")
+    agent = _over_summary_threshold(tmp_path, model)
+
+    _, metadata = agent.context_manager.prepare("fix it")
+
+    content = model.requests[0].messages[0]["content"]
+    assert "<conversation>" in content and "</conversation>" in content
+    assert content.rstrip().endswith("using exactly the five numbered sections.")
+    assert model.requests[0].max_new_tokens >= 16_384
+    assert metadata["compaction"]["kind"] == "summary"
+

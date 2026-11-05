@@ -1,0 +1,440 @@
+{
+  "schema_version": "context-compaction-v1",
+  "summary": {
+    "scenarios": 14,
+    "passed": 14,
+    "failures": [],
+    "known_issues_reproduced": [],
+    "project_repo_unchanged": true
+  },
+  "rows": [
+    {
+      "id": "under_threshold",
+      "part": "A",
+      "note": "低于 60% 不压缩",
+      "known_issue": "",
+      "verdict": "pass",
+      "expected_kind": null,
+      "kind": null,
+      "invariants": {
+        "within_budget": true,
+        "protocol": true,
+        "goal_present": true,
+        "latest_intact": true,
+        "system_stable": true,
+        "history_intact": true
+      },
+      "fact_retention": {
+        "old": true,
+        "recent": true
+      },
+      "compression_ratio": null,
+      "summary_requests": 0,
+      "rounds": [
+        null
+      ]
+    },
+    {
+      "id": "light_band",
+      "part": "A",
+      "note": "60%–80%：较早的大块工具输出换成占位符，最近 8 条原文保留",
+      "known_issue": "",
+      "verdict": "pass",
+      "expected_kind": "light",
+      "kind": "light",
+      "invariants": {
+        "within_budget": true,
+        "protocol": true,
+        "goal_present": true,
+        "latest_intact": true,
+        "system_stable": true,
+        "history_intact": true
+      },
+      "fact_retention": {
+        "recent": true,
+        "old": false
+      },
+      "compression_ratio": 0.545,
+      "summary_requests": 0,
+      "rounds": [
+        {
+          "kind": "light",
+          "cleared": 16,
+          "before_tokens": 24923,
+          "after_tokens": 11349
+        }
+      ]
+    },
+    {
+      "id": "summary_band",
+      "part": "A",
+      "note": "超过 80%：较早的轮次进摘要",
+      "known_issue": "",
+      "verdict": "pass",
+      "expected_kind": "summary",
+      "kind": "summary",
+      "invariants": {
+        "within_budget": true,
+        "protocol": true,
+        "goal_present": true,
+        "latest_intact": true,
+        "system_stable": true,
+        "history_intact": true
+      },
+      "fact_retention": {
+        "old": true,
+        "recent": true
+      },
+      "compression_ratio": 0.644,
+      "summary_requests": 1,
+      "rounds": [
+        {
+          "kind": "summary",
+          "summarized_items": 35,
+          "before_tokens": 24923,
+          "after_tokens": 8861
+        }
+      ]
+    },
+    {
+      "id": "summary_twice",
+      "part": "A",
+      "note": "第二次摘要要把第一次的摘要带进去：最早的事实仍在",
+      "known_issue": "",
+      "verdict": "pass",
+      "expected_kind": "summary",
+      "kind": "summary",
+      "invariants": {
+        "within_budget": true,
+        "protocol": true,
+        "goal_present": true,
+        "latest_intact": true,
+        "system_stable": true,
+        "history_intact": true
+      },
+      "fact_retention": {
+        "old": true,
+        "recent": true
+      },
+      "compression_ratio": 0.657,
+      "summary_requests": 2,
+      "rounds": [
+        {
+          "kind": "summary",
+          "summarized_items": 35,
+          "before_tokens": 24923,
+          "after_tokens": 8861
+        },
+        {
+          "kind": "summary",
+          "summarized_items": 44,
+          "before_tokens": 31713,
+          "after_tokens": 10868
+        }
+      ]
+    },
+    {
+      "id": "summary_fails_then_trim",
+      "part": "A",
+      "note": "摘要失败 → 轻压缩 + 兜底裁剪；用户的原始请求必须还在",
+      "known_issue": "",
+      "verdict": "pass",
+      "expected_kind": "light+trim",
+      "kind": "light+trim",
+      "invariants": {
+        "within_budget": true,
+        "protocol": true,
+        "goal_present": true,
+        "latest_intact": true,
+        "system_stable": true,
+        "history_intact": true
+      },
+      "fact_retention": {
+        "recent": true,
+        "old": false
+      },
+      "compression_ratio": 0.684,
+      "summary_requests": 1,
+      "rounds": [
+        {
+          "kind": "light+trim",
+          "cleared": 16,
+          "before_tokens": 24923,
+          "after_tokens": 7883,
+          "summary_rejected": "request failed: summary backend unavailable"
+        }
+      ]
+    },
+    {
+      "id": "summary_disabled_then_trim",
+      "part": "A",
+      "note": "关掉摘要功能时同样走兜底裁剪",
+      "known_issue": "",
+      "verdict": "pass",
+      "expected_kind": "light+trim",
+      "kind": "light+trim",
+      "invariants": {
+        "within_budget": true,
+        "protocol": true,
+        "goal_present": true,
+        "latest_intact": true,
+        "system_stable": true,
+        "history_intact": true
+      },
+      "fact_retention": {
+        "recent": true,
+        "old": false
+      },
+      "compression_ratio": 0.684,
+      "summary_requests": 0,
+      "rounds": [
+        {
+          "kind": "light+trim",
+          "cleared": 16,
+          "before_tokens": 24923,
+          "after_tokens": 7883
+        }
+      ]
+    },
+    {
+      "id": "long_request_then_trim",
+      "part": "A",
+      "note": "用户请求超过 1000 字符（SWE-bench 的 issue 常见）：兜底裁剪后请求全文必须还在",
+      "known_issue": "",
+      "verdict": "pass",
+      "expected_kind": "light+trim",
+      "kind": "light+trim",
+      "invariants": {
+        "within_budget": true,
+        "protocol": true,
+        "goal_present": true,
+        "latest_intact": true,
+        "system_stable": true,
+        "history_intact": true
+      },
+      "fact_retention": {
+        "recent": true,
+        "old": false
+      },
+      "compression_ratio": 0.689,
+      "summary_requests": 1,
+      "rounds": [
+        {
+          "kind": "light+trim",
+          "cleared": 16,
+          "before_tokens": 25628,
+          "after_tokens": 7961,
+          "summary_rejected": "request failed: summary backend unavailable"
+        }
+      ]
+    },
+    {
+      "id": "huge_recent_outputs",
+      "part": "A",
+      "note": "最近几条本身很大，轻压缩救不了",
+      "known_issue": "",
+      "verdict": "pass",
+      "expected_kind": "summary",
+      "kind": "summary",
+      "invariants": {
+        "within_budget": true,
+        "protocol": true,
+        "goal_present": true,
+        "latest_intact": true,
+        "system_stable": true,
+        "history_intact": true
+      },
+      "fact_retention": {
+        "recent": true
+      },
+      "compression_ratio": 0.692,
+      "summary_requests": 1,
+      "rounds": [
+        {
+          "kind": "summary",
+          "summarized_items": 23,
+          "before_tokens": 15843,
+          "after_tokens": 4878
+        }
+      ]
+    },
+    {
+      "id": "parallel_calls",
+      "part": "A",
+      "note": "一次调用多个工具：调用和结果不能被拆开",
+      "known_issue": "",
+      "verdict": "pass",
+      "expected_kind": "summary",
+      "kind": "summary",
+      "invariants": {
+        "within_budget": true,
+        "protocol": true,
+        "goal_present": true,
+        "latest_intact": true,
+        "system_stable": true,
+        "history_intact": true
+      },
+      "fact_retention": {
+        "recent": true
+      },
+      "compression_ratio": 0.669,
+      "summary_requests": 1,
+      "rounds": [
+        {
+          "kind": "summary",
+          "summarized_items": 69,
+          "before_tokens": 44491,
+          "after_tokens": 14730
+        }
+      ]
+    },
+    {
+      "id": "reasoning_replay",
+      "part": "A",
+      "note": "DeepSeek thinking：保留下来的工具调用必须带原样的思考内容",
+      "known_issue": "",
+      "verdict": "pass",
+      "expected_kind": "summary",
+      "kind": "summary",
+      "invariants": {
+        "within_budget": true,
+        "protocol": true,
+        "goal_present": true,
+        "latest_intact": true,
+        "system_stable": true,
+        "history_intact": true
+      },
+      "fact_retention": {
+        "recent": true
+      },
+      "compression_ratio": 0.645,
+      "summary_requests": 1,
+      "rounds": [
+        {
+          "kind": "summary",
+          "summarized_items": 35,
+          "before_tokens": 25225,
+          "after_tokens": 8952
+        }
+      ]
+    },
+    {
+      "id": "calibration_triggers_earlier",
+      "part": "A",
+      "note": "API 报告的真实 token 是估算的 2 倍：同样的历史应当提前进入摘要",
+      "known_issue": "",
+      "verdict": "pass",
+      "expected_kind": "summary",
+      "kind": "summary",
+      "invariants": {
+        "within_budget": true,
+        "protocol": true,
+        "goal_present": true,
+        "latest_intact": true,
+        "system_stable": true,
+        "history_intact": true
+      },
+      "fact_retention": {
+        "old": true,
+        "recent": true
+      },
+      "compression_ratio": 0.416,
+      "summary_requests": 1,
+      "rounds": [
+        {
+          "kind": "summary",
+          "summarized_items": 23,
+          "before_tokens": 49456,
+          "after_tokens": 28858
+        }
+      ]
+    },
+    {
+      "id": "long_task_compacts_and_finishes",
+      "part": "B",
+      "note": "16 次大文件读取 + 修复：预算很小，进入摘要压缩，任务照常完成",
+      "known_issue": "",
+      "verdict": "pass",
+      "stop_reason": "final_answer_returned",
+      "compactions": [
+        "summary",
+        "summary"
+      ],
+      "expected_kinds": [
+        "summary"
+      ],
+      "requests_checked": 21,
+      "violations": {
+        "within_budget": 0,
+        "protocol": 0,
+        "goal_present": 0,
+        "latest_intact": 0
+      },
+      "fact_retention": {},
+      "summary_requests": 2,
+      "script_exhausted": false,
+      "error": ""
+    },
+    {
+      "id": "long_task_summary_fails",
+      "part": "B",
+      "note": "摘要接口报错：退回兜底裁剪，任务照常完成，目标不丢；同一次运行只尝试一次摘要",
+      "known_issue": "",
+      "verdict": "pass",
+      "stop_reason": "final_answer_returned",
+      "compactions": [
+        "light",
+        "light",
+        "light",
+        "light",
+        "light+trim",
+        "light+trim",
+        "light+trim",
+        "light+trim",
+        "light+trim",
+        "light",
+        "light",
+        "light"
+      ],
+      "expected_kinds": [
+        "trim"
+      ],
+      "requests_checked": 23,
+      "violations": {
+        "within_budget": 0,
+        "protocol": 0,
+        "goal_present": 0,
+        "latest_intact": 0
+      },
+      "fact_retention": {},
+      "summary_requests": 1,
+      "script_exhausted": false,
+      "error": ""
+    },
+    {
+      "id": "huge_command_output",
+      "part": "B",
+      "note": "命令输出 4 万多字符：执行时保留头尾、丢中间（衡量是否需要\"大结果存磁盘\"）",
+      "known_issue": "",
+      "verdict": "pass",
+      "stop_reason": "final_answer_returned",
+      "compactions": [],
+      "expected_kinds": [],
+      "requests_checked": 5,
+      "violations": {
+        "within_budget": 0,
+        "protocol": 0,
+        "goal_present": 0,
+        "latest_intact": 0
+      },
+      "fact_retention": {
+        "head": true,
+        "tail": true,
+        "middle": false
+      },
+      "summary_requests": 0,
+      "script_exhausted": false,
+      "error": ""
+    }
+  ]
+}

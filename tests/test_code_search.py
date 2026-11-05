@@ -55,6 +55,19 @@ def test_search_respects_gitignore(repo):
     assert "node_modules" not in tool_search(_context(repo), {"pattern": "floatformat", "output_mode": "files"})
 
 
+def test_search_glob_and_repo_map_skip_the_agent_state_dir_in_git_repos(repo):
+    # 目标仓库的 .gitignore 不认识 .hh：git ls-files 会把 agent 自己的运行记录当未跟踪文件列出来。
+    # 2026-11-05 在 SWE-bench transcript 里发现 search 的结果是 .hh/runs/.../run_state.json。
+    (repo / ".hh" / "runs" / "r1").mkdir(parents=True)
+    (repo / ".hh" / "runs" / "r1" / "run_state.json").write_text('{"note": "floatformat"}', encoding="utf-8")
+    (repo / ".hh" / "runs" / "r1" / "notes.py").write_text("def floatformat():\n    pass\n", encoding="utf-8")
+    ctx = _context(repo)
+
+    assert ".hh" not in tool_search(ctx, {"pattern": "floatformat", "output_mode": "files"})
+    assert ".hh" not in tool_glob(ctx, {"pattern": "**/*.py"})
+    assert ".hh" not in tool_repo_map(ctx, {"pattern": "floatformat"})
+
+
 def test_search_glob_files_and_count_modes(repo):
     ctx = _context(repo)
 

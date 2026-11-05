@@ -788,7 +788,10 @@ def _project_files(context, base):
     listed = subprocess.run(["git", "ls-files", "-co", "--exclude-standard", "-z"], cwd=base, capture_output=True)
     if listed.returncode == 0:
         names = [name for name in listed.stdout.decode("utf-8", errors="replace").split("\0") if name]
-        return [base / name for name in sorted(names) if (base / name).is_file()]
+        # 未跟踪文件也会列出来：目标仓库的 .gitignore 不认识 agent 自己的 .hh 状态目录，不过滤就会搜到
+        # 自己的 run_state、trace（2026-11-05 在 SWE-bench transcript 里发现 search 结果里是 .hh/runs/...）
+        return [base / name for name in sorted(names)
+                if (base / name).is_file() and not any(part in IGNORED_PATH_NAMES for part in name.split("/"))]
     return [
         item for item in sorted(base.rglob("*"))
         if item.is_file() and not any(part in IGNORED_PATH_NAMES for part in item.relative_to(context.root).parts)
