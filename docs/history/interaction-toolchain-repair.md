@@ -374,7 +374,7 @@ actual tools: list_files, read_files
 启动：
 
 ```powershell
-cd C:\Users\ASUS\OneDrive\Desktop\HundredHouses-Agent
+cd C:\Users\ASUS\OneDrive\Desktop\Jaxen-Code
 .\.venv\Scripts\python.exe -m jaxen --provider deepseek --approval ask
 ```
 

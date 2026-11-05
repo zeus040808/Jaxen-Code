@@ -415,7 +415,7 @@ Session 可以保存很多历史，但 `ContextManager` 会按预算、相关性
 {
   "id": "20260813-093305-8927c7",
   "created_at": "2026-08-13T01:33:05.268374+00:00",
-  "workspace_root": "C:\\Users\\ASUS\\OneDrive\\Desktop\\HundredHouses-Agent"
+  "workspace_root": "C:\\Users\\ASUS\\OneDrive\\Desktop\\Jaxen-Code"
 }
 ```
 
