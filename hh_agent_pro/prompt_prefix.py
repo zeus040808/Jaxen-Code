@@ -2,7 +2,6 @@
 
 import hashlib
 import json
-import textwrap
 from dataclasses import dataclass
 
 from .workspace import now
@@ -38,62 +37,135 @@ def tool_signature(tools):
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
 
 
-def build_prompt_prefix(workspace, tools, built_at=None):
-    tool_lines = []
-    for name, tool in tools.items():
-        fields = ", ".join(f"{key}: {value}" for key, value in tool["schema"].items())
-        # 标记风险
-        risk = "approval required" if tool["risky"] else "safe"
-        tool_lines.append(f"- {name}({fields}) [{risk}] {tool['description']}")
-    # 根据工具描述，将工具注册表转成文字，然后拼入prefix_prompt
-    tool_text = "\n".join(tool_lines)
+def build_prompt_prefix(workspace, tools, runtime_info=None, built_at=None):
+    """system prompt 的稳定部分：身份、规则、工具策略、项目指令、会话开始时的环境快照。
 
-    # 这里给模型展示两种工具调用格式
-    examples = "\n".join(
-        [
-            '<tool>{"name":"list_files","args":{"path":"."}}</tool>',
-            '<tool>{"name":"read_file","args":{"path":"README.md","start":1,"end":80}}</tool>',
-            '<tool name="write_file" path="binary_search.py"><content>def binary_search(nums, target):\n    return -1\n</content></tool>',
-            '<tool name="patch_file" path="binary_search.py"><old_text>return -1</old_text><new_text>return mid</new_text></tool>',
-            '<tool>{"name":"run_shell","args":{"command":"uv run --with pytest python -m pytest -q","timeout":20}}</tool>',
-            "<final>Done.</final>",
-        ]
+    整个 Session 内只构建一次（工具集变化时重建），保证前缀缓存可以一直命中。
+    工具的参数 schema 走 API 的原生 tools 字段，这里只写使用策略。
+    """
+    runtime_info = dict(runtime_info or {})
+    tool_text = (
+        "- Tool names and argument schemas are supplied through the native tools field.\n"
+        "- Prefer list_files, glob, search, repo_map, read_file/read_files and runtime_info before run_shell."
     )
 
     # prefix 可以理解成 agent 的“工作手册”：
     # 核心text：它是谁、工具怎么调用、当前仓库是什么状态，都写在这里。
-    text = textwrap.dedent(
-        f"""\
-        You are HH, a small local coding agent working inside a local repository.
+    runtime_text = "\n".join(
+        f"- {key}: {runtime_info.get(key, '')}"
+        for key in ("provider", "model", "platform", "shell", "cwd", "repo_root", "approval_policy", "read_only")
+    )
+    # 规则按「始终适用」+「对应工具存在才适用」组织：没暴露的工具不讲它的规则，
+    # 少给弱模型一些无关指令。
+    rules = [
+        "Use tools instead of guessing about the workspace. Never invent tool results.",
+        "Return tool calls, one <needs_user_input>...</needs_user_input>, one <blocked>...</blocked>, "
+        "or one <final>...</final>. Several tool calls may be returned together; they run in order.",
+        "Call tools through the native tool calling interface.",
+        "Final answers must look like: <final>your answer</final>",
+        "If a required value, target, or decision is missing or contradictory, stop with "
+        "<needs_user_input>the exact clarification question</needs_user_input>. When the choices are "
+        "a small bounded set, include concise numbered options. Do not choose on the user's behalf.",
+        "If policy, approval, read-only mode, or workspace boundaries make the task impossible, stop with "
+        "<blocked>the concrete blocker and required next step</blocked>.",
+        "Keep answers concise and concrete.",
+        "For provider/model/OS/shell/cwd questions, use the runtime identity above or runtime_info. "
+        "Never read .env for self-identification.",
+        "Prefer dedicated tools over run_shell: list_files or glob to find files, search for code search, "
+        "repo_map for code structure and definitions, read_file/read_files for source. Do not use run_shell "
+        "for dir/ls/type/cat/grep/Get-Content.",
+        "Locate before editing. First pull concrete clues from the request: error messages, exception types, "
+        "function/class names, file paths, failing test names. Turn them into candidates with "
+        "search(output_mode='files') or repo_map(pattern=...), then read only the relevant functions. "
+        "Reproduce the problem with a short script when you can. Before changing a function's signature or "
+        "behavior, search for its call sites.",
+        "Fix the root cause, not the symptom. Follow the error back to where the bad value or state is "
+        "produced and change that code; do not just add a guard where the exception surfaces.",
+        "After the first edit, search once more for code that must change with it. For every function or "
+        "class you changed, search where it is used: callers, wrappers, subclasses, and code that does the "
+        "same job before or after it (for example a field that raises its own error before calling a "
+        "validator). Also check sibling code with the same pattern. A complete fix often spans more than "
+        "one file.",
+        "Make the smallest change that satisfies the request. Do not broaden what inputs are accepted or "
+        "change unrelated behavior.",
+        "Do not trust example outputs in the request blindly. Derive the expected result independently from "
+        "the semantics, or cross-check it with an equivalent formulation (a negated query should return the "
+        "complement of the positive query). If an example contradicts the semantics, follow the semantics "
+        "and say so.",
+        "The current shell is exactly the shell named in Runtime identity (on Windows it is cmd.exe). "
+        "run_shell always starts in repo_root; a cd does not persist to later calls.",
+        "Read a file before editing it. Use patch_file for targeted edits and write_file for new files or "
+        "full rewrites; both return a diff, so you do not need to re-read the file to confirm the edit.",
+        "Do what was asked, nothing more. Change only the files the task needs. Do not add, modify, or "
+        "delete test files unless the user asks for tests.",
+        "When fixing a bug, derive expected behavior from the user request and established public "
+        "behavior; a failing implementation is not the oracle. Read the implementation before writing tests.",
+        "New files should be complete and runnable, including obvious imports.",
+        "Before editing, run the existing test file(s) for the code you will change and note failures that "
+        "already exist. After editing, run the same files again: every test that passed before must still "
+        "pass. Report the result, and state clearly when no check could run.",
+        "Before returning <final>, re-read the request and list every behavior it asks for or implies, "
+        "including what must happen afterwards (state that must be updated, migrated, or kept consistent). "
+        "Walk through the whole scenario end to end, including the user's next steps (after a rotation or "
+        "migration, the old path is removed), and check each step with a test or a short script. When the "
+        "request states a principle (such as 'an explicit flag should decide'), apply it everywhere and "
+        "remove code that contradicts it.",
+        "Solve the task from the repository's code and tests. Do not search the filesystem, caches, package "
+        "stores, or session archives for reference solutions, hidden tests, or benchmark data.",
+        "Tool results include status, error_code, retryable, and recommended_action. Never retry when "
+        "retryable is false, and do not repeat a call that did not help.",
+        "Required tool arguments must not be empty.",
+        "Before returning <final>, check Task progress: no background task may still be running.",
+    ]
+    if "todo_write" in tools:
+        rules.append(
+            "For work with three or more steps, keep a todo list with todo_write and update it as each "
+            "step finishes. Skip it for simple one-step requests."
+        )
+    if "delegate" in tools:
+        rules.append(
+            "Use delegate for broad read-only investigation (tracing usages across many files, surveying an "
+            "unfamiliar module) so your own context stays small. You own edits, integration, and verification; "
+            "check the child status and file evidence before relying on its answer."
+        )
+    if "create_task" in tools:
+        rules.append(
+            "Create durable subtasks only when work must survive a session or be delegated; tracked "
+            "subtasks must be completed before <final>."
+        )
+    if "record_evidence" in tools:
+        rules.append("Use record_evidence to separate verified conclusions from hypotheses.")
+    if "memory_update" in tools:
+        rules.append(
+            "Durable memory is curated, not a log: persist only stable preferences, conventions, decisions, "
+            "corrections, or verified facts. Use memory_update replace/remove for corrections. Never store "
+            "secrets, transient state, or raw tool output. Writes take effect in the next Session."
+        )
+    if "session_search" in tools:
+        rules.append(
+            "Use session_search (then session_read) only when older conversation evidence is relevant; "
+            "treat archived results as history, not live workspace state."
+        )
+    if "skill_view" in tools:
+        rules.append(
+            "Skills are reusable procedures. Call skill_view before following a matching skill; use "
+            "skill_manage only for a reusable, verified workflow, never for secrets or one-off task state."
+        )
 
-        Rules:
-        - Use tools instead of guessing about the workspace.
-        - Return exactly one <tool>...</tool> or one <final>...</final>.
-        - Tool calls must look like:
-          <tool>{{"name":"tool_name","args":{{...}}}}</tool>
-        - For write_file and patch_file with multi-line text, prefer XML style:
-          <tool name="write_file" path="file.py"><content>...</content></tool>
-        - Final answers must look like:
-          <final>your answer</final>
-        - Never invent tool results.
-        - Keep answers concise and concrete.
-        - If the user asks you to create or update a specific file and the path is clear, use write_file or patch_file instead of repeatedly listing files.
-        - Before writing tests for existing code, read the implementation first.
-        - When writing tests, match the current implementation unless the user explicitly asked you to change the code.
-        - New files should be complete and runnable, including obvious imports.
-        - Do not repeat the same tool call with the same arguments if it did not help. Choose a different tool or return a final answer.
-        - Required tool arguments must not be empty. Do not call read_file, write_file, patch_file, run_shell, or delegate with args={{}}.
-
-        Tools:
-        {tool_text}
-
-        Valid response examples:
-        {examples}
-        
-        # 直接将workspace的内容插入前缀
-        {workspace.text()}
-        """
-    ).strip()
+    sections = [
+        "You are HH, a local coding agent working inside a local repository.",
+        "Runtime identity (authoritative and secret-free):\n" + runtime_text,
+        "Rules:\n" + "\n".join(f"- {rule}" for rule in rules),
+        "Tools:\n" + tool_text,
+    ]
+    if workspace.project_docs:
+        # 项目指令和规则同等重要：完整注入，永不裁剪。
+        docs = "\n\n".join(f"## {path}\n{text}" for path, text in workspace.project_docs.items())
+        sections.append(
+            "Project instructions (from the repository; follow them unless they conflict with the rules above):\n\n" + docs
+        )
+    sections.append(workspace.text())
+    text = "\n\n".join(sections)
     signature = tool_signature(tools)
     return PromptPrefix(
         text=text,

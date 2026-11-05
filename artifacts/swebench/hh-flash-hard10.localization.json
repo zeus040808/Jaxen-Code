@@ -1,0 +1,144 @@
+{
+  "summary": {
+    "instances": 10,
+    "found_gold": 10,
+    "median_steps_to_gold": 3.0,
+    "median_files_before_gold": 0.0,
+    "mean_gold_read_recall": 0.925,
+    "mean_edit_recall": 0.9,
+    "mean_edit_precision": 1.0
+  },
+  "rows": [
+    {
+      "instance_id": "astropy__astropy-14369",
+      "gold_files": [
+        "astropy/units/format/cds.py",
+        "astropy/units/format/cds_parsetab.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 24
+    },
+    {
+      "instance_id": "django__django-11138",
+      "gold_files": [
+        "django/db/backends/mysql/operations.py",
+        "django/db/backends/oracle/operations.py",
+        "django/db/backends/sqlite3/base.py",
+        "django/db/backends/sqlite3/operations.py"
+      ],
+      "steps_to_gold": 1,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 45
+    },
+    {
+      "instance_id": "django__django-12325",
+      "gold_files": [
+        "django/db/models/base.py",
+        "django/db/models/options.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 26
+    },
+    {
+      "instance_id": "django__django-13212",
+      "gold_files": [
+        "django/core/validators.py",
+        "django/forms/fields.py"
+      ],
+      "steps_to_gold": 1,
+      "files_before_gold": 0,
+      "gold_read_recall": 0.5,
+      "edit_recall": 0.5,
+      "edit_precision": 1.0,
+      "tool_calls": 25
+    },
+    {
+      "instance_id": "django__django-13449",
+      "gold_files": [
+        "django/db/models/expressions.py"
+      ],
+      "steps_to_gold": 5,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 19
+    },
+    {
+      "instance_id": "django__django-16631",
+      "gold_files": [
+        "django/contrib/auth/__init__.py",
+        "django/contrib/auth/base_user.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 19
+    },
+    {
+      "instance_id": "pydata__xarray-3993",
+      "gold_files": [
+        "xarray/core/dataarray.py",
+        "xarray/core/dataset.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 22
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4551",
+      "gold_files": [
+        "pylint/pyreverse/diagrams.py",
+        "pylint/pyreverse/inspector.py",
+        "pylint/pyreverse/utils.py",
+        "pylint/pyreverse/writer.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 0.75,
+      "edit_recall": 0.5,
+      "edit_precision": 1.0,
+      "tool_calls": 22
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5787",
+      "gold_files": [
+        "src/_pytest/reports.py"
+      ],
+      "steps_to_gold": 5,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 30
+    },
+    {
+      "instance_id": "sympy__sympy-12489",
+      "gold_files": [
+        "sympy/combinatorics/permutations.py"
+      ],
+      "steps_to_gold": 2,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 32
+    }
+  ]
+}

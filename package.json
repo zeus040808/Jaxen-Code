@@ -1,0 +1,28 @@
+{
+  "name": "hh-agent-enterprise-evals",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.19.0",
+  "scripts": {
+    "eval:list": "niceeval list",
+    "eval:pilot": "niceeval exp hh-agent-pilot --no-early-exit",
+    "eval:deepseek-smoke": "niceeval exp hh-agent-deepseek-smoke --no-early-exit",
+    "eval:enterprise-fake": "niceeval exp hh-agent-enterprise-fake --no-early-exit",
+    "eval:nightly": "niceeval exp hh-agent-nightly --no-early-exit",
+    "eval:release": "niceeval exp hh-agent-release --no-early-exit",
+    "eval:profile:precheck": "python scripts/eval/run_eval_profile.py precheck --platform linux",
+    "eval:ci": "niceeval exp hh-agent-pilot --no-early-exit --json --junit artifacts/eval-v2/niceeval-junit.xml",
+    "typecheck:eval": "tsc --noEmit",
+    "postinstall": "python scripts/dev/patch_niceeval_windows.py",
+    "eval:check-patch": "python scripts/dev/patch_niceeval_windows.py --check"
+  },
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "@types/dockerode": "4.0.1",
+    "dockerode": "5.0.1",
+    "niceeval": "0.13.1",
+    "tsx": "4.23.12",
+    "typescript": "5.9.3"
+  }
+}

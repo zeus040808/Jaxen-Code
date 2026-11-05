@@ -1,0 +1,52 @@
+{
+  "difficulty": "15 min - 1 hour",
+  "source": [
+    "artifacts/swebench/medium10-sample.json",
+    "artifacts/swebench/medium10b-sample.json"
+  ],
+  "note": "旧中等题回归：用当前 harness 重跑 medium10 + medium10b",
+  "instance_ids": [
+    "django__django-11790",
+    "scikit-learn__scikit-learn-15100",
+    "django__django-14238",
+    "django__django-13516",
+    "sphinx-doc__sphinx-8638",
+    "django__django-11265",
+    "django__django-15561",
+    "sphinx-doc__sphinx-8056",
+    "sympy__sympy-20154",
+    "django__django-15280",
+    "django__django-11276",
+    "django__django-12050",
+    "django__django-12406",
+    "django__django-13028",
+    "pydata__xarray-6938",
+    "pydata__xarray-6744",
+    "sympy__sympy-12419",
+    "django__django-11999",
+    "astropy__astropy-8707",
+    "matplotlib__matplotlib-24026"
+  ],
+  "images": {
+    "django__django-11790": "swebench/sweb.eval.x86_64.django_1776_django-11790:latest",
+    "scikit-learn__scikit-learn-15100": "swebench/sweb.eval.x86_64.scikit-learn_1776_scikit-learn-15100:latest",
+    "django__django-14238": "swebench/sweb.eval.x86_64.django_1776_django-14238:latest",
+    "django__django-13516": "swebench/sweb.eval.x86_64.django_1776_django-13516:latest",
+    "sphinx-doc__sphinx-8638": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-8638:latest",
+    "django__django-11265": "swebench/sweb.eval.x86_64.django_1776_django-11265:latest",
+    "django__django-15561": "swebench/sweb.eval.x86_64.django_1776_django-15561:latest",
+    "sphinx-doc__sphinx-8056": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-8056:latest",
+    "sympy__sympy-20154": "swebench/sweb.eval.x86_64.sympy_1776_sympy-20154:latest",
+    "django__django-15280": "swebench/sweb.eval.x86_64.django_1776_django-15280:latest",
+    "django__django-11276": "swebench/sweb.eval.x86_64.django_1776_django-11276:latest",
+    "django__django-12050": "swebench/sweb.eval.x86_64.django_1776_django-12050:latest",
+    "django__django-12406": "swebench/sweb.eval.x86_64.django_1776_django-12406:latest",
+    "django__django-13028": "swebench/sweb.eval.x86_64.django_1776_django-13028:latest",
+    "pydata__xarray-6938": "swebench/sweb.eval.x86_64.pydata_1776_xarray-6938:latest",
+    "pydata__xarray-6744": "swebench/sweb.eval.x86_64.pydata_1776_xarray-6744:latest",
+    "sympy__sympy-12419": "swebench/sweb.eval.x86_64.sympy_1776_sympy-12419:latest",
+    "django__django-11999": "swebench/sweb.eval.x86_64.django_1776_django-11999:latest",
+    "astropy__astropy-8707": "swebench/sweb.eval.x86_64.astropy_1776_astropy-8707:latest",
+    "matplotlib__matplotlib-24026": "swebench/sweb.eval.x86_64.matplotlib_1776_matplotlib-24026:latest"
+  }
+}

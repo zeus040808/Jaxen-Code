@@ -1,9 +1,9 @@
-# Secrets and local configuration
+# 机密与本地配置
 .env
 .env.*
 !.env.example
 
-# Python caches and environments
+# Python
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -12,22 +12,33 @@ __pycache__/
 .coverage
 htmlcov/
 .venv/
+.venv-swebench/
 venv/
-
-# Build outputs
 build/
 dist/
 *.egg-info/
 
-# IDE and OS metadata
+# Node（评测流水线，包管理器是 pnpm）
+node_modules/
+.pnpm-store/
+package-lock.json
+
+# IDE / OS
 .idea/
 .vscode/
 .DS_Store
 Thumbs.db
 
-# HH Agent local runtime data
+# HH Agent 本地运行时数据
 .hh/
 .pico/
 .tmp/
 .transcripts/
 
+# 评测运行时产物
+.niceeval/
+artifacts/eval-v2/**/evidence/
+artifacts/swebench/traces/
+artifacts/swebench/harness/
+*.ndjson
+*.hh-orig

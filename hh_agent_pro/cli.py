@@ -1,6 +1,6 @@
-﻿"""命令行入口。
+"""命令行入口。
 
-这个模块负责把“用户怎么启动 HH”翻译成 runtime 能理解的对象：
+这个模块负责把“用户怎么启动 HH”翻译成 CodingAgent 需要的对象：
 解析参数、挑模型后端、构建工作区快照、恢复或新建 session，
 最后进入 one-shot 或交互式循环。
 """
@@ -14,91 +14,93 @@ import textwrap
 import time
 
 from .config import load_project_env, provider_env
-from .providers.clients import (
-    AnthropicCompatibleModelClient,
-    OllamaModelClient,
-    OpenAIChatCompatibleModelClient,
-    OpenAICompatibleModelClient,
-)
-from .runtime import HH, SessionStore
+from .providers import AnthropicMessagesClient, EvalScriptModelClient, OpenAIChatClient
+from .agent import CodingAgent
+from .session_store import SessionStore
+from .terminal_ui import TerminalEventSink
 from .workspace import WorkspaceContext, middle
 
 
+# 对外名字是 Jaxen（界面与命令行显示用）；包名 hh_agent_pro、环境变量 HH_*、状态目录 .hh/ 保持不变。
 WELCOME_ART = (
-    "    __  __  __  __       ___                    __ ",
-    "   / / / / / / / /      / _ | ___ ____ ___  ___/ /_",
-    "  / /_/ / / /_/ /  ==  / __ |/ _ `/ -_) _ \\/ _  __/",
-    " / __  / / __  /      /_/ |_|\\_, /\\__/_//_/\\_,_/   ",
-    "/_/ /_/ /_/ /_/              /___/                  ",
+    r"       _____   _  __ ______ _   __",
+    r"      / /   | | |/ // ____// | / /",
+    r" __  / / /| | |   // __/  /  |/ / ",
+    r"/ /_/ / ___ |/   |/ /___ / /|  /  ",
+    r"\____/_/  |_/_/|_/_____//_/ |_/   ",
 )
-WELCOME_NAME = "HH AGENT PRO"
-WELCOME_SUBTITLE = "local coding agent harness"
+WELCOME_NAME = "JAXEN"
+WELCOME_SUBTITLE = "OpenAI-compatible coding agent harness"
 WELCOME_STATUS = "workspace armed | tools gated | traces on"
 HELP_DETAILS = textwrap.dedent(
     """\
     Commands:
     /help    Show this help message.
     /memory  Show the agent's distilled working memory.
+    /skills  List learned procedural skills; use /skills <name> to read one.
+    /model   Show or switch the active provider/model.
     /session Show the path to the saved session file.
     /tasks   Show durable project tasks.
     /crons   Show scheduled agent prompts.
+    /review  Review the uncommitted changes with a read-only reviewer (report only, no edits).
     /reset   Clear the current session history and memory.
     /exit    Exit the agent.
     """
 ).strip()
 
 
-DEFAULT_OLLAMA_MODEL = "qwen3.5:4b"
-DEFAULT_OLLAMA_HOST = "http://127.0.0.1:11434"
-DEFAULT_OPENAI_MODEL = "gpt-5.4"
-DEFAULT_OPENAI_BASE_URL = "https://www.right.codes/codex/v1"
-DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-6"
-DEFAULT_ANTHROPIC_BASE_URL = "https://www.right.codes/claude/v1"
-DEFAULT_DEEPSEEK_MODEL = "deepseek-chat"
+DEFAULT_DEEPSEEK_MODEL = "deepseek-flash"
 DEFAULT_DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 SECRET_ENV_NAMES_VAR = "HH_SECRET_ENV_NAMES"
+# deepseek：DeepSeek 预设；openai：任意 OpenAI Chat Completions 兼容端点（通义、OpenAI 等）；
+# anthropic：Anthropic Messages 兼容端点（如公司 LLM 网关上的 Claude）；fake：仅限隔离评测的脚本化模型。
+PROVIDER_NAMES = ("deepseek", "openai", "anthropic", "fake")
+# 每个 provider 从哪些环境变量取 key / base_url / model（按优先级）。
+PROVIDER_ENV = {
+    "deepseek": {
+        "api_key": ("HH_DEEPSEEK_API_KEY", "DEEPSEEK_API_KEY"),
+        "base_url": ("HH_DEEPSEEK_API_BASE", "DEEPSEEK_API_BASE"),
+        "model": ("HH_DEEPSEEK_MODEL", "DEEPSEEK_MODEL"),
+    },
+    "openai": {
+        "api_key": ("HH_OPENAI_API_KEY", "OPENAI_API_KEY"),
+        "base_url": ("HH_OPENAI_API_BASE", "OPENAI_API_BASE"),
+        "model": ("HH_OPENAI_MODEL", "OPENAI_MODEL"),
+    },
+    "anthropic": {
+        "api_key": ("HH_ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY"),
+        "base_url": ("HH_ANTHROPIC_API_BASE", "ANTHROPIC_BASE_URL"),
+        "model": ("HH_ANTHROPIC_MODEL", "ANTHROPIC_MODEL"),
+    },
+}
 
 # 决定这次 agent 到底用哪个模型名
 # args：命令行参数对象
 # provider：当前使用哪个模型服务商
 def _effective_model(args, provider):
-    # 模型选择优先级：
-    # 1. 用户显式传入 --model
-    # 2. provider 对应的环境变量
-    # 3. 代码里的默认值
+    # 优先级：命令行 --model > provider 对应的环境变量 > 代码默认值。
     explicit_model = getattr(args, "model", None)
     if explicit_model:
         return explicit_model
-    # 选择模型，根据命令行参数，从.env中提取
-    if provider == "openai":
-        model = provider_env("HH_OPENAI_MODEL", ("OPENAI_MODEL",))
-        if model:
-            return model
-        return DEFAULT_OPENAI_MODEL
-    if provider == "anthropic":
-        model = provider_env("HH_ANTHROPIC_MODEL", ("ANTHROPIC_MODEL",))
-        if model:
-            return model
-        return DEFAULT_ANTHROPIC_MODEL
+    if provider == "fake":
+        return EvalScriptModelClient.model
+    names = PROVIDER_ENV[provider]["model"]
+    model = provider_env(names[0], names[1:])
+    if model:
+        return model
     if provider == "deepseek":
-        model = provider_env("HH_DEEPSEEK_MODEL", ("DEEPSEEK_MODEL", "LLM_MODEL_ID"))
-        if model:
-            return model
         return DEFAULT_DEEPSEEK_MODEL
-    return DEFAULT_OLLAMA_MODEL
+    raise RuntimeError(f"Set --model or {names[0]} for the {provider} provider.")
 
 # 需要加密的环境变量名
 DEFAULT_SECRET_ENV_NAMES = (
+    "HH_DEEPSEEK_API_KEY",
+    "DEEPSEEK_API_KEY",
     "HH_OPENAI_API_KEY",
     "OPENAI_API_KEY",
     "OPENAI_API_TOKEN",
     "HH_ANTHROPIC_API_KEY",
     "ANTHROPIC_API_KEY",
-    "ANTHROPIC_AUTH_TOKEN",
-    "HH_DEEPSEEK_API_KEY",
-    "DEEPSEEK_API_KEY",
-    "HH_RIGHT_CODES_API_KEY",
-    "RIGHT_CODES_API_KEY",
     "GITHUB_PAT",
     "GH_PAT",
 )
@@ -121,66 +123,82 @@ def _configured_secret_names(args):
     return sorted(configured_secret_names)
 
 
-def _build_model_client(args):
-    # 如果没有provider，则默认使用deepseek
-    provider = getattr(args, "provider", "deepseek")
-    # CLI 只负责把 provider 选择翻译成具体 client。
-    # 真正的提示词格式、缓存支持、HTTP 协议差异，都封装在 models.py 里。
-    if provider == "openai":
-        model = _effective_model(args, provider)
-        # 先看命令行中有没有base_url
-        base_url = getattr(args, "base_url", None) or provider_env("HH_OPENAI_API_BASE", ("OPENAI_API_BASE",), DEFAULT_OPENAI_BASE_URL)
-        api_key = provider_env(
-            "HH_OPENAI_API_KEY",
-            ("OPENAI_API_KEY", "HH_RIGHT_CODES_API_KEY", "RIGHT_CODES_API_KEY", "HH_ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY"),
-        )
-        return OpenAICompatibleModelClient(
-            model=model,
-            base_url=base_url,
-            api_key=api_key,
-            temperature=args.temperature,
-            timeout=getattr(args, "openai_timeout", getattr(args, "ollama_timeout", 300)),
-        )
-    if provider == "anthropic":
-        model = _effective_model(args, provider)
-        base_url = getattr(args, "base_url", None) or provider_env("HH_ANTHROPIC_API_BASE", ("ANTHROPIC_API_BASE",), DEFAULT_ANTHROPIC_BASE_URL)
-        api_key = provider_env(
-            "HH_ANTHROPIC_API_KEY",
-            ("ANTHROPIC_API_KEY", "HH_RIGHT_CODES_API_KEY", "RIGHT_CODES_API_KEY", "HH_OPENAI_API_KEY", "OPENAI_API_KEY"),
-        )
-        return AnthropicCompatibleModelClient(
-            model=model,
-            base_url=base_url,
-            api_key=api_key,
-            temperature=args.temperature,
-            timeout=getattr(args, "openai_timeout", getattr(args, "ollama_timeout", 300)),
-        )
-    if provider == "deepseek":
-        model = _effective_model(args, provider)
-        base_url = getattr(args, "base_url", None) or provider_env(
-            "HH_DEEPSEEK_API_BASE",
-            ("DEEPSEEK_API_BASE", "BASE_URL"),
-            DEFAULT_DEEPSEEK_BASE_URL,
-        )
-        api_key = provider_env("HH_DEEPSEEK_API_KEY", ("DEEPSEEK_API_KEY",))
-        return OpenAIChatCompatibleModelClient(
-            model=model,
-            base_url=base_url,
-            api_key=api_key,
-            temperature=args.temperature,
-            timeout=getattr(args, "openai_timeout", getattr(args, "ollama_timeout", 300)),
-        )
+def _review_mode(args):
+    """交付前审查：没指定时，真实模型默认 auto；脚本化假模型默认 off（它按固定脚本应答，多出的审查请求会打乱脚本）。"""
+    mode = getattr(args, "review", None)
+    if mode is None:
+        return "off" if getattr(args, "provider", "deepseek") == "fake" else "auto"
+    return mode
 
-    # 如果没有provider，则默认使用deepseek
-    model = _effective_model(args, provider)
-    host = getattr(args, "host", DEFAULT_OLLAMA_HOST)
-    return OllamaModelClient(
-        model=model,
-        host=host,
-        temperature=args.temperature,
-        top_p=args.top_p,
-        timeout=args.ollama_timeout,
+
+def _build_model_client(args):
+    provider = getattr(args, "provider", "deepseek")
+    if provider == "fake":
+        return EvalScriptModelClient()
+    env = PROVIDER_ENV[provider]
+    api_key = provider_env(env["api_key"][0], env["api_key"][1:])
+    if not api_key:
+        raise RuntimeError(f"{provider} API key is missing. Set {' or '.join(env['api_key'])} in the project .env file.")
+    base_url = getattr(args, "base_url", None) or provider_env(
+        env["base_url"][0], env["base_url"][1:], DEFAULT_DEEPSEEK_BASE_URL if provider == "deepseek" else ""
     )
+    if not base_url:
+        raise RuntimeError(f"Set --base-url or {env['base_url'][0]} for the {provider} provider.")
+    client_class = AnthropicMessagesClient if provider == "anthropic" else OpenAIChatClient
+    client = client_class(
+        model=_effective_model(args, provider),
+        base_url=base_url,
+        api_key=api_key,
+        temperature=args.temperature,
+        timeout=args.request_timeout,
+        context_window=getattr(args, "context_window", None),
+        label={"deepseek": "DeepSeek", "anthropic": "Claude"}.get(provider, "Model"),
+    )
+    client.provider = provider
+    return client
+
+
+def _model_status(agent):
+    """Return the active provider/model without exposing credentials."""
+    client = agent.model_client
+    provider = getattr(client, "provider", client.__class__.__name__)
+    model = getattr(client, "model", "unknown")
+    return f"{provider} / {model}"
+
+
+def _switch_model(agent, args, provider, model=None):
+    """Build the replacement first, then atomically swap the active client.
+
+    Session history and memory live on ``agent``, not on the provider client, so
+    they survive the swap. A construction/configuration failure leaves the old
+    client untouched.
+    """
+    provider = str(provider).strip().lower()
+    if provider not in PROVIDER_NAMES:
+        raise RuntimeError(
+            f"Unknown provider: {provider}. Available: {', '.join(PROVIDER_NAMES)}"
+        )
+    switch_args = argparse.Namespace(**vars(args))
+    switch_args.provider = provider
+    switch_args.model = str(model).strip() if model else None
+    switch_args.cwd = agent.workspace.repo_root
+    # A command-line base URL belongs to the startup provider. Runtime switches
+    # use the target provider's own environment configuration instead.
+    switch_args.base_url = None
+    replacement = _build_model_client(switch_args)
+    old_status = _model_status(agent)
+    old_client = agent.model_client
+    agent.model_client = replacement
+    if hasattr(agent, "refresh_prefix"):
+        try:
+            agent.refresh_prefix()
+        except Exception:
+            agent.model_client = old_client
+            agent.refresh_prefix()
+            raise
+    args.provider = provider
+    args.model = switch_args.model
+    return f"model switched: {old_status} -> {_model_status(agent)}"
 
 
 def build_welcome(agent, model, host):
@@ -221,7 +239,7 @@ def build_welcome(agent, model, host):
     bottom = paint(divider("="), "36;1")
     art_rows = [paint(center(text), "36;1") for text in WELCOME_ART]
     status = f"{WELCOME_STATUS} | provider-ready"
-    command_hint = "commands: /help  /memory  /tasks  /crons  /session  /exit"
+    command_hint = "commands: /help  /model  /memory  /tasks  /crons  /session  /exit"
     rows = [
         top,
         *art_rows,
@@ -241,24 +259,25 @@ def build_welcome(agent, model, host):
     return "\n".join(rows)
 
 
-def build_agent(args):
+def build_agent(args, event_sink=None, machine_mode=False):
     """根据 CLI 参数装配出一个可运行的 Agent 实例。
 
     为什么存在：
-    命令行参数只是字符串和开关，runtime 需要的是已经装配好的对象图：
+    命令行参数只是字符串和开关，CodingAgent 需要的是已经装配好的对象图：
     model client、workspace snapshot、session store、secret 配置等。
     这个函数负责把“启动参数”翻译成“agent 运行现场”。
 
     输入 / 输出：
     - 输入：`argparse` 解析后的 `args`
-    - 输出：一个新的 `HH`，或一个从旧 session 恢复出来的 `HH`
+    - 输出：一个新的 `CodingAgent`，或一个从旧 Session 恢复出来的 `CodingAgent`
 
     在 agent 链路里的位置：
-    它是整个程序启动链路里最靠近 runtime 的装配点。`main()` 先调它，
+    它是整个程序启动链路里创建 Agent 的装配点。`main()` 先调它，
     得到 agent 后，后面无论是 one-shot 还是 REPL 模式，都会落到 `ask()`。
     """
-    # 这里是 CLI 到 runtime 的装配点：
-    # 先采集工作区快照和加载项目级环境，再整理 secret 名单、模型后端和 session。
+    # 这里是 CLI 到 Agent 的装配点：
+    # 先采集工作区快照和加载项目级环境，再整理 secret 名单、模型后端和 session。、
+    # 分配工作区和沙箱路径
     workspace = WorkspaceContext.build(args.cwd)
     # 加载环境变量
     load_project_env(workspace.repo_root)
@@ -267,31 +286,45 @@ def build_agent(args):
     # 创建 SessionStore对象 sessions 文件夹（目录）
     store = SessionStore(workspace.repo_root + "/.hh/sessions")
 
-    # 构建大模型
     model = _build_model_client(args)
     session_id = args.resume
     if session_id == "latest":
         session_id = store.latest()
     if session_id:
-        # 调用from_session函数（在runtime中实现）
-        return HH.from_session(
+        # 从 SessionStore 恢复旧会话，再装配 CodingAgent。
+        return CodingAgent.from_session(
             model_client=model,
             workspace=workspace,
             session_store=store,
             session_id=session_id,
             approval_policy=args.approval,
+            read_only=bool(getattr(args, "read_only", False)),
             max_steps=args.max_steps,
             max_new_tokens=args.max_new_tokens,
             secret_env_names=configured_secret_names,
+            event_sink=event_sink,
+            machine_mode=machine_mode,
+            episode_timeout_ms=getattr(args, "episode_timeout_ms", 1_200_000),
+            feature_flags={"skill_learning": not bool(getattr(args, "no_auto_skills", False))},
+        review_changes=_review_mode(args),
+            toolset=getattr(args, "toolset", "core"),
         )
-    return HH(
+    # 没有恢复 ID 时，创建一个新 Agent。
+    return CodingAgent(
         model_client=model,
         workspace=workspace,
         session_store=store,
         approval_policy=args.approval,
+        read_only=bool(getattr(args, "read_only", False)),
         max_steps=args.max_steps,
         max_new_tokens=args.max_new_tokens,
         secret_env_names=configured_secret_names,
+        event_sink=event_sink,
+        machine_mode=machine_mode,
+        episode_timeout_ms=getattr(args, "episode_timeout_ms", 1_200_000),
+        feature_flags={"skill_learning": not bool(getattr(args, "no_auto_skills", False))},
+        review_changes=_review_mode(args),
+        toolset=getattr(args, "toolset", "core"),
     )
 
 # 定义命令行参数规则
@@ -299,8 +332,9 @@ def build_arg_parser():
     # 这里创建一个命令行解析器
     parser = argparse.ArgumentParser(
         # 在 --help 里自动显示默认值
+        prog="jaxen",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        description="Minimal coding agent for DeepSeek, OpenAI-compatible, Anthropic-compatible, or Ollama models.",
+        description="Jaxen: DeepSeek-default local coding agent.",
     )
     # 这是一个位置参数，不是 --xxx 形式
     # nargs="*" 的意思是：可以有 0 个、1 个、多个 prompt 片段
@@ -308,26 +342,23 @@ def build_arg_parser():
 
     # --cwd 指定 Agent 工作在哪个目录
     parser.add_argument("--cwd", default=".", help="Workspace directory.")
-    parser.add_argument("--provider", choices=("ollama", "openai", "anthropic", "deepseek"), default="deepseek", help="Model backend to use.")
+    parser.add_argument("--provider", choices=PROVIDER_NAMES, default="deepseek", help="Model backend to use. DeepSeek (deepseek-flash) is the default.")
 
     # --model 用来临时覆盖模型名
-    parser.add_argument(
-        "--model",
-        default=None,
-        help="Model name override. Defaults to qwen3.5:4b for Ollama, HH_OPENAI_MODEL for openai, HH_ANTHROPIC_MODEL for anthropic, and HH_DEEPSEEK_MODEL for deepseek when set.",
-    )
-    # 这个主要给 Ollama 用
-    parser.add_argument("--host", default=DEFAULT_OLLAMA_HOST, help="Ollama server URL.")
-    parser.add_argument("--base-url", default=None, help="Provider API base URL for deepseek, openai, or anthropic.")
-
-    # 请求超时时间
-    parser.add_argument("--ollama-timeout", type=int, default=300, help="Ollama request timeout in seconds.")
-    parser.add_argument("--openai-timeout", type=int, default=300, help="OpenAI-compatible request timeout in seconds.")
+    parser.add_argument("--model", default=None, help="Model override.")
+    parser.add_argument("--base-url", default=None, help="OpenAI-compatible API base URL (required for --provider openai).")
+    parser.add_argument("--context-window", type=int, default=None, help="Model context window in tokens, for models not in the built-in table.")
+    parser.add_argument("--request-timeout", type=int, default=300, help="Model request timeout in seconds.")
 
     #用来恢复之前的 session（默认新建session）
     parser.add_argument("--resume", default=None, help="Session id to resume or 'latest'.")
     # 控制危险工具是否需要审批
     parser.add_argument("--approval", choices=("ask", "auto", "never"), default="ask", help="Approval policy for risky tools.")
+    parser.add_argument(
+        "--read-only",
+        action="store_true",
+        help="Block every workspace-mutating tool (used by read-only eval tasks).",
+    )
     # 哪些环境变量名应该被当作密钥，在 trace/report 里打码（110行使用）
     parser.add_argument(
         "--secret-env-name",
@@ -337,26 +368,44 @@ def build_arg_parser():
         help="Extra environment variable names to treat as secrets for trace/report redaction.",
     )
 
-    parser.add_argument("--max-steps", type=int, default=6, help="Maximum tool/model iterations per request.")
+    parser.add_argument(
+        "--toolset",
+        choices=("core", "full"),
+        default="core",
+        help="core: coding tools only (default); full: also task/cron/memory/skill/session tools.",
+    )
+    parser.add_argument("--max-steps", type=int, default=50, help="Maximum effective tool calls per request (default: 50).")
     #限制模型每次最多输出多少 token
-    parser.add_argument("--max-new-tokens", type=int, default=512, help="Maximum model output tokens per step.")
-    parser.add_argument("--temperature", type=float, default=0.2, help="Sampling temperature sent to Ollama.")
-    parser.add_argument("--top-p", type=float, default=0.9, help="Top-p sampling value sent to Ollama.")
+    parser.add_argument("--max-new-tokens", type=int, default=8192, help="Maximum model output tokens per step (default: 8192).")
+    parser.add_argument("--episode-timeout-ms", type=int, default=1_200_000, help="Wall-clock budget for the complete episode (default: 20 min).")
+    parser.add_argument("--jsonl", action="store_true", help="Read versioned machine requests from stdin and emit JSONL events/turns.")
+    parser.add_argument(
+        "--review", choices=("off", "auto", "always"), default=None,
+        help="Before delivering, have a read-only reviewer sub-agent check the changes once: off; auto = only when "
+             "non-test source code changed; always = any change (default: auto for real models, off for fake).",
+    )
+    parser.add_argument("--no-auto-skills", action="store_true", help="Disable automatic SKILL.md deposition after verified complex runs.")
+    parser.add_argument("--temperature", type=float, default=0.2, help="Sampling temperature.")
     return parser
 
 
 def main(argv=None):
     # 读取参数（把用户输入的命令行参数解析成一个对象）
     args = build_arg_parser().parse_args(argv)
-    # 实现一个agent对象
-    agent = build_agent(args)
+    if args.jsonl:
+        from .jsonl_protocol import run_jsonl_stdio
+
+        return run_jsonl_stdio(args, build_agent)
+    # 创建 Agent；后续每条输入分别调用一次 ask()。
+    terminal = TerminalEventSink()
+    agent = build_agent(args, event_sink=terminal)
     restored_crons = agent.cron_scheduler.start()
 
     # 上锁
     agent_lock = threading.Lock()
 
-    model = getattr(agent.model_client, "model", getattr(args, "model", DEFAULT_OLLAMA_MODEL))
-    host = getattr(agent.model_client, "host", getattr(agent.model_client, "base_url", getattr(args, "host", DEFAULT_OLLAMA_HOST)))
+    model = _model_status(agent)
+    host = getattr(agent.model_client, "base_url", "-")
     # 打印欢迎界面
     print(build_welcome(agent, model=model, host=host))
     if restored_crons:
@@ -368,12 +417,29 @@ def main(argv=None):
         prompt = " ".join(args.prompt).strip()
         if prompt:
             print()
-            try:
-                with agent_lock:
-                    print(agent.ask(prompt))
-            except RuntimeError as exc:
-                print(str(exc), file=sys.stderr)
-                return 1
+            while prompt:
+                try:
+                    with agent_lock:
+                        result = agent.ask(prompt)
+                        if not terminal.final_rendered:
+                            print(result)
+                except RuntimeError as exc:
+                    if not terminal.final_rendered:
+                        print(str(exc), file=sys.stderr)
+                    return 1
+                except KeyboardInterrupt:
+                    print("\nInterrupted. Run state and checkpoint were saved.")
+                    return 130
+                if not terminal.needs_input:
+                    break
+                if not sys.stdin.isatty():
+                    print("The agent requested user input, but stdin is not interactive.", file=sys.stderr)
+                    return 2
+                try:
+                    prompt = input("\nchoice> ").strip()
+                except (EOFError, KeyboardInterrupt):
+                    print("")
+                    return 2
         return 0
 
     # 定时系统
@@ -385,7 +451,9 @@ def main(argv=None):
             try:
                 if agent.cron_scheduler.has_queue():
                     print("\n[cron] delivering scheduled prompt")
-                    print(agent.ask("[cron tick]"))
+                    result = agent.ask("[cron tick]")
+                    if not terminal.final_rendered:
+                        print(result)
             except RuntimeError as exc:
                 print(str(exc), file=sys.stderr)
             finally:
@@ -397,7 +465,8 @@ def main(argv=None):
         # 交互模式：每次读取一条用户输入，交给同一个 agent，
         # 因此 session history 和 working memory 会跨轮延续。
         try:
-            user_input = input("\nhh> ").strip()
+            prompt_label = "\nchoice> " if terminal.needs_input else "\njaxen> "
+            user_input = input(prompt_label).strip()
         except (EOFError, KeyboardInterrupt):
             print("")
             return 0
@@ -411,6 +480,30 @@ def main(argv=None):
             continue
         if user_input == "/memory":
             print(agent.memory_text())
+            continue
+        if user_input == "/skills":
+            print(agent.skill_store.render_index())
+            continue
+        if user_input.startswith("/skills "):
+            try:
+                print(agent.skill_store.read(user_input.split(maxsplit=1)[1]))
+            except ValueError as exc:
+                print(f"skill error: {exc}", file=sys.stderr)
+            continue
+        if user_input == "/model" or user_input == "/models":
+            print(f"current: {_model_status(agent)}")
+            print(f"available: {', '.join(PROVIDER_NAMES)}")
+            print("switch: /model <provider> [model]")
+            continue
+        if user_input.startswith("/model "):
+            parts = user_input.split(maxsplit=2)
+            provider = parts[1]
+            requested_model = parts[2] if len(parts) == 3 else None
+            try:
+                with agent_lock:
+                    print(_switch_model(agent, args, provider, requested_model))
+            except RuntimeError as exc:
+                print(f"model switch failed: {exc}", file=sys.stderr)
             continue
         if user_input == "/session":
             print(agent.session_path)
@@ -429,6 +522,12 @@ def main(argv=None):
         print()
         try:
             with agent_lock:
-                print(agent.ask(user_input))
+                # 处理本条请求；AgentLoop 会控制这次任务的生命周期。
+                result = agent.ask(user_input)
+                if not terminal.final_rendered:
+                    print(result)
         except RuntimeError as exc:
-            print(str(exc), file=sys.stderr)
+            if not terminal.final_rendered:
+                print(str(exc), file=sys.stderr)
+        except KeyboardInterrupt:
+            print("\nInterrupted. Run state and checkpoint were saved; the REPL is still available.")

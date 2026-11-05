@@ -1,0 +1,2651 @@
+{
+  "benchmark": {
+    "source": "benchmarks/coding_tasks.json",
+    "task_count": 14
+  },
+  "captured_at": "2026-11-03T18:40:24+0800",
+  "failure_category_counts": {},
+  "reproducibility": {
+    "decoding": {
+      "max_new_tokens": 64,
+      "temperature": 0.0,
+      "top_p": 1.0
+    },
+    "fixture_snapshot_id": "sha256:7f404ba6273c777a2b9e7f023dba34a3ea5865ba54f0a1b6e1122ab0649391f2",
+    "locale": "C.UTF-8",
+    "model_name": "FakeModelClient",
+    "model_version": "scripted-deterministic",
+    "timezone": "Asia/Shanghai"
+  },
+  "rows": [
+    {
+      "allowed_tools": [
+        "patch_file"
+      ],
+      "artifact_digest": "sha256:fee307cba2b37b7d1cd096234826b660cb47a36282feb1f32fcc90636b3a115c",
+      "artifact_exists": true,
+      "artifact_path": "README.md",
+      "attempts": 2,
+      "category": "basic_edit",
+      "expected_artifact": "README.md contains the locked benchmark introduction",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "readme_intro_locked/bench_repo_readme",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "id": "readme_intro_locked",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Replace the placeholder README introduction with the locked benchmark introduction.",
+      "report": {
+        "attempts": 2,
+        "auto_memory": {
+          "reason": "no_explicit_durable_fact",
+          "results": [],
+          "status": "skipped"
+        },
+        "auto_skill": {
+          "reason": "too_few_tool_steps",
+          "status": "skipped"
+        },
+        "checkpoint_id": "ckpt_e007b540",
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_tokens": 123840,
+          "calibration": 1.0,
+          "cleared_tool_results": 0,
+          "compaction": null,
+          "context_window": 128000,
+          "estimated_input_tokens": 2412,
+          "instruction_docs": [],
+          "message_count": 4,
+          "prefix_hash": "fe4ec13b09a8772a41c4da1ef53d095504f9c5c9f9c1915c4c0590e8f67b3ed2",
+          "resume_status": "full-valid",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ],
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "summary_active": false,
+          "system_tokens": 1764,
+          "tool_count": 1,
+          "tool_signature": "5d53f7e0cdcfcd10f7e6d7e28e11e277ff3c6858865a18a40bcfdd440adfa18f",
+          "workspace_fingerprint": "5c8d9bc4247f7d2fae6b78c0314de687e585c9d2abe44b1e2445436ac96ffd1d"
+        },
+        "redacted_env": {
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ]
+        },
+        "request_id": "req_20261103-184020-4519a6",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184020-b14454",
+        "run_state": {
+          "attempts": 2,
+          "checkpoint_id": "ckpt_e007b540",
+          "created_at": "2026-11-03T18:40:20+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-11-03T18:40:21+08:00",
+          "last_tool": "patch_file",
+          "partial_answer": "",
+          "request_id": "req_20261103-184020-4519a6",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20261103-184020-b14454",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 1,
+          "updated_at": "2026-11-03T18:40:21+08:00",
+          "user_request": "Replace the placeholder README introduction with the locked benchmark introduction."
+        },
+        "source_evidence": {
+          "actions": [
+            {
+              "args": {
+                "new_text": "This fixture is a locked benchmark workspace.",
+                "old_text": "This is a placeholder benchmark fixture.",
+                "path": "README.md"
+              },
+              "cache_hit": false,
+              "created_at": "2026-11-03T10:40:20.988144+00:00",
+              "status": "ok",
+              "tool": "patch_file"
+            }
+          ],
+          "files": {},
+          "next_id": 1,
+          "schema_version": "v1",
+          "task_id": "taskrun_4ad29239a6",
+          "updated_at": "2026-11-03T10:40:20.988147+00:00"
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-11-03T10:40:20.912644+00:00",
+          "evidence": [
+            {
+              "affected_paths": [
+                "README.md"
+              ],
+              "created_at": "2026-11-03T10:40:20.986247+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "patched README.md\n--- a/README.md\n+++ b/README.md\n@@ -1,5 +1,5 @@\n # HH Benchmark README Fixture\n \n-This is a placeholder benchmark fixture.\n+This fixture is a locked benchmark workspace.\n \n - Placeholder note about the repo.",
+              "tool": "patch_file"
+            },
+            {
+              "created_at": "2026-11-03T10:40:21.062159+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [],
+          "goal": "Replace the placeholder README introduction with the locked benchmark introduction.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20261103-184020-b14454"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_4ad29239a6",
+          "todos": [],
+          "updated_at": "2026-11-03T10:40:21.062163+00:00",
+          "verification": {
+            "changed_paths": [],
+            "checks": [],
+            "edit_revision": 0
+          },
+          "verification_pending": false
+        },
+        "tool_steps": 1
+      },
+      "report_relpath": "readme_intro_locked/bench_repo_readme/.hh/runs/run_20261103-184020-b14454/report.json",
+      "run_dir_relpath": "readme_intro_locked/bench_repo_readme/.hh/runs/run_20261103-184020-b14454",
+      "run_id": "run_20261103-184020-b14454",
+      "run_state": {
+        "attempts": 2,
+        "checkpoint_id": "ckpt_e007b540",
+        "created_at": "2026-11-03T18:40:20+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-11-03T18:40:21+08:00",
+        "last_tool": "patch_file",
+        "partial_answer": "",
+        "request_id": "req_20261103-184020-4519a6",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184020-b14454",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 1,
+        "updated_at": "2026-11-03T18:40:21+08:00",
+        "user_request": "Replace the placeholder README introduction with the locked benchmark introduction."
+      },
+      "run_state_relpath": "readme_intro_locked/bench_repo_readme/.hh/runs/run_20261103-184020-b14454/run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 1,
+      "verifier": "python -c \"from pathlib import Path; assert 'This fixture is a locked benchmark workspace.' in Path('README.md').read_text(encoding='utf-8')\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "patch_file"
+      ],
+      "artifact_digest": "sha256:ce42b219ec4f7deb4ebd04a75c2ea4aea361609f0739b07e57ee45f7e2084d43",
+      "artifact_exists": true,
+      "artifact_path": "README.md",
+      "attempts": 2,
+      "category": "basic_edit",
+      "expected_artifact": "README.md contains the schema baseline note",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "readme_schema_note/bench_repo_readme",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "id": "readme_schema_note",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Update the README repository note to document the fixed schema and baseline.",
+      "report": {
+        "attempts": 2,
+        "auto_memory": {
+          "reason": "no_explicit_durable_fact",
+          "results": [],
+          "status": "skipped"
+        },
+        "auto_skill": {
+          "reason": "too_few_tool_steps",
+          "status": "skipped"
+        },
+        "checkpoint_id": "ckpt_e22187b1",
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_tokens": 123840,
+          "calibration": 1.0,
+          "cleared_tool_results": 0,
+          "compaction": null,
+          "context_window": 128000,
+          "estimated_input_tokens": 2411,
+          "instruction_docs": [],
+          "message_count": 4,
+          "prefix_hash": "b7fd2968a27252a09469dfb5e12ebd1791ce940dfe34b4c9da99642f23f2a21f",
+          "resume_status": "full-valid",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ],
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "summary_active": false,
+          "system_tokens": 1763,
+          "tool_count": 1,
+          "tool_signature": "5d53f7e0cdcfcd10f7e6d7e28e11e277ff3c6858865a18a40bcfdd440adfa18f",
+          "workspace_fingerprint": "47f2731573b7084799c37d8ab5394a87f60ed1ea31af09545d9df39760956c89"
+        },
+        "redacted_env": {
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ]
+        },
+        "request_id": "req_20261103-184021-b4efaf",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184021-58d0e0",
+        "run_state": {
+          "attempts": 2,
+          "checkpoint_id": "ckpt_e22187b1",
+          "created_at": "2026-11-03T18:40:21+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-11-03T18:40:21+08:00",
+          "last_tool": "patch_file",
+          "partial_answer": "",
+          "request_id": "req_20261103-184021-b4efaf",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20261103-184021-58d0e0",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 1,
+          "updated_at": "2026-11-03T18:40:21+08:00",
+          "user_request": "Update the README repository note to document the fixed schema and baseline."
+        },
+        "source_evidence": {
+          "actions": [
+            {
+              "args": {
+                "new_text": "- The benchmark schema and baseline are fixed.",
+                "old_text": "- Placeholder note about the repo.",
+                "path": "README.md"
+              },
+              "cache_hit": false,
+              "created_at": "2026-11-03T10:40:21.229941+00:00",
+              "status": "ok",
+              "tool": "patch_file"
+            }
+          ],
+          "files": {},
+          "next_id": 1,
+          "schema_version": "v1",
+          "task_id": "taskrun_113e9efab6",
+          "updated_at": "2026-11-03T10:40:21.229943+00:00"
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-11-03T10:40:21.157335+00:00",
+          "evidence": [
+            {
+              "affected_paths": [
+                "README.md"
+              ],
+              "created_at": "2026-11-03T10:40:21.228309+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "patched README.md\n--- a/README.md\n+++ b/README.md\n@@ -3,4 +3,4 @@\n This is a placeholder benchmark fixture.\n \n-- Placeholder note about the repo.\n+- The benchmark schema and baseline are fixed.\n - Placeholder note about the file layout.",
+              "tool": "patch_file"
+            },
+            {
+              "created_at": "2026-11-03T10:40:21.303178+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [],
+          "goal": "Update the README repository note to document the fixed schema and baseline.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20261103-184021-58d0e0"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_113e9efab6",
+          "todos": [],
+          "updated_at": "2026-11-03T10:40:21.303180+00:00",
+          "verification": {
+            "changed_paths": [],
+            "checks": [],
+            "edit_revision": 0
+          },
+          "verification_pending": false
+        },
+        "tool_steps": 1
+      },
+      "report_relpath": "readme_schema_note/bench_repo_readme/.hh/runs/run_20261103-184021-58d0e0/report.json",
+      "run_dir_relpath": "readme_schema_note/bench_repo_readme/.hh/runs/run_20261103-184021-58d0e0",
+      "run_id": "run_20261103-184021-58d0e0",
+      "run_state": {
+        "attempts": 2,
+        "checkpoint_id": "ckpt_e22187b1",
+        "created_at": "2026-11-03T18:40:21+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-11-03T18:40:21+08:00",
+        "last_tool": "patch_file",
+        "partial_answer": "",
+        "request_id": "req_20261103-184021-b4efaf",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184021-58d0e0",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 1,
+        "updated_at": "2026-11-03T18:40:21+08:00",
+        "user_request": "Update the README repository note to document the fixed schema and baseline."
+      },
+      "run_state_relpath": "readme_schema_note/bench_repo_readme/.hh/runs/run_20261103-184021-58d0e0/run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 1,
+      "verifier": "python -c \"from pathlib import Path; assert 'The benchmark schema and baseline are fixed.' in Path('README.md').read_text(encoding='utf-8')\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "patch_file"
+      ],
+      "artifact_digest": "sha256:86862e7d1645633bfa6d6337e59a564f57f2a95dd853a77a2efd0592af7a4cb6",
+      "artifact_exists": true,
+      "artifact_path": "README.md",
+      "attempts": 2,
+      "category": "basic_edit",
+      "expected_artifact": "README.md contains the deterministic ordering note",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "readme_ordering_note/bench_repo_readme",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "id": "readme_ordering_note",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Update the README file-layout note to document deterministic ordering.",
+      "report": {
+        "attempts": 2,
+        "auto_memory": {
+          "reason": "no_explicit_durable_fact",
+          "results": [],
+          "status": "skipped"
+        },
+        "auto_skill": {
+          "reason": "too_few_tool_steps",
+          "status": "skipped"
+        },
+        "checkpoint_id": "ckpt_d09d9c83",
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_tokens": 123840,
+          "calibration": 1.0,
+          "cleared_tool_results": 0,
+          "compaction": null,
+          "context_window": 128000,
+          "estimated_input_tokens": 2385,
+          "instruction_docs": [],
+          "message_count": 4,
+          "prefix_hash": "b698e822c86c916aae6b7b9e6c604eec62dd0ee4d46909ea4582337c3131d04a",
+          "resume_status": "full-valid",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ],
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "summary_active": false,
+          "system_tokens": 1766,
+          "tool_count": 1,
+          "tool_signature": "5d53f7e0cdcfcd10f7e6d7e28e11e277ff3c6858865a18a40bcfdd440adfa18f",
+          "workspace_fingerprint": "951b9ff0b6f984cbd07154ed28a14b399e82458ba765d8fc1d6107b944f94b8e"
+        },
+        "redacted_env": {
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ]
+        },
+        "request_id": "req_20261103-184021-dc418c",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184021-789586",
+        "run_state": {
+          "attempts": 2,
+          "checkpoint_id": "ckpt_d09d9c83",
+          "created_at": "2026-11-03T18:40:21+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-11-03T18:40:21+08:00",
+          "last_tool": "patch_file",
+          "partial_answer": "",
+          "request_id": "req_20261103-184021-dc418c",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20261103-184021-789586",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 1,
+          "updated_at": "2026-11-03T18:40:21+08:00",
+          "user_request": "Update the README file-layout note to document deterministic ordering."
+        },
+        "source_evidence": {
+          "actions": [
+            {
+              "args": {
+                "new_text": "- Deterministic file ordering keeps benchmark diffs stable.",
+                "old_text": "- Placeholder note about the file layout.",
+                "path": "README.md"
+              },
+              "cache_hit": false,
+              "created_at": "2026-11-03T10:40:21.468563+00:00",
+              "status": "ok",
+              "tool": "patch_file"
+            }
+          ],
+          "files": {},
+          "next_id": 1,
+          "schema_version": "v1",
+          "task_id": "taskrun_0e4502b36f",
+          "updated_at": "2026-11-03T10:40:21.468566+00:00"
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-11-03T10:40:21.395459+00:00",
+          "evidence": [
+            {
+              "affected_paths": [
+                "README.md"
+              ],
+              "created_at": "2026-11-03T10:40:21.466663+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "patched README.md\n--- a/README.md\n+++ b/README.md\n@@ -4,3 +4,3 @@\n \n - Placeholder note about the repo.\n-- Placeholder note about the file layout.\n+- Deterministic file ordering keeps benchmark diffs stable.",
+              "tool": "patch_file"
+            },
+            {
+              "created_at": "2026-11-03T10:40:21.540395+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [],
+          "goal": "Update the README file-layout note to document deterministic ordering.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20261103-184021-789586"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_0e4502b36f",
+          "todos": [],
+          "updated_at": "2026-11-03T10:40:21.540397+00:00",
+          "verification": {
+            "changed_paths": [],
+            "checks": [],
+            "edit_revision": 0
+          },
+          "verification_pending": false
+        },
+        "tool_steps": 1
+      },
+      "report_relpath": "readme_ordering_note/bench_repo_readme/.hh/runs/run_20261103-184021-789586/report.json",
+      "run_dir_relpath": "readme_ordering_note/bench_repo_readme/.hh/runs/run_20261103-184021-789586",
+      "run_id": "run_20261103-184021-789586",
+      "run_state": {
+        "attempts": 2,
+        "checkpoint_id": "ckpt_d09d9c83",
+        "created_at": "2026-11-03T18:40:21+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-11-03T18:40:21+08:00",
+        "last_tool": "patch_file",
+        "partial_answer": "",
+        "request_id": "req_20261103-184021-dc418c",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184021-789586",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 1,
+        "updated_at": "2026-11-03T18:40:21+08:00",
+        "user_request": "Update the README file-layout note to document deterministic ordering."
+      },
+      "run_state_relpath": "readme_ordering_note/bench_repo_readme/.hh/runs/run_20261103-184021-789586/run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 1,
+      "verifier": "python -c \"from pathlib import Path; assert 'Deterministic file ordering keeps benchmark diffs stable.' in Path('README.md').read_text(encoding='utf-8')\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "patch_file"
+      ],
+      "artifact_digest": "sha256:cd2458426f8f5d5e4b07ec4f96fe91ff53da5dd01f7a0b500ee58376b7d67b4c",
+      "artifact_exists": true,
+      "artifact_path": "sample.txt",
+      "attempts": 2,
+      "category": "basic_edit",
+      "expected_artifact": "sample.txt contains beta-locked",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "sample_beta_locked/bench_repo_patch",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "id": "sample_beta_locked",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Change the beta token in sample.txt to beta-locked.",
+      "report": {
+        "attempts": 2,
+        "auto_memory": {
+          "reason": "no_explicit_durable_fact",
+          "results": [],
+          "status": "skipped"
+        },
+        "auto_skill": {
+          "reason": "too_few_tool_steps",
+          "status": "skipped"
+        },
+        "checkpoint_id": "ckpt_56a92de2",
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_tokens": 123840,
+          "calibration": 1.0,
+          "cleared_tool_results": 0,
+          "compaction": null,
+          "context_window": 128000,
+          "estimated_input_tokens": 2258,
+          "instruction_docs": [],
+          "message_count": 4,
+          "prefix_hash": "d07ca76997e26dc894b8848c230b3090d1ecb42d132ef1cf9ba68ff7001b5c0b",
+          "resume_status": "full-valid",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ],
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "summary_active": false,
+          "system_tokens": 1762,
+          "tool_count": 1,
+          "tool_signature": "5d53f7e0cdcfcd10f7e6d7e28e11e277ff3c6858865a18a40bcfdd440adfa18f",
+          "workspace_fingerprint": "879abef6cce87970561dd837f17d0a331adc0210e3f13cb166e4e0d16d9e6b1c"
+        },
+        "redacted_env": {
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ]
+        },
+        "request_id": "req_20261103-184021-fbbbe6",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184021-30355d",
+        "run_state": {
+          "attempts": 2,
+          "checkpoint_id": "ckpt_56a92de2",
+          "created_at": "2026-11-03T18:40:21+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-11-03T18:40:21+08:00",
+          "last_tool": "patch_file",
+          "partial_answer": "",
+          "request_id": "req_20261103-184021-fbbbe6",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20261103-184021-30355d",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 1,
+          "updated_at": "2026-11-03T18:40:21+08:00",
+          "user_request": "Change the beta token in sample.txt to beta-locked."
+        },
+        "source_evidence": {
+          "actions": [
+            {
+              "args": {
+                "new_text": "beta-locked",
+                "old_text": "beta",
+                "path": "sample.txt"
+              },
+              "cache_hit": false,
+              "created_at": "2026-11-03T10:40:21.706373+00:00",
+              "status": "ok",
+              "tool": "patch_file"
+            }
+          ],
+          "files": {},
+          "next_id": 1,
+          "schema_version": "v1",
+          "task_id": "taskrun_bf835d35b2",
+          "updated_at": "2026-11-03T10:40:21.706376+00:00"
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-11-03T10:40:21.632088+00:00",
+          "evidence": [
+            {
+              "affected_paths": [
+                "sample.txt"
+              ],
+              "created_at": "2026-11-03T10:40:21.704633+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "patched sample.txt\n--- a/sample.txt\n+++ b/sample.txt\n@@ -1,4 +1,4 @@\n alpha\n-beta\n+beta-locked\n gamma\n placeholder",
+              "tool": "patch_file"
+            },
+            {
+              "created_at": "2026-11-03T10:40:21.778653+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [],
+          "goal": "Change the beta token in sample.txt to beta-locked.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20261103-184021-30355d"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_bf835d35b2",
+          "todos": [],
+          "updated_at": "2026-11-03T10:40:21.778655+00:00",
+          "verification": {
+            "changed_paths": [],
+            "checks": [],
+            "edit_revision": 0
+          },
+          "verification_pending": false
+        },
+        "tool_steps": 1
+      },
+      "report_relpath": "sample_beta_locked/bench_repo_patch/.hh/runs/run_20261103-184021-30355d/report.json",
+      "run_dir_relpath": "sample_beta_locked/bench_repo_patch/.hh/runs/run_20261103-184021-30355d",
+      "run_id": "run_20261103-184021-30355d",
+      "run_state": {
+        "attempts": 2,
+        "checkpoint_id": "ckpt_56a92de2",
+        "created_at": "2026-11-03T18:40:21+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-11-03T18:40:21+08:00",
+        "last_tool": "patch_file",
+        "partial_answer": "",
+        "request_id": "req_20261103-184021-fbbbe6",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184021-30355d",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 1,
+        "updated_at": "2026-11-03T18:40:21+08:00",
+        "user_request": "Change the beta token in sample.txt to beta-locked."
+      },
+      "run_state_relpath": "sample_beta_locked/bench_repo_patch/.hh/runs/run_20261103-184021-30355d/run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 1,
+      "verifier": "python -c \"from pathlib import Path; assert 'beta-locked' in Path('sample.txt').read_text(encoding='utf-8')\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "patch_file"
+      ],
+      "artifact_digest": "sha256:c661ddfecfd7038db8b7b2376eeff5f3885ca4b3aa0345850baa6359f9deb549",
+      "artifact_exists": true,
+      "artifact_path": "sample.txt",
+      "attempts": 2,
+      "category": "basic_edit",
+      "expected_artifact": "sample.txt contains gamma-locked",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "sample_gamma_locked/bench_repo_patch",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "id": "sample_gamma_locked",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Change the gamma token in sample.txt to gamma-locked.",
+      "report": {
+        "attempts": 2,
+        "auto_memory": {
+          "reason": "no_explicit_durable_fact",
+          "results": [],
+          "status": "skipped"
+        },
+        "auto_skill": {
+          "reason": "too_few_tool_steps",
+          "status": "skipped"
+        },
+        "checkpoint_id": "ckpt_06f8b59d",
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_tokens": 123840,
+          "calibration": 1.0,
+          "cleared_tool_results": 0,
+          "compaction": null,
+          "context_window": 128000,
+          "estimated_input_tokens": 2262,
+          "instruction_docs": [],
+          "message_count": 4,
+          "prefix_hash": "9bf08de22a029c89faf98d74375eec2b1491207e4c9a0f8b7886175bd2780e6a",
+          "resume_status": "full-valid",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ],
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "summary_active": false,
+          "system_tokens": 1763,
+          "tool_count": 1,
+          "tool_signature": "5d53f7e0cdcfcd10f7e6d7e28e11e277ff3c6858865a18a40bcfdd440adfa18f",
+          "workspace_fingerprint": "8b74656dcd51ec268ff89f39328a84a6f5d4d14fb1fe2c4c704f1f05b7f0a2f5"
+        },
+        "redacted_env": {
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ]
+        },
+        "request_id": "req_20261103-184021-b8b5cc",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184021-482f30",
+        "run_state": {
+          "attempts": 2,
+          "checkpoint_id": "ckpt_06f8b59d",
+          "created_at": "2026-11-03T18:40:21+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-11-03T18:40:22+08:00",
+          "last_tool": "patch_file",
+          "partial_answer": "",
+          "request_id": "req_20261103-184021-b8b5cc",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20261103-184021-482f30",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 1,
+          "updated_at": "2026-11-03T18:40:22+08:00",
+          "user_request": "Change the gamma token in sample.txt to gamma-locked."
+        },
+        "source_evidence": {
+          "actions": [
+            {
+              "args": {
+                "new_text": "gamma-locked",
+                "old_text": "gamma",
+                "path": "sample.txt"
+              },
+              "cache_hit": false,
+              "created_at": "2026-11-03T10:40:21.940855+00:00",
+              "status": "ok",
+              "tool": "patch_file"
+            }
+          ],
+          "files": {},
+          "next_id": 1,
+          "schema_version": "v1",
+          "task_id": "taskrun_4ca75dfa50",
+          "updated_at": "2026-11-03T10:40:21.940859+00:00"
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-11-03T10:40:21.870940+00:00",
+          "evidence": [
+            {
+              "affected_paths": [
+                "sample.txt"
+              ],
+              "created_at": "2026-11-03T10:40:21.939168+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "patched sample.txt\n--- a/sample.txt\n+++ b/sample.txt\n@@ -1,4 +1,4 @@\n alpha\n beta\n-gamma\n+gamma-locked\n placeholder",
+              "tool": "patch_file"
+            },
+            {
+              "created_at": "2026-11-03T10:40:22.012128+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [],
+          "goal": "Change the gamma token in sample.txt to gamma-locked.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20261103-184021-482f30"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_4ca75dfa50",
+          "todos": [],
+          "updated_at": "2026-11-03T10:40:22.012130+00:00",
+          "verification": {
+            "changed_paths": [],
+            "checks": [],
+            "edit_revision": 0
+          },
+          "verification_pending": false
+        },
+        "tool_steps": 1
+      },
+      "report_relpath": "sample_gamma_locked/bench_repo_patch/.hh/runs/run_20261103-184021-482f30/report.json",
+      "run_dir_relpath": "sample_gamma_locked/bench_repo_patch/.hh/runs/run_20261103-184021-482f30",
+      "run_id": "run_20261103-184021-482f30",
+      "run_state": {
+        "attempts": 2,
+        "checkpoint_id": "ckpt_06f8b59d",
+        "created_at": "2026-11-03T18:40:21+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-11-03T18:40:22+08:00",
+        "last_tool": "patch_file",
+        "partial_answer": "",
+        "request_id": "req_20261103-184021-b8b5cc",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184021-482f30",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 1,
+        "updated_at": "2026-11-03T18:40:22+08:00",
+        "user_request": "Change the gamma token in sample.txt to gamma-locked."
+      },
+      "run_state_relpath": "sample_gamma_locked/bench_repo_patch/.hh/runs/run_20261103-184021-482f30/run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 1,
+      "verifier": "python -c \"from pathlib import Path; assert 'gamma-locked' in Path('sample.txt').read_text(encoding='utf-8')\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "patch_file"
+      ],
+      "artifact_digest": "sha256:927c9bb49935d22cfef1df0fd954eb8011420a9b1ec2350d65647accf201bbe9",
+      "artifact_exists": true,
+      "artifact_path": "sample.txt",
+      "attempts": 2,
+      "category": "basic_edit",
+      "expected_artifact": "sample.txt contains delta",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "sample_placeholder_delta/bench_repo_patch",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "id": "sample_placeholder_delta",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Replace the placeholder token in sample.txt with delta.",
+      "report": {
+        "attempts": 2,
+        "auto_memory": {
+          "reason": "no_explicit_durable_fact",
+          "results": [],
+          "status": "skipped"
+        },
+        "auto_skill": {
+          "reason": "too_few_tool_steps",
+          "status": "skipped"
+        },
+        "checkpoint_id": "ckpt_7df7b15a",
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_tokens": 123840,
+          "calibration": 1.0,
+          "cleared_tool_results": 0,
+          "compaction": null,
+          "context_window": 128000,
+          "estimated_input_tokens": 2258,
+          "instruction_docs": [],
+          "message_count": 4,
+          "prefix_hash": "08c0741d5be8adf74f3467514774f333ffeeef61612568a1ca327824f4308357",
+          "resume_status": "full-valid",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ],
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "summary_active": false,
+          "system_tokens": 1769,
+          "tool_count": 1,
+          "tool_signature": "5d53f7e0cdcfcd10f7e6d7e28e11e277ff3c6858865a18a40bcfdd440adfa18f",
+          "workspace_fingerprint": "19fdc183409539bacd7342757eeeb65bec27e2503f0b7d6f0840531de16bdcb9"
+        },
+        "redacted_env": {
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ]
+        },
+        "request_id": "req_20261103-184022-844240",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184022-737b42",
+        "run_state": {
+          "attempts": 2,
+          "checkpoint_id": "ckpt_7df7b15a",
+          "created_at": "2026-11-03T18:40:22+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-11-03T18:40:22+08:00",
+          "last_tool": "patch_file",
+          "partial_answer": "",
+          "request_id": "req_20261103-184022-844240",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20261103-184022-737b42",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 1,
+          "updated_at": "2026-11-03T18:40:22+08:00",
+          "user_request": "Replace the placeholder token in sample.txt with delta."
+        },
+        "source_evidence": {
+          "actions": [
+            {
+              "args": {
+                "new_text": "delta",
+                "old_text": "placeholder",
+                "path": "sample.txt"
+              },
+              "cache_hit": false,
+              "created_at": "2026-11-03T10:40:22.186433+00:00",
+              "status": "ok",
+              "tool": "patch_file"
+            }
+          ],
+          "files": {},
+          "next_id": 1,
+          "schema_version": "v1",
+          "task_id": "taskrun_af2d34a542",
+          "updated_at": "2026-11-03T10:40:22.186436+00:00"
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-11-03T10:40:22.110823+00:00",
+          "evidence": [
+            {
+              "affected_paths": [
+                "sample.txt"
+              ],
+              "created_at": "2026-11-03T10:40:22.184844+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "patched sample.txt\n--- a/sample.txt\n+++ b/sample.txt\n@@ -2,3 +2,3 @@\n beta\n gamma\n-placeholder\n+delta",
+              "tool": "patch_file"
+            },
+            {
+              "created_at": "2026-11-03T10:40:22.258094+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [],
+          "goal": "Replace the placeholder token in sample.txt with delta.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20261103-184022-737b42"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_af2d34a542",
+          "todos": [],
+          "updated_at": "2026-11-03T10:40:22.258096+00:00",
+          "verification": {
+            "changed_paths": [],
+            "checks": [],
+            "edit_revision": 0
+          },
+          "verification_pending": false
+        },
+        "tool_steps": 1
+      },
+      "report_relpath": "sample_placeholder_delta/bench_repo_patch/.hh/runs/run_20261103-184022-737b42/report.json",
+      "run_dir_relpath": "sample_placeholder_delta/bench_repo_patch/.hh/runs/run_20261103-184022-737b42",
+      "run_id": "run_20261103-184022-737b42",
+      "run_state": {
+        "attempts": 2,
+        "checkpoint_id": "ckpt_7df7b15a",
+        "created_at": "2026-11-03T18:40:22+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-11-03T18:40:22+08:00",
+        "last_tool": "patch_file",
+        "partial_answer": "",
+        "request_id": "req_20261103-184022-844240",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184022-737b42",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 1,
+        "updated_at": "2026-11-03T18:40:22+08:00",
+        "user_request": "Replace the placeholder token in sample.txt with delta."
+      },
+      "run_state_relpath": "sample_placeholder_delta/bench_repo_patch/.hh/runs/run_20261103-184022-737b42/run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 1,
+      "verifier": "python -c \"from pathlib import Path; assert 'delta' in Path('sample.txt').read_text(encoding='utf-8')\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "patch_file"
+      ],
+      "artifact_digest": "sha256:e002978c173afade6392ba828d0c739d6178823d885435671698b5d232723140",
+      "artifact_exists": true,
+      "artifact_path": "README.md",
+      "attempts": 3,
+      "category": "tool_error_recovery",
+      "expected_artifact": "README.md is updated after invalid arguments",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "invalid_patch_recovery/bench_repo_readme",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "id": "invalid_patch_recovery",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Recover from one malformed patch request and update the README introduction.",
+      "report": {
+        "attempts": 3,
+        "auto_memory": {
+          "reason": "no_explicit_durable_fact",
+          "results": [],
+          "status": "skipped"
+        },
+        "auto_skill": {
+          "reason": "too_few_tool_steps",
+          "status": "skipped"
+        },
+        "checkpoint_id": "ckpt_bc427de5",
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_tokens": 123840,
+          "calibration": 1.0,
+          "cleared_tool_results": 0,
+          "compaction": null,
+          "context_window": 128000,
+          "estimated_input_tokens": 2747,
+          "instruction_docs": [],
+          "message_count": 6,
+          "prefix_hash": "2ba4e6306458ab618d5689ec8221d2a2167d9ebda9cb78fdf84ce93250c0e48d",
+          "resume_status": "full-valid",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ],
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "summary_active": false,
+          "system_tokens": 1768,
+          "tool_count": 1,
+          "tool_signature": "5d53f7e0cdcfcd10f7e6d7e28e11e277ff3c6858865a18a40bcfdd440adfa18f",
+          "workspace_fingerprint": "68227f01a2cc6af237f71211b42c6358833e605def8dd6df9ea5494ae6f94759"
+        },
+        "redacted_env": {
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ]
+        },
+        "request_id": "req_20261103-184022-9b5c57",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184022-a37145",
+        "run_state": {
+          "attempts": 3,
+          "checkpoint_id": "ckpt_bc427de5",
+          "created_at": "2026-11-03T18:40:22+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-11-03T18:40:22+08:00",
+          "last_tool": "patch_file",
+          "partial_answer": "",
+          "request_id": "req_20261103-184022-9b5c57",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20261103-184022-a37145",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 2,
+          "updated_at": "2026-11-03T18:40:22+08:00",
+          "user_request": "Recover from one malformed patch request and update the README introduction."
+        },
+        "source_evidence": {
+          "actions": [
+            {
+              "args": {
+                "old_text": "This is a placeholder benchmark fixture.",
+                "path": "README.md"
+              },
+              "cache_hit": false,
+              "created_at": "2026-11-03T10:40:22.410645+00:00",
+              "status": "rejected",
+              "tool": "patch_file"
+            },
+            {
+              "args": {
+                "new_text": "This fixture recovered after invalid patch args.",
+                "old_text": "This is a placeholder benchmark fixture.",
+                "path": "README.md"
+              },
+              "cache_hit": false,
+              "created_at": "2026-11-03T10:40:22.479751+00:00",
+              "status": "ok",
+              "tool": "patch_file"
+            }
+          ],
+          "files": {},
+          "next_id": 1,
+          "schema_version": "v1",
+          "task_id": "taskrun_b5cc5c8a1a",
+          "updated_at": "2026-11-03T10:40:22.479754+00:00"
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-11-03T10:40:22.347051+00:00",
+          "evidence": [
+            {
+              "affected_paths": [],
+              "created_at": "2026-11-03T10:40:22.409003+00:00",
+              "error_code": "invalid_arguments",
+              "kind": "tool",
+              "status": "rejected",
+              "summary": "error: invalid arguments for patch_file: missing new_text\nexample: <tool name=\"patch_file\" path=\"binary_search.py\"><old_text>return -1</old_text><new_text>return mid</new_text></tool>",
+              "tool": "patch_file"
+            },
+            {
+              "affected_paths": [
+                "README.md"
+              ],
+              "created_at": "2026-11-03T10:40:22.477803+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "patched README.md\n--- a/README.md\n+++ b/README.md\n@@ -1,5 +1,5 @@\n # HH Benchmark README Fixture\n \n-This is a placeholder benchmark fixture.\n+This fixture recovered after invalid patch args.\n \n - Placeholder note about the repo.",
+              "tool": "patch_file"
+            },
+            {
+              "created_at": "2026-11-03T10:40:22.549356+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [
+            {
+              "check_kind": "",
+              "created_at": "2026-11-03T10:40:22.409008+00:00",
+              "error_code": "invalid_arguments",
+              "fingerprint": "d4b2544104e63338c71b534f092270a3f581f522212012c43fc2c8267112ddd3",
+              "path": "README.md",
+              "read_only": false,
+              "resolution": "corrected by successful patch_file",
+              "resolved": true,
+              "resolved_at": "2026-11-03T10:40:22.477809+00:00",
+              "retryable": true,
+              "summary": "error: invalid arguments for patch_file: missing new_text\nexample: <tool name=\"patch_file\" path=\"binary_search.py\"><old_text>return -1</old_text><new_text>return mid</new_text></tool>",
+              "tool": "patch_file"
+            }
+          ],
+          "goal": "Recover from one malformed patch request and update the README introduction.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20261103-184022-a37145"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_b5cc5c8a1a",
+          "todos": [],
+          "updated_at": "2026-11-03T10:40:22.549359+00:00",
+          "verification": {
+            "changed_paths": [],
+            "checks": [],
+            "edit_revision": 0
+          },
+          "verification_pending": false
+        },
+        "tool_steps": 2
+      },
+      "report_relpath": "invalid_patch_recovery/bench_repo_readme/.hh/runs/run_20261103-184022-a37145/report.json",
+      "run_dir_relpath": "invalid_patch_recovery/bench_repo_readme/.hh/runs/run_20261103-184022-a37145",
+      "run_id": "run_20261103-184022-a37145",
+      "run_state": {
+        "attempts": 3,
+        "checkpoint_id": "ckpt_bc427de5",
+        "created_at": "2026-11-03T18:40:22+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-11-03T18:40:22+08:00",
+        "last_tool": "patch_file",
+        "partial_answer": "",
+        "request_id": "req_20261103-184022-9b5c57",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184022-a37145",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 2,
+        "updated_at": "2026-11-03T18:40:22+08:00",
+        "user_request": "Recover from one malformed patch request and update the README introduction."
+      },
+      "run_state_relpath": "invalid_patch_recovery/bench_repo_readme/.hh/runs/run_20261103-184022-a37145/run_state.json",
+      "status": "pass",
+      "step_budget": 2,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 2,
+      "verifier": "python -c \"from pathlib import Path; assert 'This fixture recovered after invalid patch args.' in Path('README.md').read_text(encoding='utf-8')\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "read_file",
+        "patch_file"
+      ],
+      "artifact_digest": "sha256:0c0f6e3ab243efe3321d69a833ae53d5b0158467ec443afb28d1d877cd3f6bc1",
+      "artifact_exists": true,
+      "artifact_path": "sample.txt",
+      "attempts": 3,
+      "category": "security_recovery",
+      "expected_artifact": "sample.txt contains alpha-guarded after the rejected read",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "path_escape_recovery/bench_repo_patch",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "id": "path_escape_recovery",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Reject an out-of-workspace read and then apply the safe sample.txt update.",
+      "report": {
+        "attempts": 3,
+        "auto_memory": {
+          "reason": "no_explicit_durable_fact",
+          "results": [],
+          "status": "skipped"
+        },
+        "auto_skill": {
+          "reason": "too_few_tool_steps",
+          "status": "skipped"
+        },
+        "checkpoint_id": "ckpt_6305cbd3",
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_tokens": 123840,
+          "calibration": 1.0,
+          "cleared_tool_results": 0,
+          "compaction": null,
+          "context_window": 128000,
+          "estimated_input_tokens": 2612,
+          "instruction_docs": [],
+          "message_count": 6,
+          "prefix_hash": "a5de640fd278ff029a2b36456058e05a4f1e2cddc52284f2b41ce2051308aeaf",
+          "resume_status": "full-valid",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ],
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "summary_active": false,
+          "system_tokens": 1764,
+          "tool_count": 2,
+          "tool_signature": "18f1085435d6ecfa386ed983885f6670e721d8e91e7aea19252276453fee0ae7",
+          "workspace_fingerprint": "1deb75077ace06ff33218e0ab08f445328ffe3c5242197a174777458958f953b"
+        },
+        "redacted_env": {
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ]
+        },
+        "request_id": "req_20261103-184022-ac33a9",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184022-eca0d0",
+        "run_state": {
+          "attempts": 3,
+          "checkpoint_id": "ckpt_6305cbd3",
+          "created_at": "2026-11-03T18:40:22+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-11-03T18:40:22+08:00",
+          "last_tool": "patch_file",
+          "partial_answer": "",
+          "request_id": "req_20261103-184022-ac33a9",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20261103-184022-eca0d0",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 2,
+          "updated_at": "2026-11-03T18:40:22+08:00",
+          "user_request": "Reject an out-of-workspace read and then apply the safe sample.txt update."
+        },
+        "source_evidence": {
+          "actions": [
+            {
+              "args": {
+                "end": 1,
+                "path": "../outside.txt",
+                "start": 1
+              },
+              "cache_hit": false,
+              "created_at": "2026-11-03T10:40:22.698022+00:00",
+              "status": "rejected",
+              "tool": "read_file"
+            },
+            {
+              "args": {
+                "new_text": "alpha-guarded",
+                "old_text": "alpha",
+                "path": "sample.txt"
+              },
+              "cache_hit": false,
+              "created_at": "2026-11-03T10:40:22.767511+00:00",
+              "status": "ok",
+              "tool": "patch_file"
+            }
+          ],
+          "files": {},
+          "next_id": 1,
+          "schema_version": "v1",
+          "task_id": "taskrun_16961d9fef",
+          "updated_at": "2026-11-03T10:40:22.767514+00:00"
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-11-03T10:40:22.635758+00:00",
+          "evidence": [
+            {
+              "affected_paths": [],
+              "created_at": "2026-11-03T10:40:22.696383+00:00",
+              "error_code": "path_escape",
+              "kind": "tool",
+              "status": "rejected",
+              "summary": "error: invalid arguments for read_file: path escapes workspace: ../outside.txt\nexample: <tool>{\"name\":\"read_file\",\"args\":{\"path\":\"README.md\",\"start\":1,\"end\":80}}</tool>",
+              "tool": "read_file"
+            },
+            {
+              "affected_paths": [
+                "sample.txt"
+              ],
+              "created_at": "2026-11-03T10:40:22.765635+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "patched sample.txt\n--- a/sample.txt\n+++ b/sample.txt\n@@ -1,3 +1,3 @@\n-alpha\n+alpha-guarded\n beta\n gamma",
+              "tool": "patch_file"
+            },
+            {
+              "created_at": "2026-11-03T10:40:22.833672+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [
+            {
+              "check_kind": "",
+              "created_at": "2026-11-03T10:40:22.696389+00:00",
+              "error_code": "path_escape",
+              "fingerprint": "3ae1fba273cacbc3f407242e51d129123cd271ec589fe93aad0240257cafab94",
+              "path": "../outside.txt",
+              "read_only": true,
+              "resolved": false,
+              "retryable": false,
+              "summary": "error: invalid arguments for read_file: path escapes workspace: ../outside.txt\nexample: <tool>{\"name\":\"read_file\",\"args\":{\"path\":\"README.md\",\"start\":1,\"end\":80}}</tool>",
+              "tool": "read_file"
+            }
+          ],
+          "goal": "Reject an out-of-workspace read and then apply the safe sample.txt update.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20261103-184022-eca0d0"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_16961d9fef",
+          "todos": [],
+          "updated_at": "2026-11-03T10:40:22.833674+00:00",
+          "verification": {
+            "changed_paths": [],
+            "checks": [],
+            "edit_revision": 0
+          },
+          "verification_pending": false
+        },
+        "tool_steps": 2
+      },
+      "report_relpath": "path_escape_recovery/bench_repo_patch/.hh/runs/run_20261103-184022-eca0d0/report.json",
+      "run_dir_relpath": "path_escape_recovery/bench_repo_patch/.hh/runs/run_20261103-184022-eca0d0",
+      "run_id": "run_20261103-184022-eca0d0",
+      "run_state": {
+        "attempts": 3,
+        "checkpoint_id": "ckpt_6305cbd3",
+        "created_at": "2026-11-03T18:40:22+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-11-03T18:40:22+08:00",
+        "last_tool": "patch_file",
+        "partial_answer": "",
+        "request_id": "req_20261103-184022-ac33a9",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184022-eca0d0",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 2,
+        "updated_at": "2026-11-03T18:40:22+08:00",
+        "user_request": "Reject an out-of-workspace read and then apply the safe sample.txt update."
+      },
+      "run_state_relpath": "path_escape_recovery/bench_repo_patch/.hh/runs/run_20261103-184022-eca0d0/run_state.json",
+      "status": "pass",
+      "step_budget": 2,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 2,
+      "verifier": "python -c \"from pathlib import Path; assert 'alpha-guarded' in Path('sample.txt').read_text(encoding='utf-8'); assert 'path_escape' in ''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl'))\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "read_file",
+        "patch_file"
+      ],
+      "artifact_digest": "sha256:c9e609150e7d00b1b1b7230f147d8948417881bd09b30684c0a4a025da75214c",
+      "artifact_exists": true,
+      "artifact_path": "sample.txt",
+      "attempts": 4,
+      "category": "tool_contract_recovery",
+      "expected_artifact": "sample.txt contains repeat-guarded",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "repeated_read_recovery/bench_repo_patch",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "id": "repeated_read_recovery",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Recover from repeated identical reads and complete the requested sample.txt edit.",
+      "report": {
+        "attempts": 4,
+        "auto_memory": {
+          "reason": "no_explicit_durable_fact",
+          "results": [],
+          "status": "skipped"
+        },
+        "auto_skill": {
+          "reason": "too_few_tool_steps",
+          "status": "skipped"
+        },
+        "checkpoint_id": "ckpt_d7b2bc64",
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_tokens": 123840,
+          "calibration": 1.0,
+          "cleared_tool_results": 0,
+          "compaction": null,
+          "context_window": 128000,
+          "estimated_input_tokens": 2814,
+          "instruction_docs": [],
+          "message_count": 8,
+          "prefix_hash": "8d4abf5c850285ca9a5b5a5af41b1003e362f3ecd7a227952fb8bfba8ea1471c",
+          "resume_status": "partial-stale",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ],
+          "stale_paths": [
+            "sample.txt"
+          ],
+          "stale_summary_invalidations": 1,
+          "summary_active": false,
+          "system_tokens": 1767,
+          "tool_count": 2,
+          "tool_signature": "18f1085435d6ecfa386ed983885f6670e721d8e91e7aea19252276453fee0ae7",
+          "workspace_fingerprint": "5e760fbf79159769106465c412d78d27706402cc0873b20702b36dcf64358fcc"
+        },
+        "redacted_env": {
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ]
+        },
+        "request_id": "req_20261103-184022-cedd0b",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184022-8dac68",
+        "run_state": {
+          "attempts": 4,
+          "checkpoint_id": "ckpt_d7b2bc64",
+          "created_at": "2026-11-03T18:40:22+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-11-03T18:40:23+08:00",
+          "last_tool": "patch_file",
+          "partial_answer": "",
+          "request_id": "req_20261103-184022-cedd0b",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20261103-184022-8dac68",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 2,
+          "updated_at": "2026-11-03T18:40:23+08:00",
+          "user_request": "Recover from repeated identical reads and complete the requested sample.txt edit."
+        },
+        "source_evidence": {
+          "actions": [
+            {
+              "args": {
+                "end": 4,
+                "path": "sample.txt",
+                "start": 1
+              },
+              "cache_hit": false,
+              "created_at": "2026-11-03T10:40:22.985478+00:00",
+              "status": "ok",
+              "tool": "read_file"
+            },
+            {
+              "args": {
+                "end": 4,
+                "path": "sample.txt",
+                "start": 1
+              },
+              "cache_hit": true,
+              "created_at": "2026-11-03T10:40:23.053220+00:00",
+              "status": "cached",
+              "tool": "read_file"
+            },
+            {
+              "args": {
+                "new_text": "repeat-guarded",
+                "old_text": "placeholder",
+                "path": "sample.txt"
+              },
+              "cache_hit": false,
+              "created_at": "2026-11-03T10:40:23.125751+00:00",
+              "status": "ok",
+              "tool": "patch_file"
+            }
+          ],
+          "files": {},
+          "next_id": 2,
+          "schema_version": "v1",
+          "task_id": "taskrun_8e49f5ae7d",
+          "updated_at": "2026-11-03T10:40:23.184748+00:00"
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-11-03T10:40:22.921422+00:00",
+          "evidence": [
+            {
+              "affected_paths": [],
+              "created_at": "2026-11-03T10:40:22.983844+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "# sample.txt\n   1: alpha\n   2: beta\n   3: gamma\n   4: placeholder",
+              "tool": "read_file"
+            },
+            {
+              "affected_paths": [],
+              "created_at": "2026-11-03T10:40:23.051056+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "cached observation: unchanged successful read_file result reused; no tool step consumed.\n- sample.txt: content=alpha | beta | gamma | placeholder; excerpt_sha256=1f8a9434564a",
+              "tool": "read_file"
+            },
+            {
+              "affected_paths": [
+                "sample.txt"
+              ],
+              "created_at": "2026-11-03T10:40:23.123843+00:00",
+              "error_code": "",
+              "kind": "tool",
+              "status": "ok",
+              "summary": "patched sample.txt\n--- a/sample.txt\n+++ b/sample.txt\n@@ -2,3 +2,3 @@\n beta\n gamma\n-placeholder\n+repeat-guarded",
+              "tool": "patch_file"
+            },
+            {
+              "created_at": "2026-11-03T10:40:23.193994+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [],
+          "goal": "Recover from repeated identical reads and complete the requested sample.txt edit.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20261103-184022-8dac68"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_8e49f5ae7d",
+          "todos": [],
+          "updated_at": "2026-11-03T10:40:23.193996+00:00",
+          "verification": {
+            "changed_paths": [],
+            "checks": [],
+            "edit_revision": 0
+          },
+          "verification_pending": false
+        },
+        "tool_steps": 2
+      },
+      "report_relpath": "repeated_read_recovery/bench_repo_patch/.hh/runs/run_20261103-184022-8dac68/report.json",
+      "run_dir_relpath": "repeated_read_recovery/bench_repo_patch/.hh/runs/run_20261103-184022-8dac68",
+      "run_id": "run_20261103-184022-8dac68",
+      "run_state": {
+        "attempts": 4,
+        "checkpoint_id": "ckpt_d7b2bc64",
+        "created_at": "2026-11-03T18:40:22+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-11-03T18:40:23+08:00",
+        "last_tool": "patch_file",
+        "partial_answer": "",
+        "request_id": "req_20261103-184022-cedd0b",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184022-8dac68",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 2,
+        "updated_at": "2026-11-03T18:40:23+08:00",
+        "user_request": "Recover from repeated identical reads and complete the requested sample.txt edit."
+      },
+      "run_state_relpath": "repeated_read_recovery/bench_repo_patch/.hh/runs/run_20261103-184022-8dac68/run_state.json",
+      "status": "pass",
+      "step_budget": 4,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 2,
+      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'repeat-guarded' in Path('sample.txt').read_text(encoding='utf-8'); assert 'tool_cache_hit' in traces\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "read_file"
+      ],
+      "artifact_digest": "sha256:e1fb642f4924b9dba90e4d9ca47810436b274fd48fbfec832a989f09c5c00da4",
+      "artifact_exists": true,
+      "artifact_path": "README.md",
+      "attempts": 1,
+      "category": "context_governance",
+      "expected_artifact": "context reduction creates an auditable checkpoint",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "context_reduction_checkpoint/bench_repo_readme",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "id": "context_reduction_checkpoint",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": false,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Complete the task while preserving a checkpoint when the context is reduced.",
+      "report": {
+        "attempts": 1,
+        "auto_memory": {
+          "reason": "no_explicit_durable_fact",
+          "results": [],
+          "status": "skipped"
+        },
+        "auto_skill": {
+          "reason": "too_few_tool_steps",
+          "status": "skipped"
+        },
+        "checkpoint_id": "ckpt_522a1e8d",
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_tokens": 2175,
+          "calibration": 1.0,
+          "cleared_tool_results": 0,
+          "compaction": {
+            "after_tokens": 2136,
+            "before_tokens": 3349,
+            "kind": "trim"
+          },
+          "context_window": 128000,
+          "estimated_input_tokens": 2136,
+          "instruction_docs": [],
+          "message_count": 4,
+          "prefix_hash": "808b6713ccb0ea7a8dcdc1c3600492d783ffeac051364ab46d2d2c1f30f7c6b2",
+          "resume_status": "no-checkpoint",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ],
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "summary_active": false,
+          "system_tokens": 1775,
+          "tool_count": 1,
+          "tool_signature": "dec43b759af571da85b10666c0df8d1e361b3e84176e4e2f9fbe9bf6d3054d7e",
+          "workspace_fingerprint": "61ec407d3c77cb35600f236d3ff562223687ec93ddd3d7ea4e18454d9e578e63"
+        },
+        "redacted_env": {
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ]
+        },
+        "request_id": "req_20261103-184023-3ae4f8",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184023-d56ecb",
+        "run_state": {
+          "attempts": 1,
+          "checkpoint_id": "ckpt_522a1e8d",
+          "created_at": "2026-11-03T18:40:23+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-11-03T18:40:23+08:00",
+          "last_tool": "",
+          "partial_answer": "",
+          "request_id": "req_20261103-184023-3ae4f8",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20261103-184023-d56ecb",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 0,
+          "updated_at": "2026-11-03T18:40:23+08:00",
+          "user_request": "Complete the task while preserving a checkpoint when the context is reduced."
+        },
+        "source_evidence": {
+          "actions": [],
+          "files": {},
+          "next_id": 1,
+          "schema_version": "v1",
+          "task_id": "taskrun_0c416e4615",
+          "updated_at": "2026-11-03T10:40:23.302435+00:00"
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-11-03T10:40:23.302431+00:00",
+          "evidence": [
+            {
+              "created_at": "2026-11-03T10:40:23.366951+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [],
+          "goal": "Complete the task while preserving a checkpoint when the context is reduced.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20261103-184023-d56ecb"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_0c416e4615",
+          "todos": [],
+          "updated_at": "2026-11-03T10:40:23.366953+00:00",
+          "verification": {
+            "changed_paths": [],
+            "checks": [],
+            "edit_revision": 0
+          },
+          "verification_pending": false
+        },
+        "tool_steps": 0
+      },
+      "report_relpath": "context_reduction_checkpoint/bench_repo_readme/.hh/runs/run_20261103-184023-d56ecb/report.json",
+      "run_dir_relpath": "context_reduction_checkpoint/bench_repo_readme/.hh/runs/run_20261103-184023-d56ecb",
+      "run_id": "run_20261103-184023-d56ecb",
+      "run_state": {
+        "attempts": 1,
+        "checkpoint_id": "ckpt_522a1e8d",
+        "created_at": "2026-11-03T18:40:23+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-11-03T18:40:23+08:00",
+        "last_tool": "",
+        "partial_answer": "",
+        "request_id": "req_20261103-184023-3ae4f8",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184023-d56ecb",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 0,
+        "updated_at": "2026-11-03T18:40:23+08:00",
+        "user_request": "Complete the task while preserving a checkpoint when the context is reduced."
+      },
+      "run_state_relpath": "context_reduction_checkpoint/bench_repo_readme/.hh/runs/run_20261103-184023-d56ecb/run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 0,
+      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'context_reduction' in traces\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "read_file"
+      ],
+      "artifact_digest": "sha256:aa5fe63f6475e4de2553d551b9e91e883c2fc5f09f27c625c3f5fa37710956b0",
+      "artifact_exists": true,
+      "artifact_path": "sample.txt",
+      "attempts": 1,
+      "category": "checkpoint_recovery",
+      "expected_artifact": "freshness mismatch is detected and checkpointed",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "freshness_reanchor_resume/bench_repo_patch",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "id": "freshness_reanchor_resume",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": false,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Resume after a key file changed and re-anchor the stale checkpoint.",
+      "report": {
+        "attempts": 1,
+        "auto_memory": {
+          "reason": "no_explicit_durable_fact",
+          "results": [],
+          "status": "skipped"
+        },
+        "auto_skill": {
+          "reason": "too_few_tool_steps",
+          "status": "skipped"
+        },
+        "checkpoint_id": "ckpt_5032e2b7",
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_tokens": 123840,
+          "calibration": 1.0,
+          "cleared_tool_results": 0,
+          "compaction": null,
+          "context_window": 128000,
+          "estimated_input_tokens": 1976,
+          "instruction_docs": [],
+          "message_count": 1,
+          "prefix_hash": "326ea1daab04aad0f551b5b5aeda723649d6326e470f6b4c208e2dc69288c165",
+          "resume_status": "partial-stale",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ],
+          "stale_paths": [
+            "sample.txt"
+          ],
+          "stale_summary_invalidations": 0,
+          "summary_active": false,
+          "system_tokens": 1770,
+          "tool_count": 1,
+          "tool_signature": "dec43b759af571da85b10666c0df8d1e361b3e84176e4e2f9fbe9bf6d3054d7e",
+          "workspace_fingerprint": "cb599750942422148f2b64fc61ca521a43b37611f44a7ee5e48f68676473110c"
+        },
+        "redacted_env": {
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ]
+        },
+        "request_id": "req_20261103-184023-598f2f",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184023-0d0e76",
+        "run_state": {
+          "attempts": 1,
+          "checkpoint_id": "ckpt_5032e2b7",
+          "created_at": "2026-11-03T18:40:23+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-11-03T18:40:23+08:00",
+          "last_tool": "",
+          "partial_answer": "",
+          "request_id": "req_20261103-184023-598f2f",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20261103-184023-0d0e76",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 0,
+          "updated_at": "2026-11-03T18:40:23+08:00",
+          "user_request": "Resume after a key file changed and re-anchor the stale checkpoint."
+        },
+        "source_evidence": {
+          "actions": [],
+          "files": {},
+          "next_id": 1,
+          "schema_version": "v1",
+          "task_id": "taskrun_0bf63b46d6",
+          "updated_at": "2026-11-03T10:40:23.451289+00:00"
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-11-03T10:40:23.451285+00:00",
+          "evidence": [
+            {
+              "created_at": "2026-11-03T10:40:23.514949+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [],
+          "goal": "Resume after a key file changed and re-anchor the stale checkpoint.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20261103-184023-0d0e76"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_0bf63b46d6",
+          "todos": [],
+          "updated_at": "2026-11-03T10:40:23.514951+00:00",
+          "verification": {
+            "changed_paths": [],
+            "checks": [],
+            "edit_revision": 0
+          },
+          "verification_pending": false
+        },
+        "tool_steps": 0
+      },
+      "report_relpath": "freshness_reanchor_resume/bench_repo_patch/.hh/runs/run_20261103-184023-0d0e76/report.json",
+      "run_dir_relpath": "freshness_reanchor_resume/bench_repo_patch/.hh/runs/run_20261103-184023-0d0e76",
+      "run_id": "run_20261103-184023-0d0e76",
+      "run_state": {
+        "attempts": 1,
+        "checkpoint_id": "ckpt_5032e2b7",
+        "created_at": "2026-11-03T18:40:23+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-11-03T18:40:23+08:00",
+        "last_tool": "",
+        "partial_answer": "",
+        "request_id": "req_20261103-184023-598f2f",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184023-0d0e76",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 0,
+        "updated_at": "2026-11-03T18:40:23+08:00",
+        "user_request": "Resume after a key file changed and re-anchor the stale checkpoint."
+      },
+      "run_state_relpath": "freshness_reanchor_resume/bench_repo_patch/.hh/runs/run_20261103-184023-0d0e76/run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 0,
+      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'freshness_mismatch' in traces\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "read_file"
+      ],
+      "artifact_digest": "sha256:59fb5abc13b3820bd9a669d9748a5236a301262fb47973660a61ec32d9610fef",
+      "artifact_exists": true,
+      "artifact_path": "sample.txt",
+      "attempts": 1,
+      "category": "checkpoint_recovery",
+      "expected_artifact": "runtime identity mismatch is traced",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Done.",
+      "fixture_copy_relpath": "workspace_mismatch_resume/bench_repo_patch",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "id": "workspace_mismatch_resume",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Resume after workspace identity drift and record the mismatch.",
+      "report": {
+        "attempts": 1,
+        "auto_memory": {
+          "reason": "no_explicit_durable_fact",
+          "results": [],
+          "status": "skipped"
+        },
+        "auto_skill": {
+          "reason": "too_few_tool_steps",
+          "status": "skipped"
+        },
+        "checkpoint_id": "ckpt_01e352d9",
+        "final_answer": "Done.",
+        "prompt_metadata": {
+          "budget_tokens": 123840,
+          "calibration": 1.0,
+          "cleared_tool_results": 0,
+          "compaction": null,
+          "context_window": 128000,
+          "estimated_input_tokens": 1975,
+          "instruction_docs": [],
+          "message_count": 1,
+          "prefix_hash": "4eafebb9051da6f880bb2f372c180128dc46a33f0005c41a0e98b709ba8e355a",
+          "resume_status": "workspace-mismatch",
+          "runtime_identity_mismatch_fields": [
+            "workspace_fingerprint"
+          ],
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ],
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "summary_active": false,
+          "system_tokens": 1770,
+          "tool_count": 1,
+          "tool_signature": "dec43b759af571da85b10666c0df8d1e361b3e84176e4e2f9fbe9bf6d3054d7e",
+          "workspace_fingerprint": "5381efb72fc443b88158b0039373aef98c3b9a536f1e25d64164fe8188a04310"
+        },
+        "redacted_env": {
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ]
+        },
+        "request_id": "req_20261103-184023-c4bb14",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184023-96a001",
+        "run_state": {
+          "attempts": 1,
+          "checkpoint_id": "ckpt_01e352d9",
+          "created_at": "2026-11-03T18:40:23+08:00",
+          "final_answer": "Done.",
+          "finished_at": "2026-11-03T18:40:23+08:00",
+          "last_tool": "",
+          "partial_answer": "",
+          "request_id": "req_20261103-184023-c4bb14",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20261103-184023-96a001",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 0,
+          "updated_at": "2026-11-03T18:40:23+08:00",
+          "user_request": "Resume after workspace identity drift and record the mismatch."
+        },
+        "source_evidence": {
+          "actions": [],
+          "files": {},
+          "next_id": 1,
+          "schema_version": "v1",
+          "task_id": "taskrun_badf79567f",
+          "updated_at": "2026-11-03T10:40:23.599118+00:00"
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-11-03T10:40:23.599115+00:00",
+          "evidence": [
+            {
+              "created_at": "2026-11-03T10:40:23.661142+00:00",
+              "kind": "delivery",
+              "summary": "Done."
+            }
+          ],
+          "failures": [],
+          "goal": "Resume after workspace identity drift and record the mismatch.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20261103-184023-96a001"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_badf79567f",
+          "todos": [],
+          "updated_at": "2026-11-03T10:40:23.661144+00:00",
+          "verification": {
+            "changed_paths": [],
+            "checks": [],
+            "edit_revision": 0
+          },
+          "verification_pending": false
+        },
+        "tool_steps": 0
+      },
+      "report_relpath": "workspace_mismatch_resume/bench_repo_patch/.hh/runs/run_20261103-184023-96a001/report.json",
+      "run_dir_relpath": "workspace_mismatch_resume/bench_repo_patch/.hh/runs/run_20261103-184023-96a001",
+      "run_id": "run_20261103-184023-96a001",
+      "run_state": {
+        "attempts": 1,
+        "checkpoint_id": "ckpt_01e352d9",
+        "created_at": "2026-11-03T18:40:23+08:00",
+        "final_answer": "Done.",
+        "finished_at": "2026-11-03T18:40:23+08:00",
+        "last_tool": "",
+        "partial_answer": "",
+        "request_id": "req_20261103-184023-c4bb14",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184023-96a001",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 0,
+        "updated_at": "2026-11-03T18:40:23+08:00",
+        "user_request": "Resume after workspace identity drift and record the mismatch."
+      },
+      "run_state_relpath": "workspace_mismatch_resume/bench_repo_patch/.hh/runs/run_20261103-184023-96a001/run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 0,
+      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'runtime_identity_mismatch' in traces\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "read_file"
+      ],
+      "artifact_digest": "sha256:e1fb642f4924b9dba90e4d9ca47810436b274fd48fbfec832a989f09c5c00da4",
+      "artifact_exists": true,
+      "artifact_path": "README.md",
+      "attempts": 1,
+      "category": "durable_memory",
+      "expected_artifact": "stable convention is promoted into durable memory",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Remembered the explicit benchmark artifact convention.",
+      "fixture_copy_relpath": "durable_promotion_accept/bench_repo_readme",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "id": "durable_promotion_accept",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Remember that Preserve benchmark regression artifacts under artifacts/.",
+      "report": {
+        "attempts": 1,
+        "auto_memory": {
+          "results": [
+            {
+              "action": "add",
+              "id": "mem_6a9e26b1eb0c",
+              "status": "added"
+            }
+          ],
+          "status": "captured"
+        },
+        "auto_skill": {
+          "reason": "too_few_tool_steps",
+          "status": "skipped"
+        },
+        "checkpoint_id": "ckpt_dcf07036",
+        "final_answer": "Remembered the explicit benchmark artifact convention.",
+        "prompt_metadata": {
+          "budget_tokens": 123840,
+          "calibration": 1.0,
+          "cleared_tool_results": 0,
+          "compaction": null,
+          "context_window": 128000,
+          "estimated_input_tokens": 1906,
+          "instruction_docs": [],
+          "message_count": 1,
+          "prefix_hash": "91eb287b5fccf69f43024215217c75fe7fb9837e90d728f61a6d85b5ed937417",
+          "resume_status": "no-checkpoint",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ],
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "summary_active": false,
+          "system_tokens": 1770,
+          "tool_count": 1,
+          "tool_signature": "dec43b759af571da85b10666c0df8d1e361b3e84176e4e2f9fbe9bf6d3054d7e",
+          "workspace_fingerprint": "ab2d2abbfabcafa45ddb852e4b2779482d04e057f66ee4a7f2ec79c7b32a83dc"
+        },
+        "redacted_env": {
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ]
+        },
+        "request_id": "req_20261103-184023-429dbd",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184023-531724",
+        "run_state": {
+          "attempts": 1,
+          "checkpoint_id": "ckpt_dcf07036",
+          "created_at": "2026-11-03T18:40:23+08:00",
+          "final_answer": "Remembered the explicit benchmark artifact convention.",
+          "finished_at": "2026-11-03T18:40:23+08:00",
+          "last_tool": "",
+          "partial_answer": "",
+          "request_id": "req_20261103-184023-429dbd",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20261103-184023-531724",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 0,
+          "updated_at": "2026-11-03T18:40:23+08:00",
+          "user_request": "Remember that Preserve benchmark regression artifacts under artifacts/."
+        },
+        "source_evidence": {
+          "actions": [],
+          "files": {},
+          "next_id": 1,
+          "schema_version": "v1",
+          "task_id": "taskrun_86c4525dd1",
+          "updated_at": "2026-11-03T10:40:23.795005+00:00"
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-11-03T10:40:23.794981+00:00",
+          "evidence": [
+            {
+              "created_at": "2026-11-03T10:40:23.882823+00:00",
+              "kind": "delivery",
+              "summary": "Remembered the explicit benchmark artifact convention."
+            }
+          ],
+          "failures": [],
+          "goal": "Remember that Preserve benchmark regression artifacts under artifacts/.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20261103-184023-531724"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_86c4525dd1",
+          "todos": [],
+          "updated_at": "2026-11-03T10:40:23.882825+00:00",
+          "verification": {
+            "changed_paths": [],
+            "checks": [],
+            "edit_revision": 0
+          },
+          "verification_pending": false
+        },
+        "tool_steps": 0
+      },
+      "report_relpath": "durable_promotion_accept/bench_repo_readme/.hh/runs/run_20261103-184023-531724/report.json",
+      "run_dir_relpath": "durable_promotion_accept/bench_repo_readme/.hh/runs/run_20261103-184023-531724",
+      "run_id": "run_20261103-184023-531724",
+      "run_state": {
+        "attempts": 1,
+        "checkpoint_id": "ckpt_dcf07036",
+        "created_at": "2026-11-03T18:40:23+08:00",
+        "final_answer": "Remembered the explicit benchmark artifact convention.",
+        "finished_at": "2026-11-03T18:40:23+08:00",
+        "last_tool": "",
+        "partial_answer": "",
+        "request_id": "req_20261103-184023-429dbd",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184023-531724",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 0,
+        "updated_at": "2026-11-03T18:40:23+08:00",
+        "user_request": "Remember that Preserve benchmark regression artifacts under artifacts/."
+      },
+      "run_state_relpath": "durable_promotion_accept/bench_repo_readme/.hh/runs/run_20261103-184023-531724/run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 0,
+      "verifier": "python -c \"from pathlib import Path; memory=Path('.hh/memory/curated.json').read_text(encoding='utf-8'); assert 'Preserve benchmark regression artifacts' in memory\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    },
+    {
+      "allowed_tools": [
+        "read_file"
+      ],
+      "artifact_digest": "sha256:e1fb642f4924b9dba90e4d9ca47810436b274fd48fbfec832a989f09c5c00da4",
+      "artifact_exists": true,
+      "artifact_path": "README.md",
+      "attempts": 1,
+      "category": "durable_memory",
+      "expected_artifact": "secret-like content is rejected from durable memory",
+      "expected_artifact_exists": true,
+      "failure_category": null,
+      "final_answer": "Project convention: Keep verifier outcomes stable across reruns.\nDependency: API key is sk-benchmark-secret.\nDecision: Current goal is debug the harness.",
+      "fixture_copy_relpath": "durable_promotion_reject/bench_repo_readme",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "id": "durable_promotion_reject",
+      "initial_episodic_notes_empty": true,
+      "initial_history_empty": true,
+      "initial_memory_empty": true,
+      "initial_task_summary_empty": true,
+      "non_failure_stop_reason": true,
+      "passed": true,
+      "prompt": "Keep only safe durable project facts from the final answer.",
+      "report": {
+        "attempts": 1,
+        "auto_memory": {
+          "reason": "no_explicit_durable_fact",
+          "results": [],
+          "status": "skipped"
+        },
+        "auto_skill": {
+          "reason": "too_few_tool_steps",
+          "status": "skipped"
+        },
+        "checkpoint_id": "ckpt_0fdf7f44",
+        "final_answer": "Project convention: Keep verifier outcomes stable across reruns.\nDependency: API key is sk-benchmark-secret.\nDecision: Current goal is debug the harness.",
+        "prompt_metadata": {
+          "budget_tokens": 123840,
+          "calibration": 1.0,
+          "cleared_tool_results": 0,
+          "compaction": null,
+          "context_window": 128000,
+          "estimated_input_tokens": 1899,
+          "instruction_docs": [],
+          "message_count": 1,
+          "prefix_hash": "3781f893e0f5250e438d9d3ff526ec175c8872a619104f9f30a10cf6e69033e2",
+          "resume_status": "no-checkpoint",
+          "runtime_identity_mismatch_fields": [],
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ],
+          "stale_paths": [],
+          "stale_summary_invalidations": 0,
+          "summary_active": false,
+          "system_tokens": 1770,
+          "tool_count": 1,
+          "tool_signature": "dec43b759af571da85b10666c0df8d1e361b3e84176e4e2f9fbe9bf6d3054d7e",
+          "workspace_fingerprint": "13ebc34bbbf530dfecffaca264ba07108a1fdfa4751f9ad3e251beae8f6ab96c"
+        },
+        "redacted_env": {
+          "secret_env_count": 2,
+          "secret_env_names": [
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_MESSAGING_TOKEN"
+          ]
+        },
+        "request_id": "req_20261103-184023-b9b054",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184023-674e0e",
+        "run_state": {
+          "attempts": 1,
+          "checkpoint_id": "ckpt_0fdf7f44",
+          "created_at": "2026-11-03T18:40:23+08:00",
+          "final_answer": "Project convention: Keep verifier outcomes stable across reruns.\nDependency: API key is sk-benchmark-secret.\nDecision: Current goal is debug the harness.",
+          "finished_at": "2026-11-03T18:40:24+08:00",
+          "last_tool": "",
+          "partial_answer": "",
+          "request_id": "req_20261103-184023-b9b054",
+          "resume_status": "no-checkpoint",
+          "run_id": "run_20261103-184023-674e0e",
+          "status": "completed",
+          "stop_reason": "final_answer_returned",
+          "tool_steps": 0,
+          "updated_at": "2026-11-03T18:40:24+08:00",
+          "user_request": "Keep only safe durable project facts from the final answer."
+        },
+        "source_evidence": {
+          "actions": [],
+          "files": {},
+          "next_id": 1,
+          "schema_version": "v1",
+          "task_id": "taskrun_557e43c5cf",
+          "updated_at": "2026-11-03T10:40:23.984105+00:00"
+        },
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "task_state": {
+          "claims": [],
+          "continuation_requests": [],
+          "created_at": "2026-11-03T10:40:23.984100+00:00",
+          "evidence": [
+            {
+              "created_at": "2026-11-03T10:40:24.056809+00:00",
+              "kind": "delivery",
+              "summary": "Project convention: Keep verifier outcomes stable across reruns.\nDependency: API key is sk-benchmark-secret.\nDecision: Current goal is debug the harness."
+            }
+          ],
+          "failures": [],
+          "goal": "Keep only safe durable project facts from the final answer.",
+          "next_action": "",
+          "open_questions": [],
+          "run_ids": [
+            "run_20261103-184023-674e0e"
+          ],
+          "schema_version": "v1",
+          "status": "completed",
+          "subtask_ids": [],
+          "task_id": "taskrun_557e43c5cf",
+          "todos": [],
+          "updated_at": "2026-11-03T10:40:24.056811+00:00",
+          "verification": {
+            "changed_paths": [],
+            "checks": [],
+            "edit_revision": 0
+          },
+          "verification_pending": false
+        },
+        "tool_steps": 0
+      },
+      "report_relpath": "durable_promotion_reject/bench_repo_readme/.hh/runs/run_20261103-184023-674e0e/report.json",
+      "run_dir_relpath": "durable_promotion_reject/bench_repo_readme/.hh/runs/run_20261103-184023-674e0e",
+      "run_id": "run_20261103-184023-674e0e",
+      "run_state": {
+        "attempts": 1,
+        "checkpoint_id": "ckpt_0fdf7f44",
+        "created_at": "2026-11-03T18:40:23+08:00",
+        "final_answer": "Project convention: Keep verifier outcomes stable across reruns.\nDependency: API key is sk-benchmark-secret.\nDecision: Current goal is debug the harness.",
+        "finished_at": "2026-11-03T18:40:24+08:00",
+        "last_tool": "",
+        "partial_answer": "",
+        "request_id": "req_20261103-184023-b9b054",
+        "resume_status": "no-checkpoint",
+        "run_id": "run_20261103-184023-674e0e",
+        "status": "completed",
+        "stop_reason": "final_answer_returned",
+        "tool_steps": 0,
+        "updated_at": "2026-11-03T18:40:24+08:00",
+        "user_request": "Keep only safe durable project facts from the final answer."
+      },
+      "run_state_relpath": "durable_promotion_reject/bench_repo_readme/.hh/runs/run_20261103-184023-674e0e/run_state.json",
+      "status": "pass",
+      "step_budget": 1,
+      "stop_reason": "final_answer_returned",
+      "tool_steps": 0,
+      "verifier": "python -c \"import json; from pathlib import Path; session=json.loads(next(Path('.hh/sessions').glob('*.json')).read_text(encoding='utf-8')); memory=json.dumps(session.get('memory', {}), ensure_ascii=False); assert 'sk-benchmark-secret' not in memory\"",
+      "verifier_exit_code": 0,
+      "verifier_passed": true,
+      "verifier_stderr": "",
+      "verifier_stdout": "",
+      "within_budget": true
+    }
+  ],
+  "runtime": {
+    "branch": "codex/eval-v2",
+    "commit_sha": "4d9a2d179073ef10175209077a28ebc017bc53b0"
+  },
+  "schema_version": 1,
+  "summary": {
+    "failed": 0,
+    "failure_category_counts": {},
+    "pass_rate": 1.0,
+    "passed": 14,
+    "total_tasks": 14,
+    "verifier_pass_rate": 1.0,
+    "verifier_passes": 14,
+    "within_budget": 14,
+    "within_budget_rate": 1.0
+  }
+}

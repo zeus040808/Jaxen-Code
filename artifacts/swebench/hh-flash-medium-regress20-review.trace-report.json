@@ -1,0 +1,256 @@
+{
+  "total": {
+    "empty_retries": 0,
+    "tools": 536,
+    "tool_fail": 27,
+    "fail:invalid_arguments": 11,
+    "review:approve": 17,
+    "fail:tool_failed": 13,
+    "compaction:light": 3,
+    "completion_deferred": 2,
+    "completion_forced": 2,
+    "fail:path_escape": 2,
+    "review:issues": 1,
+    "fail:tool_partial_success": 1
+  },
+  "rows": [
+    {
+      "instance_id": "django__django-11790",
+      "outcome": "resolved",
+      "stop_reason": "final_answer_returned",
+      "counts": {
+        "empty_retries": 0,
+        "tools": 19,
+        "tool_fail": 2,
+        "fail:invalid_arguments": 2,
+        "review:approve": 1
+      }
+    },
+    {
+      "instance_id": "django__django-14238",
+      "outcome": "resolved",
+      "stop_reason": "final_answer_returned",
+      "counts": {
+        "empty_retries": 0,
+        "tools": 12,
+        "tool_fail": 1,
+        "fail:tool_failed": 1,
+        "review:approve": 1
+      }
+    },
+    {
+      "instance_id": "django__django-13516",
+      "outcome": "resolved",
+      "stop_reason": "final_answer_returned",
+      "counts": {
+        "empty_retries": 0,
+        "tools": 10,
+        "review:approve": 1
+      }
+    },
+    {
+      "instance_id": "scikit-learn__scikit-learn-15100",
+      "outcome": "resolved",
+      "stop_reason": "final_answer_returned",
+      "counts": {
+        "empty_retries": 0,
+        "tools": 8,
+        "review:approve": 1
+      }
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-8638",
+      "outcome": "unresolved",
+      "stop_reason": "incomplete_delivery",
+      "counts": {
+        "empty_retries": 0,
+        "tools": 48,
+        "tool_fail": 1,
+        "fail:tool_failed": 1,
+        "compaction:light": 1,
+        "completion_deferred": 1,
+        "completion_forced": 1
+      }
+    },
+    {
+      "instance_id": "django__django-11265",
+      "outcome": "unresolved",
+      "stop_reason": "final_answer_returned",
+      "counts": {
+        "empty_retries": 0,
+        "tools": 47,
+        "review:approve": 1
+      }
+    },
+    {
+      "instance_id": "django__django-15561",
+      "outcome": "resolved",
+      "stop_reason": "final_answer_returned",
+      "counts": {
+        "empty_retries": 0,
+        "tools": 39,
+        "tool_fail": 2,
+        "fail:path_escape": 1,
+        "fail:invalid_arguments": 1,
+        "review:approve": 1
+      }
+    },
+    {
+      "instance_id": "sphinx-doc__sphinx-8056",
+      "outcome": "unresolved",
+      "stop_reason": "final_answer_returned",
+      "counts": {
+        "empty_retries": 0,
+        "tools": 36,
+        "tool_fail": 1,
+        "fail:tool_failed": 1,
+        "review:approve": 1
+      }
+    },
+    {
+      "instance_id": "sympy__sympy-20154",
+      "outcome": "resolved",
+      "stop_reason": "final_answer_returned",
+      "counts": {
+        "empty_retries": 0,
+        "tools": 14,
+        "review:approve": 1
+      }
+    },
+    {
+      "instance_id": "django__django-15280",
+      "outcome": "resolved",
+      "stop_reason": "final_answer_returned",
+      "counts": {
+        "empty_retries": 0,
+        "tools": 49,
+        "tool_fail": 3,
+        "fail:invalid_arguments": 2,
+        "fail:tool_failed": 1,
+        "review:approve": 1
+      }
+    },
+    {
+      "instance_id": "django__django-11276",
+      "outcome": "resolved",
+      "stop_reason": "final_answer_returned",
+      "counts": {
+        "empty_retries": 0,
+        "tools": 30,
+        "tool_fail": 2,
+        "fail:invalid_arguments": 1,
+        "fail:tool_failed": 1,
+        "review:approve": 1
+      }
+    },
+    {
+      "instance_id": "django__django-12050",
+      "outcome": "resolved",
+      "stop_reason": "final_answer_returned",
+      "counts": {
+        "empty_retries": 0,
+        "tools": 8,
+        "tool_fail": 1,
+        "fail:invalid_arguments": 1,
+        "review:approve": 1
+      }
+    },
+    {
+      "instance_id": "django__django-12406",
+      "outcome": "resolved",
+      "stop_reason": "final_answer_returned",
+      "counts": {
+        "empty_retries": 0,
+        "tools": 52,
+        "compaction:light": 1,
+        "review:issues": 1,
+        "tool_fail": 1,
+        "fail:tool_partial_success": 1
+      }
+    },
+    {
+      "instance_id": "django__django-13028",
+      "outcome": "resolved",
+      "stop_reason": "final_answer_returned",
+      "counts": {
+        "empty_retries": 0,
+        "tools": 12,
+        "review:approve": 1
+      }
+    },
+    {
+      "instance_id": "pydata__xarray-6938",
+      "outcome": "unresolved",
+      "stop_reason": "final_answer_returned",
+      "counts": {
+        "empty_retries": 0,
+        "tools": 18,
+        "tool_fail": 2,
+        "fail:invalid_arguments": 2,
+        "review:approve": 1
+      }
+    },
+    {
+      "instance_id": "pydata__xarray-6744",
+      "outcome": "resolved",
+      "stop_reason": "final_answer_returned",
+      "counts": {
+        "empty_retries": 0,
+        "tools": 16,
+        "review:approve": 1
+      }
+    },
+    {
+      "instance_id": "sympy__sympy-12419",
+      "outcome": "resolved",
+      "stop_reason": "final_answer_returned",
+      "counts": {
+        "empty_retries": 0,
+        "tools": 47,
+        "tool_fail": 1,
+        "fail:tool_failed": 1,
+        "review:approve": 1
+      }
+    },
+    {
+      "instance_id": "django__django-11999",
+      "outcome": "resolved",
+      "stop_reason": "final_answer_returned",
+      "counts": {
+        "empty_retries": 0,
+        "tools": 13,
+        "tool_fail": 1,
+        "fail:path_escape": 1,
+        "review:approve": 1
+      }
+    },
+    {
+      "instance_id": "astropy__astropy-8707",
+      "outcome": "resolved",
+      "stop_reason": "incomplete_delivery",
+      "counts": {
+        "empty_retries": 0,
+        "tools": 36,
+        "tool_fail": 6,
+        "fail:invalid_arguments": 1,
+        "fail:tool_failed": 5,
+        "compaction:light": 1,
+        "completion_deferred": 1,
+        "completion_forced": 1
+      }
+    },
+    {
+      "instance_id": "matplotlib__matplotlib-24026",
+      "outcome": "resolved",
+      "stop_reason": "final_answer_returned",
+      "counts": {
+        "empty_retries": 0,
+        "tools": 22,
+        "tool_fail": 3,
+        "fail:invalid_arguments": 1,
+        "fail:tool_failed": 2,
+        "review:approve": 1
+      }
+    }
+  ]
+}

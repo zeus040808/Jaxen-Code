@@ -1,0 +1,659 @@
+{
+  "schema_version": 2,
+  "suite_id": "hh-runtime-regression-v2",
+  "suite_version": 1,
+  "generated_by": "scripts/eval/build_enterprise_dataset.py",
+  "tasks": [
+    {
+      "id": "readme_intro_locked",
+      "version": 2,
+      "suite": "runtime-regression",
+      "suite_type": "regression",
+      "eval_unit": "episode",
+      "category": "basic_edit",
+      "capability": "agent_runtime",
+      "difficulty": "medium",
+      "risk": "medium",
+      "source": "benchmarks/coding_tasks.json@v1",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "fixture_digest": "sha256:c9e7058d480ff157c0816ecd326802f960191c62236747d5bd5fe77f703eb589",
+      "prompt": "Replace the placeholder README introduction with the locked benchmark introduction.",
+      "expected_outcome": "full_completion",
+      "approval_policy": "auto",
+      "read_only": false,
+      "budgets": {
+        "max_steps": 1,
+        "max_new_tokens": 2048,
+        "timeout_ms": 180000
+      },
+      "allowed_changed_paths": [
+        "README.md"
+      ],
+      "required_changed_paths": [
+        "README.md"
+      ],
+      "require_no_changes": false,
+      "checks": [
+        {
+          "id": "legacy_verifier",
+          "type": "command",
+          "command": "python -c \"from pathlib import Path; assert 'This fixture is a locked benchmark workspace.' in Path('README.md').read_text(encoding='utf-8')\""
+        }
+      ],
+      "reference_solution": "builtin:runtime/readme_intro_locked",
+      "human_review": {
+        "required": false,
+        "reasons": []
+      },
+      "trials": {
+        "nightly": 3,
+        "release": 5
+      },
+      "execution_engine": "python_harness"
+    },
+    {
+      "id": "readme_schema_note",
+      "version": 2,
+      "suite": "runtime-regression",
+      "suite_type": "regression",
+      "eval_unit": "episode",
+      "category": "basic_edit",
+      "capability": "agent_runtime",
+      "difficulty": "medium",
+      "risk": "medium",
+      "source": "benchmarks/coding_tasks.json@v1",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "fixture_digest": "sha256:c9e7058d480ff157c0816ecd326802f960191c62236747d5bd5fe77f703eb589",
+      "prompt": "Update the README repository note to document the fixed schema and baseline.",
+      "expected_outcome": "full_completion",
+      "approval_policy": "auto",
+      "read_only": false,
+      "budgets": {
+        "max_steps": 1,
+        "max_new_tokens": 2048,
+        "timeout_ms": 180000
+      },
+      "allowed_changed_paths": [
+        "README.md"
+      ],
+      "required_changed_paths": [
+        "README.md"
+      ],
+      "require_no_changes": false,
+      "checks": [
+        {
+          "id": "legacy_verifier",
+          "type": "command",
+          "command": "python -c \"from pathlib import Path; assert 'The benchmark schema and baseline are fixed.' in Path('README.md').read_text(encoding='utf-8')\""
+        }
+      ],
+      "reference_solution": "builtin:runtime/readme_schema_note",
+      "human_review": {
+        "required": false,
+        "reasons": []
+      },
+      "trials": {
+        "nightly": 3,
+        "release": 5
+      },
+      "execution_engine": "python_harness"
+    },
+    {
+      "id": "readme_ordering_note",
+      "version": 2,
+      "suite": "runtime-regression",
+      "suite_type": "regression",
+      "eval_unit": "episode",
+      "category": "basic_edit",
+      "capability": "agent_runtime",
+      "difficulty": "medium",
+      "risk": "medium",
+      "source": "benchmarks/coding_tasks.json@v1",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "fixture_digest": "sha256:c9e7058d480ff157c0816ecd326802f960191c62236747d5bd5fe77f703eb589",
+      "prompt": "Update the README file-layout note to document deterministic ordering.",
+      "expected_outcome": "full_completion",
+      "approval_policy": "auto",
+      "read_only": false,
+      "budgets": {
+        "max_steps": 1,
+        "max_new_tokens": 2048,
+        "timeout_ms": 180000
+      },
+      "allowed_changed_paths": [
+        "README.md"
+      ],
+      "required_changed_paths": [
+        "README.md"
+      ],
+      "require_no_changes": false,
+      "checks": [
+        {
+          "id": "legacy_verifier",
+          "type": "command",
+          "command": "python -c \"from pathlib import Path; assert 'Deterministic file ordering keeps benchmark diffs stable.' in Path('README.md').read_text(encoding='utf-8')\""
+        }
+      ],
+      "reference_solution": "builtin:runtime/readme_ordering_note",
+      "human_review": {
+        "required": false,
+        "reasons": []
+      },
+      "trials": {
+        "nightly": 3,
+        "release": 5
+      },
+      "execution_engine": "python_harness"
+    },
+    {
+      "id": "sample_beta_locked",
+      "version": 2,
+      "suite": "runtime-regression",
+      "suite_type": "regression",
+      "eval_unit": "episode",
+      "category": "basic_edit",
+      "capability": "agent_runtime",
+      "difficulty": "medium",
+      "risk": "medium",
+      "source": "benchmarks/coding_tasks.json@v1",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "fixture_digest": "sha256:86b147fabbf197f7ad8e1bb3ac728f50a7e6662529b34299e6e472d59f8558e3",
+      "prompt": "Change the beta token in sample.txt to beta-locked.",
+      "expected_outcome": "full_completion",
+      "approval_policy": "auto",
+      "read_only": false,
+      "budgets": {
+        "max_steps": 1,
+        "max_new_tokens": 2048,
+        "timeout_ms": 180000
+      },
+      "allowed_changed_paths": [
+        "sample.txt"
+      ],
+      "required_changed_paths": [
+        "sample.txt"
+      ],
+      "require_no_changes": false,
+      "checks": [
+        {
+          "id": "legacy_verifier",
+          "type": "command",
+          "command": "python -c \"from pathlib import Path; assert 'beta-locked' in Path('sample.txt').read_text(encoding='utf-8')\""
+        }
+      ],
+      "reference_solution": "builtin:runtime/sample_beta_locked",
+      "human_review": {
+        "required": false,
+        "reasons": []
+      },
+      "trials": {
+        "nightly": 3,
+        "release": 5
+      },
+      "execution_engine": "python_harness"
+    },
+    {
+      "id": "sample_gamma_locked",
+      "version": 2,
+      "suite": "runtime-regression",
+      "suite_type": "regression",
+      "eval_unit": "episode",
+      "category": "basic_edit",
+      "capability": "agent_runtime",
+      "difficulty": "medium",
+      "risk": "medium",
+      "source": "benchmarks/coding_tasks.json@v1",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "fixture_digest": "sha256:86b147fabbf197f7ad8e1bb3ac728f50a7e6662529b34299e6e472d59f8558e3",
+      "prompt": "Change the gamma token in sample.txt to gamma-locked.",
+      "expected_outcome": "full_completion",
+      "approval_policy": "auto",
+      "read_only": false,
+      "budgets": {
+        "max_steps": 1,
+        "max_new_tokens": 2048,
+        "timeout_ms": 180000
+      },
+      "allowed_changed_paths": [
+        "sample.txt"
+      ],
+      "required_changed_paths": [
+        "sample.txt"
+      ],
+      "require_no_changes": false,
+      "checks": [
+        {
+          "id": "legacy_verifier",
+          "type": "command",
+          "command": "python -c \"from pathlib import Path; assert 'gamma-locked' in Path('sample.txt').read_text(encoding='utf-8')\""
+        }
+      ],
+      "reference_solution": "builtin:runtime/sample_gamma_locked",
+      "human_review": {
+        "required": false,
+        "reasons": []
+      },
+      "trials": {
+        "nightly": 3,
+        "release": 5
+      },
+      "execution_engine": "python_harness"
+    },
+    {
+      "id": "sample_placeholder_delta",
+      "version": 2,
+      "suite": "runtime-regression",
+      "suite_type": "regression",
+      "eval_unit": "episode",
+      "category": "basic_edit",
+      "capability": "agent_runtime",
+      "difficulty": "medium",
+      "risk": "medium",
+      "source": "benchmarks/coding_tasks.json@v1",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "fixture_digest": "sha256:86b147fabbf197f7ad8e1bb3ac728f50a7e6662529b34299e6e472d59f8558e3",
+      "prompt": "Replace the placeholder token in sample.txt with delta.",
+      "expected_outcome": "full_completion",
+      "approval_policy": "auto",
+      "read_only": false,
+      "budgets": {
+        "max_steps": 1,
+        "max_new_tokens": 2048,
+        "timeout_ms": 180000
+      },
+      "allowed_changed_paths": [
+        "sample.txt"
+      ],
+      "required_changed_paths": [
+        "sample.txt"
+      ],
+      "require_no_changes": false,
+      "checks": [
+        {
+          "id": "legacy_verifier",
+          "type": "command",
+          "command": "python -c \"from pathlib import Path; assert 'delta' in Path('sample.txt').read_text(encoding='utf-8')\""
+        }
+      ],
+      "reference_solution": "builtin:runtime/sample_placeholder_delta",
+      "human_review": {
+        "required": false,
+        "reasons": []
+      },
+      "trials": {
+        "nightly": 3,
+        "release": 5
+      },
+      "execution_engine": "python_harness"
+    },
+    {
+      "id": "invalid_patch_recovery",
+      "version": 2,
+      "suite": "runtime-regression",
+      "suite_type": "regression",
+      "eval_unit": "episode",
+      "category": "tool_error_recovery",
+      "capability": "agent_runtime",
+      "difficulty": "medium",
+      "risk": "medium",
+      "source": "benchmarks/coding_tasks.json@v1",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "fixture_digest": "sha256:c9e7058d480ff157c0816ecd326802f960191c62236747d5bd5fe77f703eb589",
+      "prompt": "Recover from one malformed patch request and update the README introduction.",
+      "expected_outcome": "full_completion",
+      "approval_policy": "auto",
+      "read_only": false,
+      "budgets": {
+        "max_steps": 2,
+        "max_new_tokens": 2048,
+        "timeout_ms": 180000
+      },
+      "allowed_changed_paths": [
+        "README.md"
+      ],
+      "required_changed_paths": [
+        "README.md"
+      ],
+      "require_no_changes": false,
+      "checks": [
+        {
+          "id": "legacy_verifier",
+          "type": "command",
+          "command": "python -c \"from pathlib import Path; assert 'This fixture recovered after invalid patch args.' in Path('README.md').read_text(encoding='utf-8')\""
+        }
+      ],
+      "reference_solution": "builtin:runtime/invalid_patch_recovery",
+      "human_review": {
+        "required": false,
+        "reasons": []
+      },
+      "trials": {
+        "nightly": 3,
+        "release": 5
+      },
+      "execution_engine": "python_harness"
+    },
+    {
+      "id": "path_escape_recovery",
+      "version": 2,
+      "suite": "runtime-regression",
+      "suite_type": "regression",
+      "eval_unit": "episode",
+      "category": "security_recovery",
+      "capability": "agent_runtime",
+      "difficulty": "medium",
+      "risk": "high",
+      "source": "benchmarks/coding_tasks.json@v1",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "fixture_digest": "sha256:86b147fabbf197f7ad8e1bb3ac728f50a7e6662529b34299e6e472d59f8558e3",
+      "prompt": "Reject an out-of-workspace read and then apply the safe sample.txt update.",
+      "expected_outcome": "full_completion",
+      "approval_policy": "auto",
+      "read_only": false,
+      "budgets": {
+        "max_steps": 2,
+        "max_new_tokens": 2048,
+        "timeout_ms": 180000
+      },
+      "allowed_changed_paths": [
+        "sample.txt"
+      ],
+      "required_changed_paths": [
+        "sample.txt"
+      ],
+      "require_no_changes": false,
+      "checks": [
+        {
+          "id": "legacy_verifier",
+          "type": "command",
+          "command": "python -c \"from pathlib import Path; assert 'alpha-guarded' in Path('sample.txt').read_text(encoding='utf-8'); assert 'path_escape' in ''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl'))\""
+        }
+      ],
+      "reference_solution": "builtin:runtime/path_escape_recovery",
+      "human_review": {
+        "required": false,
+        "reasons": []
+      },
+      "trials": {
+        "nightly": 3,
+        "release": 5
+      },
+      "execution_engine": "python_harness"
+    },
+    {
+      "id": "repeated_read_recovery",
+      "version": 2,
+      "suite": "runtime-regression",
+      "suite_type": "regression",
+      "eval_unit": "episode",
+      "category": "tool_contract_recovery",
+      "capability": "agent_runtime",
+      "difficulty": "medium",
+      "risk": "medium",
+      "source": "benchmarks/coding_tasks.json@v1",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "fixture_digest": "sha256:86b147fabbf197f7ad8e1bb3ac728f50a7e6662529b34299e6e472d59f8558e3",
+      "prompt": "Recover from repeated identical reads and complete the requested sample.txt edit.",
+      "expected_outcome": "full_completion",
+      "approval_policy": "auto",
+      "read_only": false,
+      "budgets": {
+        "max_steps": 4,
+        "max_new_tokens": 2048,
+        "timeout_ms": 180000
+      },
+      "allowed_changed_paths": [
+        "sample.txt"
+      ],
+      "required_changed_paths": [
+        "sample.txt"
+      ],
+      "require_no_changes": false,
+      "checks": [
+        {
+          "id": "legacy_verifier",
+          "type": "command",
+          "command": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'repeat-guarded' in Path('sample.txt').read_text(encoding='utf-8'); assert 'tool_cache_hit' in traces\""
+        }
+      ],
+      "reference_solution": "builtin:runtime/repeated_read_recovery",
+      "human_review": {
+        "required": false,
+        "reasons": []
+      },
+      "trials": {
+        "nightly": 3,
+        "release": 5
+      },
+      "execution_engine": "python_harness"
+    },
+    {
+      "id": "context_reduction_checkpoint",
+      "version": 2,
+      "suite": "runtime-regression",
+      "suite_type": "regression",
+      "eval_unit": "episode",
+      "category": "context_governance",
+      "capability": "agent_runtime",
+      "difficulty": "medium",
+      "risk": "medium",
+      "source": "benchmarks/coding_tasks.json@v1",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "fixture_digest": "sha256:c9e7058d480ff157c0816ecd326802f960191c62236747d5bd5fe77f703eb589",
+      "prompt": "Complete the task while preserving a checkpoint when the context is reduced.",
+      "expected_outcome": "full_completion",
+      "approval_policy": "auto",
+      "read_only": false,
+      "budgets": {
+        "max_steps": 1,
+        "max_new_tokens": 2048,
+        "timeout_ms": 180000
+      },
+      "allowed_changed_paths": [],
+      "required_changed_paths": [],
+      "require_no_changes": true,
+      "checks": [
+        {
+          "id": "legacy_verifier",
+          "type": "command",
+          "command": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'context_reduction' in traces\""
+        }
+      ],
+      "reference_solution": "builtin:runtime/context_reduction_checkpoint",
+      "human_review": {
+        "required": false,
+        "reasons": []
+      },
+      "trials": {
+        "nightly": 3,
+        "release": 5
+      },
+      "execution_engine": "python_harness",
+      "setup": {
+        "kind": "context_reduction",
+        "history_count": 12,
+        "note_count": 6,
+        "transcript_budget_tokens": 400
+      }
+    },
+    {
+      "id": "freshness_reanchor_resume",
+      "version": 2,
+      "suite": "runtime-regression",
+      "suite_type": "regression",
+      "eval_unit": "episode",
+      "category": "checkpoint_recovery",
+      "capability": "agent_runtime",
+      "difficulty": "medium",
+      "risk": "medium",
+      "source": "benchmarks/coding_tasks.json@v1",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "fixture_digest": "sha256:86b147fabbf197f7ad8e1bb3ac728f50a7e6662529b34299e6e472d59f8558e3",
+      "prompt": "Resume after a key file changed and re-anchor the stale checkpoint.",
+      "expected_outcome": "full_completion",
+      "approval_policy": "auto",
+      "read_only": false,
+      "budgets": {
+        "max_steps": 1,
+        "max_new_tokens": 2048,
+        "timeout_ms": 180000
+      },
+      "allowed_changed_paths": [],
+      "required_changed_paths": [],
+      "require_no_changes": true,
+      "checks": [
+        {
+          "id": "legacy_verifier",
+          "type": "command",
+          "command": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'freshness_mismatch' in traces\""
+        }
+      ],
+      "reference_solution": "builtin:runtime/freshness_reanchor_resume",
+      "human_review": {
+        "required": false,
+        "reasons": []
+      },
+      "trials": {
+        "nightly": 3,
+        "release": 5
+      },
+      "execution_engine": "python_harness",
+      "setup": {
+        "kind": "freshness_mismatch",
+        "path": "sample.txt"
+      }
+    },
+    {
+      "id": "workspace_mismatch_resume",
+      "version": 2,
+      "suite": "runtime-regression",
+      "suite_type": "regression",
+      "eval_unit": "episode",
+      "category": "checkpoint_recovery",
+      "capability": "agent_runtime",
+      "difficulty": "medium",
+      "risk": "medium",
+      "source": "benchmarks/coding_tasks.json@v1",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_patch",
+      "fixture_digest": "sha256:86b147fabbf197f7ad8e1bb3ac728f50a7e6662529b34299e6e472d59f8558e3",
+      "prompt": "Resume after workspace identity drift and record the mismatch.",
+      "expected_outcome": "full_completion",
+      "approval_policy": "auto",
+      "read_only": false,
+      "budgets": {
+        "max_steps": 1,
+        "max_new_tokens": 2048,
+        "timeout_ms": 180000
+      },
+      "allowed_changed_paths": [],
+      "required_changed_paths": [],
+      "require_no_changes": true,
+      "checks": [
+        {
+          "id": "legacy_verifier",
+          "type": "command",
+          "command": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'runtime_identity_mismatch' in traces\""
+        }
+      ],
+      "reference_solution": "builtin:runtime/workspace_mismatch_resume",
+      "human_review": {
+        "required": false,
+        "reasons": []
+      },
+      "trials": {
+        "nightly": 3,
+        "release": 5
+      },
+      "execution_engine": "python_harness",
+      "setup": {
+        "kind": "workspace_mismatch"
+      }
+    },
+    {
+      "id": "durable_promotion_accept",
+      "version": 2,
+      "suite": "runtime-regression",
+      "suite_type": "regression",
+      "eval_unit": "episode",
+      "category": "durable_memory",
+      "capability": "agent_runtime",
+      "difficulty": "medium",
+      "risk": "medium",
+      "source": "benchmarks/coding_tasks.json@v1",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "fixture_digest": "sha256:c9e7058d480ff157c0816ecd326802f960191c62236747d5bd5fe77f703eb589",
+      "prompt": "Remember that Preserve benchmark regression artifacts under artifacts/.",
+      "expected_outcome": "full_completion",
+      "approval_policy": "auto",
+      "read_only": false,
+      "budgets": {
+        "max_steps": 1,
+        "max_new_tokens": 2048,
+        "timeout_ms": 180000
+      },
+      "allowed_changed_paths": [],
+      "required_changed_paths": [],
+      "require_no_changes": true,
+      "checks": [
+        {
+          "id": "legacy_verifier",
+          "type": "command",
+          "command": "python -c \"from pathlib import Path; memory=Path('.hh/memory/curated.json').read_text(encoding='utf-8'); assert 'Preserve benchmark regression artifacts' in memory\""
+        }
+      ],
+      "reference_solution": "builtin:runtime/durable_promotion_accept",
+      "human_review": {
+        "required": false,
+        "reasons": []
+      },
+      "trials": {
+        "nightly": 3,
+        "release": 5
+      },
+      "execution_engine": "python_harness"
+    },
+    {
+      "id": "durable_promotion_reject",
+      "version": 2,
+      "suite": "runtime-regression",
+      "suite_type": "regression",
+      "eval_unit": "episode",
+      "category": "durable_memory",
+      "capability": "agent_runtime",
+      "difficulty": "medium",
+      "risk": "medium",
+      "source": "benchmarks/coding_tasks.json@v1",
+      "fixture_repo": "benchmarks/fixtures/bench_repo_readme",
+      "fixture_digest": "sha256:c9e7058d480ff157c0816ecd326802f960191c62236747d5bd5fe77f703eb589",
+      "prompt": "Keep only safe durable project facts from the final answer.",
+      "expected_outcome": "full_completion",
+      "approval_policy": "auto",
+      "read_only": false,
+      "budgets": {
+        "max_steps": 1,
+        "max_new_tokens": 2048,
+        "timeout_ms": 180000
+      },
+      "allowed_changed_paths": [],
+      "required_changed_paths": [],
+      "require_no_changes": true,
+      "checks": [
+        {
+          "id": "legacy_verifier",
+          "type": "command",
+          "command": "python -c \"import json; from pathlib import Path; session=json.loads(next(Path('.hh/sessions').glob('*.json')).read_text(encoding='utf-8')); memory=json.dumps(session.get('memory', {}), ensure_ascii=False); assert 'sk-benchmark-secret' not in memory\""
+        }
+      ],
+      "reference_solution": "builtin:runtime/durable_promotion_reject",
+      "human_review": {
+        "required": false,
+        "reasons": []
+      },
+      "trials": {
+        "nightly": 3,
+        "release": 5
+      },
+      "execution_engine": "python_harness"
+    }
+  ]
+}

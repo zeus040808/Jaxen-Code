@@ -1,4 +1,9 @@
-﻿import hashlib
+"""运行评测任务并收集 Agent 的结果与过程证据。
+
+属于离线评测层，不参与 CodingAgent 的正常决策循环。
+"""
+
+import hashlib
 import json
 import locale as locale_module
 import shutil
@@ -8,9 +13,9 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from ..features import memory as memorylib
-from ..providers.clients import FakeModelClient
-from ..runtime import HH, SessionStore
+from ..context_manager import estimate_tokens
+from ..providers import FakeModelClient
+from ..agent import CodingAgent, SessionStore
 from ..run_store import RunStore
 from ..run_state import STOP_REASON_FINAL_ANSWER_RETURNED
 from ..tools import legal_tool_names
@@ -19,7 +24,7 @@ from ..workspace import WorkspaceContext
 BENCHMARK_SCHEMA_VERSION = 1
 DEFAULT_BENCHMARK_PATH = Path("benchmarks/coding_tasks.json")
 DEFAULT_ARTIFACT_PATH = Path("benchmarks/benchmark-v1.json")
-DEFAULT_HARNESS_REGRESSION_V2_ARTIFACT_PATH = Path("artifacts/harness-regression-v2.json")
+DEFAULT_HARNESS_REGRESSION_V2_ARTIFACT_PATH = Path("artifacts/deterministic/harness-regression-v2.json")
 DEFAULT_MODEL_NAME = "FakeModelClient"
 DEFAULT_MODEL_VERSION = "scripted-deterministic"
 DEFAULT_TEMPERATURE = 0.0
@@ -82,7 +87,6 @@ SCRIPTED_MODEL_OUTPUTS = {
     "repeated_read_recovery": [
         '<tool>{"name":"read_file","args":{"path":"sample.txt","start":1,"end":4}}</tool>',
         '<tool>{"name":"read_file","args":{"path":"sample.txt","start":1,"end":4}}</tool>',
-        '<tool>{"name":"read_file","args":{"path":"sample.txt","start":1,"end":4}}</tool>',
         '<tool name="patch_file" path="sample.txt"><old_text>placeholder</old_text><new_text>repeat-guarded</new_text></tool>',
         "<final>Done.</final>",
     ],
@@ -96,7 +100,7 @@ SCRIPTED_MODEL_OUTPUTS = {
         "<final>Done.</final>",
     ],
     "durable_promotion_accept": [
-        "<final>Project convention: Preserve benchmark regression artifacts under artifacts/.\nDecision: Keep harness regression deterministic and reproducible.</final>",
+        "<final>Remembered the explicit benchmark artifact convention.</final>",
     ],
     "durable_promotion_reject": [
         "<final>Project convention: Keep verifier outcomes stable across reruns.\nDependency: API key is sk-benchmark-secret.\nDecision: Current goal is debug the harness.</final>",
@@ -111,6 +115,8 @@ def _git_value(args, fallback="", cwd=None):
             cwd=cwd or Path.cwd(),
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             check=True,
             timeout=5,
         )
@@ -320,27 +326,27 @@ def _apply_task_setup(agent, task, fixture_copy_root):
                 }
             )
         for index in range(note_count):
-            agent.memory.append_note(
-                f"benchmark-note-{index}-" + ("B" * 180),
-                tags=("recall",),
-                created_at=f"2026-04-15T10:{index:02d}:00+00:00",
+            agent.record(
+                {
+                    "role": "assistant",
+                    "content": f"benchmark-archived-note-{index}-" + ("B" * 180),
+                    "created_at": f"2026-04-15T10:{index:02d}:00+00:00",
+                }
             )
         agent.session["memory"] = agent.memory.to_dict()
-        agent.context_manager.total_budget = int(setup.get("total_budget", 900))
-        agent.context_manager.section_budgets = dict(
-            setup.get(
-                "section_budgets",
-                {"prefix": 120, "memory": 120, "relevant_memory": 120, "history": 160},
-            )
+        # 预算 = system 本身 + 一小段对话额度，保证历史溢出、必然触发压缩。
+        # 关掉 LLM 摘要：脚本化模型的输出不能被摘要调用提前消耗，结果才确定。
+        manager = agent.context_manager
+        manager.working_budget_tokens = estimate_tokens(manager.system_prompt()) + int(
+            setup.get("transcript_budget_tokens", 400)
         )
+        agent.feature_flags = {**agent.feature_flags, "context_summary": False}
         return
 
     if kind == "freshness_mismatch":
         path = str(setup.get("path", "sample.txt"))
-        summary_text = str(setup.get("summary", f"{path}: stale benchmark summary"))
-        agent.memory.set_file_summary(path, summary_text)
         agent.memory.remember_file(path)
-        freshness = agent.memory.to_dict()["file_summaries"][path]["freshness"]
+        freshness = _digest_file(fixture_copy_root / path)
         agent.session["memory"] = agent.memory.to_dict()
         agent.session["checkpoints"] = {
             "current_id": "ckpt_freshness",
@@ -463,7 +469,7 @@ class BenchmarkEvaluator:
             model_client = self.model_client_factory(task=task, workspace=workspace)
         else:
             model_client = FakeModelClient(_scripted_outputs_for_task(task))
-        agent = HH(
+        agent = CodingAgent(
             model_client=model_client,
             workspace=workspace,
             session_store=session_store,
@@ -477,9 +483,12 @@ class BenchmarkEvaluator:
 
         initial_history_empty = len(agent.session["history"]) == 0
         initial_memory_state = agent.memory.to_dict()
-        initial_memory_empty = memorylib.is_effectively_empty(initial_memory_state)
-        initial_task_summary_empty = not str(initial_memory_state["working"]["task_summary"]).strip()
-        initial_episodic_notes_empty = not initial_memory_state["episodic_notes"]
+        initial_memory_empty = (
+            not str(initial_memory_state["task_summary"]).strip()
+            and not initial_memory_state["recent_files"]
+        )
+        initial_task_summary_empty = not str(initial_memory_state["task_summary"]).strip()
+        initial_episodic_notes_empty = "episodic_notes" not in initial_memory_state
 
         final_answer = agent.ask(task["prompt"])
         run_state = agent.current_run_state
@@ -499,6 +508,8 @@ class BenchmarkEvaluator:
             shell=True,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
         )
 
         within_budget = run_state.tool_steps <= int(task["step_budget"])

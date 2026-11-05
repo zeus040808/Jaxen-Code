@@ -1,0 +1,6 @@
+{
+  "timeout": 30,
+  "retries": 3,
+  "features": ["users", "pricing"]
+}
+

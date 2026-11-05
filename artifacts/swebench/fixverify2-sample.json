@@ -1,0 +1,13 @@
+{
+  "difficulty": "15 min - 1 hour",
+  "source": "artifacts/swebench/medium20d-sample.json",
+  "note": "验证第五轮修复：重复失败误判（12754）、正文为空的截断（23413）",
+  "instance_ids": [
+    "django__django-12754",
+    "sympy__sympy-23413"
+  ],
+  "images": {
+    "django__django-12754": "swebench/sweb.eval.x86_64.django_1776_django-12754:latest",
+    "sympy__sympy-23413": "swebench/sweb.eval.x86_64.sympy_1776_sympy-23413:latest"
+  }
+}

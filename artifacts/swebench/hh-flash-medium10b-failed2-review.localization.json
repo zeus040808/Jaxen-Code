@@ -1,0 +1,39 @@
+{
+  "summary": {
+    "instances": 2,
+    "found_gold": 2,
+    "median_steps_to_gold": 2.5,
+    "median_files_before_gold": 0.0,
+    "mean_gold_read_recall": 1.0,
+    "mean_edit_recall": 0.75,
+    "mean_edit_precision": 1.0
+  },
+  "rows": [
+    {
+      "instance_id": "django__django-12406",
+      "gold_files": [
+        "django/db/models/fields/related.py",
+        "django/forms/models.py"
+      ],
+      "steps_to_gold": 3,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 1.0,
+      "edit_precision": 1.0,
+      "tool_calls": 44
+    },
+    {
+      "instance_id": "pydata__xarray-6938",
+      "gold_files": [
+        "xarray/core/dataset.py",
+        "xarray/core/variable.py"
+      ],
+      "steps_to_gold": 2,
+      "files_before_gold": 0,
+      "gold_read_recall": 1.0,
+      "edit_recall": 0.5,
+      "edit_precision": 1.0,
+      "tool_calls": 34
+    }
+  ]
+}

@@ -1,25 +1,21 @@
-﻿from .cli import build_agent, build_arg_parser, build_welcome, main
-from .providers.clients import (
-    AnthropicCompatibleModelClient,
-    FakeModelClient,
-    OllamaModelClient,
-    OpenAIChatCompatibleModelClient,
-    OpenAICompatibleModelClient,
-)
-from .runtime import HH, SessionStore
+"""HH Agent 的公开接口。"""
+
+from .cli import build_agent, build_arg_parser, build_welcome, main
+from .agent import CodingAgent
+from .providers import EvalScriptModelClient, FakeModelClient, ModelRequest, OpenAIChatClient
+from .session_store import SessionStore
 from .workspace import WorkspaceContext
 
 __all__ = [
-    "AnthropicCompatibleModelClient",
+    "CodingAgent",
+    "EvalScriptModelClient",
     "FakeModelClient",
-    "HH",
+    "ModelRequest",
+    "OpenAIChatClient",
+    "SessionStore",
+    "WorkspaceContext",
     "build_agent",
     "build_arg_parser",
     "build_welcome",
     "main",
-    "OllamaModelClient",
-    "OpenAIChatCompatibleModelClient",
-    "OpenAICompatibleModelClient",
-    "SessionStore",
-    "WorkspaceContext",
 ]

@@ -1,0 +1,11 @@
+{
+  "source": "\u65b0\u4e2d\u7b49\u9898\u7b2c\u4e00\u6279\uff08medium10b\uff09\u672a\u901a\u8fc7\u7684 2 \u9053",
+  "instance_ids": [
+    "django__django-12406",
+    "pydata__xarray-6938"
+  ],
+  "images": {
+    "django__django-12406": "swebench/sweb.eval.x86_64.django_1776_django-12406:latest",
+    "pydata__xarray-6938": "swebench/sweb.eval.x86_64.pydata_1776_xarray-6938:latest"
+  }
+}
