@@ -80,6 +80,41 @@ def agent_record(meta_path, instance_id):
     return next((row for row in reversed(rows) if row.get("instance_id") == instance_id), {})
 
 
+# agent 以这些原因结束说明是基础设施问题（模型接口不可用），不是解题失败：等一会儿自动重跑
+INFRA_STOP_REASONS = {"model_error"}
+
+
+def drop_instance(path, instance_id):
+    """从 jsonl 里删掉某道题的行。预测脚本见到已有预测会跳过，重跑前必须先删掉。"""
+    if not path.exists():
+        return
+    lines = [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    kept = [line for line in lines if json.loads(line).get("instance_id") != instance_id]
+    path.write_text("".join(line + "\n" for line in kept), encoding="utf-8")
+
+
+def run_agent(args, instance_id, command):
+    """跑 agent；碰到基础设施失败就等 infra_wait 秒、清掉旧记录再跑，最多 infra_retries 次。
+
+    返回 (output, record, retries)。2026-11-03 中等 50 道有 2 道因此要手工补跑 4 次，还踩了"只删 results
+    不删 predictions，预测脚本跳过、流水线拿旧记录再判一次分"的坑。
+    """
+    out_dir = Path(args.out_dir)
+    meta_path = out_dir / f"{args.run_name}.agent-runs.jsonl"
+    for retries in range(args.infra_retries + 1):
+        output = subprocess.run(command, capture_output=True, text=True).stdout
+        record = agent_record(meta_path, instance_id)
+        if (record.get("stop_reason") not in INFRA_STOP_REASONS or retries == args.infra_retries
+                or "stop: token budget reached" in output):
+            return output, record, retries
+        log(f"{instance_id}: infra failure ({record.get('stop_reason')}) -> retry "
+            f"{retries + 1}/{args.infra_retries} in {args.infra_wait}s")
+        time.sleep(args.infra_wait)
+        # 只删预测：预测脚本靠它判断"做过没有"。运行记录留着——失败那次花的 token 仍计入预算，也留作审计；
+        # agent_record 取的是最新一行
+        drop_instance(out_dir / f"{args.run_name}.predictions.jsonl", instance_id)
+
+
 def process(args, instance_id, results_path):
     out_dir = Path(args.out_dir)
     started = time.monotonic()
@@ -102,8 +137,9 @@ def process(args, instance_id, results_path):
             command += ["--max-total-tokens", str(args.max_total_tokens)]
         if args.agent_src:
             command += ["--agent-src", args.agent_src]
-        output = subprocess.run(command, capture_output=True, text=True).stdout
-        record = agent_record(out_dir / f"{args.run_name}.agent-runs.jsonl", instance_id)
+        output, record, infra_retries = run_agent(args, instance_id, command)
+        if infra_retries:
+            row["infra_retries"] = infra_retries
         if "stop: token budget reached" in output or not record:
             row["outcome"] = "skipped_budget"
             log(f"{instance_id}: token budget reached -> stopping")
@@ -145,6 +181,9 @@ def main():
                         help="Where to pull instance images from; images are re-tagged with the official name.")
     parser.add_argument("--max-total-tokens", type=int, default=None)
     parser.add_argument("--agent-src", default=None, help="传给 run_hh_predictions.py：挂进容器的 agent 代码目录")
+    parser.add_argument("--infra-retries", type=int, default=2,
+                        help="agent 因模型接口不可用（model_error）结束时，自动重跑几次（默认 2）")
+    parser.add_argument("--infra-wait", type=int, default=120, help="自动重跑前等待的秒数（默认 120）")
     parser.add_argument("--pull-only", action="store_true",
                         help="Only download and tag images, then exit (no gold check, agent, or grading).")
     args = parser.parse_args()

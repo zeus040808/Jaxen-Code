@@ -44,8 +44,20 @@ SWE-bench/SWE-bench_Verified 实例
     --swe-python .venv-swebench/bin/python --max-total-tokens 12000000
 ```
 
-补跑个别实例（例如服务故障造成的 `model_error`）时注意两点（2026-11-03 踩过）：
-- 要把这道题从 `<run-name>.results.jsonl`、`.predictions.jsonl`、`.agent-runs.jsonl` **三个文件**里都删掉（先备份）。
+模型接口不可用造成的 `model_error`，流水线会自动处理：删掉这道题的预测、等 `--infra-wait` 秒（默认 120）后重跑，
+最多 `--infra-retries` 次（默认 2）；运行记录保留（失败那次的 token 仍计入预算），结果行里记 `infra_retries`。
+
+评测版本：对照实验（审查开/关、同模型基线）统一用 git 标签 `eval-v3`（提交 a34b05b）的代码。为了不受工作区里
+正在进行的修改影响，把标签导出成单独的目录，用 `--agent-src` 挂进容器：
+
+```bash
+mkdir -p /tmp/hh-eval-v3 && git archive eval-v3 hh_agent_pro | tar -x -C /tmp/hh-eval-v3
+```
+
+然后给 `run_pipeline.py` 加 `--agent-src /tmp/hh-eval-v3/hh_agent_pro`。
+
+手工补跑个别实例时注意两点（2026-11-03 踩过）：
+- 要把这道题从 `<run-name>.results.jsonl` 和 `.predictions.jsonl` 里都删掉（先备份），`.agent-runs.jsonl` 可以保留。
   只删 results 的话，预测脚本看到已有预测会跳过，流水线拿旧记录再判一次分。
 - `--max-total-tokens` 按整个运行名**累计**计算，补跑时上限要按累计值设，否则一开跑就触发预算停止。
 
