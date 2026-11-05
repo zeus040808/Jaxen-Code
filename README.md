@@ -1,45 +1,71 @@
 # Jaxen
 
-> 原名 HH Agent Pro。对外名字（命令行欢迎界面、`jaxen>` 提示符、`--help`、网页界面）已改为 **Jaxen**；
-> 代码里的包名 `hh_agent_pro` / `hh_agent_ui`、环境变量 `HH_*`、状态目录 `.hh/` 和历史文档保持不变，避免影响已有功能与评测记录。
+从零实现的本地 coding agent harness：跑在终端里，读写本地代码仓库，自己跑测试、改代码、交付补丁。
+另配一套可复现的评测体系，包括官方 SWE-bench Verified 判分和隔离的评测环境。
 
-一个从零实现的本地 coding agent harness——跑在终端里，作用于本地代码仓库，
-并配套一套可复现的企业式评测体系。
+这是学习兼求职作品集项目，参考了 Claude Code 的设计。工具系统、上下文管理、交付门禁和审查子 agent 都是自己写的，
+没有套用 agent 框架。目标是每个机制都能讲清楚原理和取舍。
 
-学习 + 求职作品集项目。
+> 代码包名 `hh_agent_pro` / `hh_agent_ui`、环境变量 `HH_*`、状态目录 `.hh/` 沿用旧名 HH Agent Pro，
+> 对外显示的名字（命令行、网页界面）是 **Jaxen**。
 
----
+## 当前成绩
 
-## 这个项目是什么
+SWE-bench Verified，模型 DeepSeek V4 Flash（`deepseek-flash`）。判分用官方 harness（隐藏测试），
+环境隔离：没有外网，git 历史重建为单个提交。
 
-`hh_agent_pro` 是本地 coding agent：`CodingAgent` 持有模型、工具和跨请求状态，
-`AgentLoop` 控制单次任务从开始到交付的决策循环。上下文、工具、安全与记忆
-由各自模块提供，不由模型客户端直接执行。
+| 测量 | 结果 | 说明 |
+|---|---|---|
+| **中等题 50 道**（15 min – 1 hour） | **42/50（84%）** | 95% 置信区间约 72%–92%；一次统一版本测量，花费约 ¥17.5，[报告](docs/results/2026-11-03-swebench-medium50.md) |
+| 简单题 20 道（< 15 min） | 19/20 | 隔离环境，[报告](docs/results/2026-11-02-swebench-isolated.md) |
+| 难题 10 道（1 – 4 hours） | 5/10 | 隔离环境，同上 |
 
-它不是对某个框架的封装——工具系统、上下文预算、记忆分层、断点恢复、
-审批门禁全部自研，目的是把 coding agent 的每一个机制讲清楚。
+几点说明：
+- 每组都是从 Verified 里抽的样本，不是全量 500 道，题量小，置信区间宽。
+- 更早的 20/20、10/10 成绩是在泄露环境里跑的（镜像里有未来的修复提交、容器能联网），**已作废**，见
+  [评测环境泄露](docs/results/2026-11-02-swebench-leakage.md)。
+- 中等题 8 道失败里：5 道是修法不完整，2 道与隐藏测试的写法有关，1 道是 harness 问题（已修复并复测通过）。
 
-### 核心能力
+## 架构一览
 
-| 机制 | 说明 |
+```text
+用户 / 评测脚本 / 网页 UI
+        │  (交互终端 或 JSONL 机器协议)
+        ▼
+CodingAgent ── 持有模型、工具、会话状态
+        │
+AgentLoop ── 每轮：组装上下文 → 调模型 → 执行工具 → 更新任务状态 → 判断能否交付
+   │            │                │                    │
+ContextManager  provider         ToolExecutor         TaskState + 审查子 agent
+稳定前缀+会话   OpenAI 兼容 /     参数校验→审批→执行    改了代码必须有改后测试；
++末尾提醒；     Anthropic        →裁剪→记账            改动交付前由只读子 agent 审一遍
+接近上限才压缩
+        │
+RunStore ── trace.jsonl（事件）/ transcript.jsonl（逐轮完整对话）/ report.json / run_state.json
+```
+
+| 机制 | 做了什么 |
 |---|---|
-| **工具系统** | 26 个工具，统一经 `ToolExecutor` 收口：参数校验 → 审批 → 执行 → 裁剪 → 记账 |
-| **安全护栏** | 路径锚定在仓库内、只读模式、审批策略、shell 环境变量白名单、密钥自动脱敏 |
-| **上下文工程** | 稳定 system + 只追加会话记录 + 末尾提醒；按模型窗口推导 token 预算，接近上限才轻压缩/摘要压缩 |
-| **三层记忆** | 会话工作记忆 / 可纠正的长期事实 / SQLite 跨会话归档 |
-| **断点恢复** | 检查点带文件新鲜度指纹，工作区漂移可检测并重新锚定 |
-| **人机协同** | `needs_user_input` 与审批作为协议状态；审批前不修改工作区 |
-| **可观测性** | 逐事件 `trace.jsonl` + 结果 `report.json` + 可恢复 `run_state.json` |
-| **机器接口** | 非交互 JSONL 协议，供自动化评测驱动 |
+| **工具系统** | 所有工具调用都经过 `ToolExecutor`：参数校验 → 审批 → 执行 → 输出裁剪 → 记账。`core` 工具集只给编码工具，`full` 再加记忆、任务、定时、技能 |
+| **安全护栏** | 路径锚定在仓库内；只读模式；审批策略；shell 环境变量白名单；密钥在 trace、报告、终端里自动脱敏 |
+| **上下文工程** | 稳定的 system 前缀 + 只追加的会话记录 + 末尾提醒，提高缓存命中（评测中 83%–87%）。token 预算由模型窗口推导，接近上限才做轻压缩或摘要 |
+| **交付门禁** | 改了代码却没有改后测试、还有未解决的工具失败，就不允许交付 |
+| **审查子 agent** | 改了非测试源码时，交付前由一个只读子 agent 审查一次（`--review auto`） |
+| **错误恢复** | 模型请求按错误类型重试；输出被截断且为空时加大输出预算重发；重复失败检测，防止死循环 |
+| **记忆与恢复** | 三层记忆（会话 / 长期事实 / SQLite 归档）；检查点带文件指纹，工作区变化能检测出来 |
+| **可观测性** | `transcript.jsonl` 记录每轮发给模型的内容、模型原始输出和推理内容；`run_started` 记录模型、配置和代码版本哈希；`trace_report.py` 出批量统计和单题时间线 |
 
----
+各模块职责见 [模块导览](docs/architecture/module-map.md)。
 
 ## 快速开始
 
+需要 Python 3.11+。
+
 ```bash
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
-cp .env.example .env        # 填入 provider API key
-python -m hh_agent_pro       # 进入交互式终端
+cp .env.example .env        # 填入 API key，.env 已被 git 忽略
+python -m hh_agent_pro      # 进入交互终端
 ```
 
 一次性提问：
@@ -50,106 +76,68 @@ python -m hh_agent_pro "解释这个仓库的目录结构"
 
 常用参数：
 
+| 参数 | 作用 |
+|---|---|
+| `--provider deepseek\|openai\|anthropic` | 模型后端，默认 deepseek；`openai` 是任意 OpenAI 兼容端点（配 `--base-url`、`--model`） |
+| `--approval ask\|auto\|never` | 危险工具的审批策略 |
+| `--read-only` | 禁止一切写操作 |
+| `--review off\|auto\|always` | 交付前的审查子 agent，真实模型默认 auto |
+| `--toolset core\|full` | 工具集，默认 core |
+| `--resume latest` | 恢复最近一次会话 |
+| `--jsonl` | 非交互机器协议，供评测和 UI 驱动 |
+
+网页界面（经同一个 JSONL 协议驱动 agent，和命令行共用一个核心）：
+
 ```bash
---provider deepseek|openai     # openai = 任意 OpenAI 兼容端点（需 --base-url、--model）
---approval ask|auto|never      # 危险工具的审批策略
---read-only                    # 禁止一切写操作
---resume latest                # 恢复最近一次会话
---max-steps 50                 # 单次请求的工具调用上限（默认 50）
---toolset core|full            # core 只给编码工具（默认）；full 再加记忆/任务/定时/技能工具
+python -m hh_agent_ui --cwd <要操作的仓库> --port 8765
 ```
 
-跑测试：
+测试：
 
 ```bash
-python -m pytest -q            # 运行项目测试
+python -m pytest -q
 ```
 
----
+## 评测
+
+| 层 | 内容 | 用不用真实模型 |
+|---|---|---|
+| 单元测试 | 300+ 个，覆盖工具、门禁、上下文、恢复、协议 | 否 |
+| Harness 回归 | 用脚本化的假模型重放固定场景 | 否 |
+| 自建任务集 | 74 个任务 × 3 次，分开统计能力失败和基础设施失败 | 是 |
+| SWE-bench Verified | 官方镜像 + 官方判分，隔离环境，流水线自动补跑接口故障 | 是 |
+
+SWE-bench 流水线：gold 补丁校验 → 在官方镜像里跑 agent → 官方 harness 判分，每题一行结果，可以中断续跑。
+对照实验统一用 git 标签 `eval-v3` 的代码。用法见 [SWE-bench 评测手册](docs/evaluation/swebench.md)。
 
 ## 目录结构
 
+```text
+hh_agent_pro/        agent 本体
+├── agent.py         CodingAgent：装配能力、持有会话
+├── agent_loop.py    单次任务的控制循环与停止条件
+├── tool_executor.py 工具执行的总闸口
+├── context_manager.py / prompt_prefix.py   上下文组装与压缩
+├── task_state.py    任务进度与交付门禁
+├── review.py / subagent.py                 审查子 agent
+├── providers/       OpenAI 兼容、Anthropic、脚本化测试模型
+├── memory/ skills/ services/               记忆、技能、后台服务
+└── run_store.py     运行工件落盘
+hh_agent_ui/         网页界面（服务端 + React 前端）
+scripts/swebench/    SWE-bench 流水线、隔离代理、定位指标、trace 复盘
+scripts/eval/        自建任务集评测
+benchmarks/ evals/   任务集与评测定义
+docs/                设计、评测方法、各轮报告
+tests/               自动化测试
 ```
-hh_agent_pro/            Agent 本体
-├── agent.py             CodingAgent：装配能力、持有 Session、提供 ask()
-├── agent_loop.py        单次任务的控制循环与停止条件
-├── tool_executor.py     工具执行的总闸口
-├── context_manager.py   上下文组装与压缩
-├── prompt_prefix.py     稳定前缀（规则 + 工具目录 + 工作区快照）
-├── tools.py             工具注册表与实现
-├── memory/              三层记忆
-├── skills/              可复用流程的存储与自动沉淀
-├── services/            工具背后的长期服务（后台任务、定时、项目任务）
-├── providers/           OpenAI 兼容模型客户端 + 测试用脚本化模型
-├── evaluation/          评测判分与指标（不参与 agent 运行）
-├── checkpoint.py        检查点与恢复状态
-├── task_state.py        任务进度与交付门禁
-├── evidence.py          证据账本（区分已验证结论与假设）
-└── jsonl_protocol.py    非交互机器接口
-
-evals/ experiments/      NiceEval 评测定义与实验配置
-benchmarks/              任务集与测试仓库 fixture
-scripts/eval/            企业评测：数据集生成、执行、门禁、诊断
-scripts/swebench/        SWE-bench 预测生成
-scripts/dev/             开发辅助（NiceEval Windows 补丁）
-artifacts/               评测产物（见下）
-docs/                    文档：architecture / evaluation / results / learning / history
-tests/                   自动化测试
-```
-
-各模块的完整职责与调用关系见 [模块导览](docs/architecture/module-map.md)。
-
-### artifacts 布局
-
-| 目录 | 内容 |
-|---|---|
-| `eval-v2/` | 企业评测的 trial 结果（报告见 `docs/results/`） |
-| `deterministic/` | 确定性回归产物（每次运行覆盖） |
-| `ablations/` | 组件消融实验 |
-| `swebench/` | SWE-bench 预测与 agent 运行记录 |
-
----
-
-## 评测体系
-
-评测分五层，判断标准是**这个问题需不需要真实模型才能回答**：
-
-| 层 | 内容 | 频率 | 成本 |
-|---|---|---|---|
-| T0 | 单元测试（约 210 个） | 每次提交 | 0 |
-| T1 | Harness 一致性回归（假模型，14 个场景） | 每次提交 | 0 |
-| T2 | 组件评测（上下文 / 记忆 / 恢复） | 每次 PR | 0 |
-| T3 | 端到端能力（真实模型，74 任务 × 3 次） | 每周 | ~¥15 |
-| T4 | 长会话与人工介入 | 每月 | 人工 |
-
-关键设计：
-
-- **能力失败与基础设施失败严格分开**——API 欠费不算模型能力差，不进能力分母
-- **`pass^k` 优先于 `pass@k`**——高风险任务要求 3 次全过
-- **评测自身也有门禁**——任一分类有效样本 < 3 时拒绝输出任何通过率
-- **Python 硬判分器保权威**，NiceEval 只做调度与展示，平台可替换
-
-最新结果：[docs/results/2026-08-19-enterprise-eval.md](docs/results/2026-08-19-enterprise-eval.md)
-
----
-
-## 文档
-
-见 [docs/README.md](docs/README.md)。
-
----
 
 ## 已知短板
 
-评测跑出来的真实结论，不粉饰：
+- **多文件、多处修改容易漏改**：中等题和难题的失败多数属于这一类，主要受模型能力限制。
+- **SWE-bench 只能测"根据 issue 修 bug"**：新功能开发、长会话、需要人参与的场景还没有系统评测。
+- **审查子 agent 的价值还没量化**：50 道里提出有效问题 3 次，成本约占输入 token 的 15%；关闭审查的对照实验还没跑。
+- **没有和同模型的简单 agent 对比**：harness 本身带来多少提升，还要跑 mini-swe-agent 等基线才能回答。
 
-- **代码能力**：自建 fixture 上 DeepSeek V4 Pro 为 27/30（交付门禁死锁修复后单次测量，无方差数据）；
-  仍弱在多文件一致性与重构兼容
-- **范围纪律不足**——agent 会"顺手多改"，尤其会自己改测试文件。2026-10-30 起由提示规则约束，
-  并保留 `write_scope` 运行时护栏
-- **抗干扰弱**——陈旧文档/记忆干扰下容易答错
-- **安全与会话控制强**——30 次高风险 trial 零违规、零越权写
-- **真实仓库能力尚无基线**——SWE-bench Verified 只跑通 1 题冒烟，见
-  [docs/evaluation/swebench.md](docs/evaluation/swebench.md)
+## 文档
 
-以上数字来自 2026-08-19 报告，之后的 harness 升级（上下文、预算、工具、门禁）尚未重新测量。
+[docs/README.md](docs/README.md) 是全部文档的索引：机制设计、评测方法、按日期排列的评测报告。
