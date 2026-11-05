@@ -1,4 +1,4 @@
-# HH Agent 企业级评测 v2：运行与判定手册
+# Jaxen 企业级评测 v2：运行与判定手册
 
 ## 1. 评测职责边界
 
@@ -7,7 +7,7 @@
 ```text
 Task/Dataset v2
 → NiceEval 调度、多轮、Sandbox、Record/View
-→ HH Agent JSONL 协议
+→ Jaxen JSONL 协议
 → Python 硬 Grader（测试、diff、轨迹、安全）
 → trial-results-v2.jsonl
 → Python 企业门禁与报告
@@ -49,7 +49,7 @@ Task/Dataset v2
 # PR：无付费 API
 python -m pytest -q
 python scripts/eval/run_deterministic_gate.py --repetitions 1 --platform linux
-pnpm exec niceeval exp hh-agent-pilot --rerun all --json --junit artifacts/eval-v2/niceeval-pr-junit.xml
+pnpm exec niceeval exp jaxen-pilot --rerun all --json --junit artifacts/eval-v2/niceeval-pr-junit.xml
 
 # Nightly：每任务 3 个有效 trial，串行，infra 最多补跑 2 次
 python scripts/eval/run_eval_profile.py nightly --platform linux --infra-retries 2 \
@@ -105,4 +105,4 @@ Release 缺少冻结 baseline 或 Linux 权威安全结果时为 `INCOMPLETE`，
 - NiceEval Run：`4d4da101-2a3c-4730-8248-83beef4aaed2`
 - 74/74 passed，0 failed，0 errored，0 skipped，0 reused。
 - sidecar 74 行，JUnit 74 tests；3 个 ask-policy 任务批准前误执行实测为 0。
-- 结论：`REFERENCE_PRECHECK_PASS`。这证明评测基础设施闭环，不代表 DeepSeek 驱动的 HH Agent 已达到 100% 能力通过率。
+- 结论：`REFERENCE_PRECHECK_PASS`。这证明评测基础设施闭环，不代表 DeepSeek 驱动的 Jaxen 已达到 100% 能力通过率。

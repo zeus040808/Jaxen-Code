@@ -6,7 +6,7 @@
 使 Coding 通过率从 62.07% 被抬到 69.23%。
 """
 
-from hh_agent_pro.evaluation.schema_v2 import (
+from jaxen.evaluation.schema_v2 import (
     EXCLUDED_FROM_CAPABILITY_DENOMINATOR,
     PASSING_TRIAL_STATUSES,
     TRIAL_STATUSES,
@@ -37,7 +37,7 @@ def _model_error_row(message):
     }
 
 
-# 真实捕获于 .hh/runs/run_20260813-093833-395ef5/run_state.json
+# 真实捕获于 .jaxen/runs/run_20260813-093833-395ef5/run_state.json
 DEEPSEEK_THINKING_400 = (
     'OpenAI-chat-compatible request failed with HTTP 400: {"error":{"message":'
     '"The `reasoning_content` in the thinking mode must be passed back to the API.",'

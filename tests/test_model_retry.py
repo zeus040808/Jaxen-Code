@@ -8,8 +8,8 @@ import urllib.error
 
 import pytest
 
-from hh_agent_pro.providers import ModelRequest, OpenAIChatClient
-from hh_agent_pro.providers.openai_chat import MAX_ATTEMPTS
+from jaxen.providers import ModelRequest, OpenAIChatClient
+from jaxen.providers.openai_chat import MAX_ATTEMPTS
 
 OK_STREAM = [b'data: {"choices":[{"delta":{"content":"<final>ok</final>"}}]}\n', b"data: [DONE]\n"]
 
@@ -53,7 +53,7 @@ def _client(monkeypatch, outcomes):
             raise outcome
         return outcome
 
-    monkeypatch.setattr("hh_agent_pro.providers.openai_chat.urllib.request.urlopen", fake_open)
+    monkeypatch.setattr("jaxen.providers.openai_chat.urllib.request.urlopen", fake_open)
     client = OpenAIChatClient("deepseek-flash", "https://api.deepseek.com", "key", 0.2, 5, label="DeepSeek")
     delays = []
     client.sleep = delays.append
@@ -71,7 +71,7 @@ def test_retry_behind_proxy_keeps_the_https_tunnel(monkeypatch):
     seen = []
 
     def proxied_open(request, timeout):
-        request.set_proxy("hh-eval-proxy:8888", "http")  # 模拟 ProxyHandler 对 https 请求做的事
+        request.set_proxy("jaxen-eval-proxy:8888", "http")  # 模拟 ProxyHandler 对 https 请求做的事
         # 真实的 urlopen 要求请求体是 bytes（第一版修复把它覆盖成了错误响应的 str，重试时 TypeError）
         assert isinstance(request.data, bytes)
         seen.append((request.type, request.selector))
@@ -79,7 +79,7 @@ def test_retry_behind_proxy_keeps_the_https_tunnel(monkeypatch):
             raise _http_error(503)
         return Response(OK_STREAM)
 
-    monkeypatch.setattr("hh_agent_pro.providers.openai_chat.urllib.request.urlopen", proxied_open)
+    monkeypatch.setattr("jaxen.providers.openai_chat.urllib.request.urlopen", proxied_open)
     client = OpenAIChatClient("deepseek-flash", "https://api.deepseek.com", "key", 0.2, 5, label="DeepSeek")
     client.sleep = lambda delay: None
 
@@ -160,7 +160,7 @@ def test_empty_response_is_resent_and_usage_includes_retries(monkeypatch):
 
 
 def test_persistently_empty_response_fails_with_finish_reason(monkeypatch):
-    from hh_agent_pro.providers.openai_chat import EMPTY_RESPONSE_RETRIES
+    from jaxen.providers.openai_chat import EMPTY_RESPONSE_RETRIES
 
     client, calls, _ = _client(monkeypatch, [_stream()] * (EMPTY_RESPONSE_RETRIES + 1))
     with pytest.raises(RuntimeError, match="finish_reason=stop"):
@@ -178,7 +178,7 @@ def test_malformed_native_tool_arguments_become_a_retry_not_a_model_error(monkey
     # 2026-11-05 故障注入发现：原生 tool_calls 的参数是半截 JSON 时 provider 直接抛错，整轮以 model_error 结束。
     # 现在交回一个解析不了的文本工具调用，AgentLoop 让模型重来；原生协议状态清空，不留下没有结果的 tool_call id。
     import json as _json
-    from hh_agent_pro.agent import CodingAgent
+    from jaxen.agent import CodingAgent
 
     call = {"index": 0, "id": "call_1", "function": {"name": "patch_file", "arguments": '{"path": "calc.py",'}}
     stream = Response([

@@ -2,7 +2,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from hh_agent_pro.evaluation.schema_v2 import (
+from jaxen.evaluation.schema_v2 import (
     classify_trial_v2,
     fixture_digest,
     load_task_suite_v2,

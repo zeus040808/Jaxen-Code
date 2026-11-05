@@ -1,6 +1,6 @@
-# HH Agent Pro 说明文档
+# Jaxen Code 说明文档
 
-`hh_agent_pro` 是本仓库的本地 coding agent：在完整的工程骨架（OpenAI 兼容模型接口、
+`jaxen` 是本仓库的本地 coding agent：在完整的工程骨架（OpenAI 兼容模型接口、
 checkpoint、trace、审批、记忆）之上，增量吸收 `learn-claude-code` 的设计。
 模块职责和调用链见 [模块导览](module-map.md)，2026-10-30 的 harness 改动见
 [harness-upgrades-20261030.md](harness-upgrades-20261030.md)。
@@ -10,16 +10,16 @@ checkpoint、trace、审批、记忆）之上，增量吸收 `learn-claude-code`
 只支持 **OpenAI Chat Completions 兼容**的大模型接口，默认 DeepSeek `deepseek-flash`：
 
 ```powershell
-python -m hh_agent_pro --approval ask
-python -m hh_agent_pro --approval auto "分析项目结构并提出改进建议"
-python -m hh_agent_pro --model deepseek-v4-pro
+python -m jaxen --approval ask
+python -m jaxen --approval auto "分析项目结构并提出改进建议"
+python -m jaxen --model deepseek-v4-pro
 ```
 
 | provider | 用途 | 配置 |
 |---|---|---|
-| `deepseek`（默认） | DeepSeek 预设 | `HH_DEEPSEEK_API_KEY`、`HH_DEEPSEEK_API_BASE`、`HH_DEEPSEEK_MODEL` |
-| `openai` | 任意兼容端点（通义千问兼容模式、OpenAI 等） | `HH_OPENAI_API_KEY`，加 `--base-url`/`HH_OPENAI_API_BASE` 与 `--model`/`HH_OPENAI_MODEL`；不在内置窗口表里的模型用 `--context-window` |
-| `fake` | 仅限隔离评测的脚本化模型 | `HH_ALLOW_EVAL_FAKE_PROVIDER=1` |
+| `deepseek`（默认） | DeepSeek 预设 | `JAXEN_DEEPSEEK_API_KEY`、`JAXEN_DEEPSEEK_API_BASE`、`JAXEN_DEEPSEEK_MODEL` |
+| `openai` | 任意兼容端点（通义千问兼容模式、OpenAI 等） | `JAXEN_OPENAI_API_KEY`，加 `--base-url`/`JAXEN_OPENAI_API_BASE` 与 `--model`/`JAXEN_OPENAI_MODEL`；不在内置窗口表里的模型用 `--context-window` |
+| `fake` | 仅限隔离评测的脚本化模型 | `JAXEN_ALLOW_EVAL_FAKE_PROVIDER=1` |
 
 每个用户请求默认最多 50 次有效工具调用（`--max-steps` 调整）。缓存命中的重复读取不消耗额度；
 达到上限后进入 `final-only`，要求模型基于已有证据回答。
@@ -28,9 +28,9 @@ python -m hh_agent_pro --model deepseek-v4-pro
 client 保持不变：
 
 ```text
-hh> /model
-hh> /model deepseek deepseek-v4-pro
-hh> /model openai qwen-plus
+jaxen> /model
+jaxen> /model deepseek deepseek-v4-pro
+jaxen> /model openai qwen-plus
 ```
 
 客户端流式读取 SSE：终端实时显示请求开始、reasoning 进行中和请求完成，但不打印私有推理；
@@ -46,7 +46,7 @@ hh> /model openai qwen-plus
 
 ## 保留的工程能力
 
-`hh_agent_pro` 保留这些核心结构：
+`jaxen` 保留这些核心结构：
 
 - `agent.CodingAgent`
 - `AgentLoop`（单次请求的控制循环）
@@ -57,7 +57,7 @@ hh> /model openai qwen-plus
 - `RunStore`
 - `SessionStore`
 - `RunState`
-- `TaskState`
+- `ProgressTracker`
 - checkpoint / resume 检查
 - 稳定 system 前缀 + 只追加会话记录 + 按 token 预算压缩的上下文
 - layered memory
@@ -65,113 +65,69 @@ hh> /model openai qwen-plus
 - shell env allowlist
 - secret redaction
 - run artifacts：
-  - `.hh/runs/<run_id>/run_state.json`
-  - `.hh/runs/<run_id>/trace.jsonl`
-  - `.hh/runs/<run_id>/report.json`
+  - `.jaxen/runs/<run_id>/run_state.json`
+  - `.jaxen/runs/<run_id>/trace.jsonl`
+  - `.jaxen/runs/<run_id>/report.json`
 
-也就是说，这不是删减版，而是 HH-branded 增强版。
+也就是说，这不是删减版，而是 Jaxen-branded 增强版。
 
 ## 新增能力
 
-### 1. 持久化项目任务
+### 1. 长任务待办（backlog，只在 full 工具集）
 
-新增工具：
+跨会话保留的待办项，带依赖、验收标准和证据：
 
-- `create_task`
-- `list_tasks`
-- `claim_task`
-- `complete_task`
-- `fail_task`
-- `block_task`
-- `record_evidence`
+- `backlog_add`、`backlog_list`、`backlog_claim`、`backlog_complete`、`backlog_fail`、`backlog_block`
 
-任务文件保存到：
+保存在 `.jaxen/backlog/`。它和当前请求的进度账本互不依赖：待办没做完不会拦当前请求的交付。
+当前请求内的计划用 `todo_write`。设计来源是 `learn-claude-code` S12 的任务系统，2026-11-05 起和短任务拆开。
 
-```text
-.hh/tasks/
-```
+### 2. 后台命令
 
-这部分来自 `learn-claude-code` S12 / `hh_agent.task_system` 的设计。
-
-### 2. 后台 shell 任务
-
-`run_shell` 新增参数：
-
-```json
-{"background": true}
-```
-
-示例：
+`run_shell` 带 `{"background": true}` 时在后台跑：
 
 ```xml
 <tool>{"name":"run_shell","args":{"command":"pytest -q","timeout":120,"background":true}}</tool>
 ```
 
-只有显式设置 `background: true` 才会进入后台。完成结果会在同一个 Agent Loop 的下一次模型决策前以 `<task_notification>` 注入 history；测试和编译命令默认前台运行，以便当前 Run 立即拿到退出码。
+只有显式设置才会进后台。完成结果在下一次模型决策前以 `<job_notification>` 注入历史；测试和编译命令默认前台运行，
+当前运行能立即拿到退出码。来源是 S13 background tasks。
 
-这部分来自 S13 background tasks。
+### 3. 定时提示（用户功能）
 
-### 3. Cron 定时唤醒
-
-新增工具：
-
-- `schedule_cron`
-- `list_crons`
-- `cancel_cron`
-
-定时任务保存到：
+用户在 CLI 里安排"到点发给 agent 的一条指令"，5 段 cron 表达式（分 时 日 月 周）：
 
 ```text
-.hh/scheduled_tasks.json
+/schedule 0 9 * * 1-5 跑一遍测试并汇报失败
+/schedules
+/unschedule sched_ab12cd
 ```
 
-到点后不会直接执行 shell，而是把 prompt 转成一条新的用户消息：
+保存在 `.jaxen/schedules.json`。到点后 CLI 把这条指令当成用户消息调用 `agent.ask()`，由 agent 决定读文件、
+跑工具还是回答。**模型看不到任何定时工具**：要不要定时是用户的决定。来源是 S14 cron scheduler，2026-11-05
+从模型工具改为用户命令。
+
+### 4. CLI 命令
 
 ```text
-[Scheduled] ...
+/backlog     查看长任务待办
+/schedule    安排定时提示；/schedules 查看，/unschedule <id> 取消
+/review      只读审查当前未提交的改动
 ```
 
-然后仍由 Agent 决定是否读文件、运行工具或回答。
+### 5. 进度账本与交付门禁
 
-这部分来自 S14 cron scheduler。
+当前目标的进度保存在会话的 `progress` 里（`ProgressTracker`）：目标和状态、跨运行的续跑记录、todo、
+代码改了测没测、工具失败、已验证 / 未验证的结论、待回答的问题、最近的观察。
 
-### 4. CLI 增强
+模型交最终答案前，门禁检查：未解决的可重试工具失败、未验证的结论、待回答的问题、还在跑的后台命令。
+还能动手时提醒一次，再交就带着未解决项放行（`incomplete_delivery`）。
 
-新增 REPL 命令：
-
-```text
-/tasks   查看持久化项目任务
-/crons   查看定时任务
-```
-
-启动 REPL 后会自动启动 cron scheduler，并在 Agent 空闲时交付定时任务。
-
-### 5. TaskState 与交付门
-
-当前用户任务的语义进度保存在 Session 的 `task_state` 中，包括：
-
-- 当前目标和状态
-- 跨 Run 的续跑记录
-- 当前任务关联的子任务 ID
-- 工具证据和失败记录
-- 已验证/未验证结论
-- 开放问题和下一步
-
-ProjectTask 支持 `pending`、`in_progress`、`completed`、`failed`、`blocked`、`cancelled`，并可保存验收条件、证据和失败原因。
-
-模型返回 `<final>` 前，Runtime 会拒绝以下提前交付：
-
-- 当前任务仍有 `pending` 或 `in_progress` 子任务
-- 子任务处于 `failed` 或 `blocked`
-- 存在未验证结论或开放问题
-- 存在未解决的可恢复工具失败
-- 仍有后台任务运行
-
-完整设计见 [`HH_TASK_STATE_AND_DELIVERY_GATE_ZH.md`](task-state-and-delivery.md)。
+完整设计见 [进度账本与交付门禁](progress-and-delivery.md)，概念关系见 [概念与模块地图](module-map.md)。
 
 ## 工程能力清单
 
-`hh_agent_pro` 保留的工程特性：
+`jaxen` 保留的工程特性：
 
 - OpenAI Chat Completions 兼容接口（DeepSeek 预设）
 - checkpoint / resume
@@ -184,7 +140,7 @@ ProjectTask 支持 `pending`、`in_progress`、`completed`、`failed`、`blocked
 - approval policy
 - secret redaction
 
-然后在工具层和运行层补上任务、后台、定时能力。
+然后在工具层和运行层补上长任务待办、后台命令、定时提示。
 
 ## 测试
 
@@ -210,4 +166,4 @@ pytest -q
 
 可以写：
 
-> 基于 HH 完整 agent runtime 实现增强版本地 coding agent，支持任意 OpenAI 兼容大模型、checkpoint/resume、run trace/report、workspace fingerprint、layered memory、ToolExecutor 安全审计等工程能力，并增量加入 learn-claude-code 风格的持久化任务系统、后台工具执行和 cron 定时唤醒机制；通过 pytest 覆盖工具协议、任务流、后台通知、定时调度和 run artifact。
+> 基于 Jaxen 完整 agent runtime 实现增强版本地 coding agent，支持任意 OpenAI 兼容大模型、checkpoint/resume、run trace/report、workspace fingerprint、layered memory、ToolExecutor 安全审计等工程能力，并增量加入 learn-claude-code 风格的持久化任务系统、后台工具执行和 cron 定时唤醒机制；通过 pytest 覆盖工具协议、任务流、后台通知、定时调度和 run artifact。

@@ -1,6 +1,6 @@
-# HH Agent Pro 评测实施计划 v3
+# Jaxen Code 评测实施计划 v3
 
-> 被测对象：HH Agent Pro（`hh_agent_pro/`，约 12,200 行）
+> 被测对象：Jaxen Code（`jaxen/`，约 12,200 行）
 > 前序基线：`artifacts/enterprise-eval-20260818/`（release_decision = fail）
 > 本文取代：v2 企业级实施计划 + 通用四维度框架
 > 组织方式：**四维度骨架 + 双轨任务来源 + 分期门禁**
@@ -77,7 +77,7 @@ Task/Dataset v2 (schema_v2.py)
                defineSandboxAgent + Docker
         │
         ▼
-  HH Agent（CLI 或 JSONL 机器接口）
+  Jaxen（CLI 或 JSONL 机器接口）
         │
         ▼
   标准产物：trace.jsonl / run_state.json / report.json / workspace diff / usage
@@ -113,7 +113,7 @@ Task/Dataset v2 (schema_v2.py)
 每条包含：仓库 + base_commit + GitHub issue 描述 + `FAIL_TO_PASS` 测试 + `PASS_TO_PASS` 测试。
 判分方式：应用 agent 产出的 patch → 跑测试 → `FAIL_TO_PASS` 必须全过且 `PASS_TO_PASS` 不得回归。
 
-这个形态与 HH Agent Pro 的工具集（`read_file`/`search`/`patch_file`/`run_shell`）天然匹配。
+这个形态与 Jaxen Code 的工具集（`read_file`/`search`/`patch_file`/`run_shell`）天然匹配。
 
 **抽样方案**（一期 30 条）：
 
@@ -222,8 +222,8 @@ checkpoint 文本进入 prompt 且未被裁剪、恢复后不重复已完成工�
 
 | 断言 | 检查点 |
 |---|---|
-| delegate 正确性 | 复杂任务触发 `delegate`，且子 agent `read_only=True`、`depth` 递增 |
-| 证据先行 | `record_evidence` 在下结论前调用；`evidence_before_claim_rate` ≥ 0.9 |
+| investigate 正确性 | 复杂任务触发 `investigate`，且子 agent `read_only=True`、`depth` 递增 |
+| 证据先行 | `backlog_note` 在下结论前调用；`evidence_before_claim_rate` ≥ 0.9 |
 | 缓存契约 | 重复读命中缓存 → `effective_tool_step: False`；连续 2 次 → `final_only_mode` |
 | 检查点触发 | stale/mismatch 时创建 checkpoint，且 trigger 字段正确 |
 | Skill 复用 | 匹配到 skill 索引后调用 `skill_view`，而非重新摸索 |
@@ -432,7 +432,7 @@ maxConcurrency = 1（串行，避免 provider 限流与结果串扰）
 **`valid_episode_rate` 是评测健康度指标，不是 agent 指标。**
 < 0.85 说明评测执行有问题，此时任何能力结论都不成立。
 
-### 7.3 HH Agent JSONL 机器接口
+### 7.3 Jaxen JSONL 机器接口
 
 普通终端 CLI 保持不变，新增非交互 JSONL 模式。
 
@@ -451,13 +451,13 @@ maxConcurrency = 1（串行，避免 provider 限流与结果串扰）
 
 **事件映射**（复用现有 `emit_ui` / `CallbackEventSink`，改动小）：
 
-| HH 内部事件 | JSONL kind |
+| Jaxen 内部事件 | JSONL kind |
 |---|---|
 | 最终回答 | `message` |
 | tool_started / tool_finished | `operation.started` / `operation.finished` |
 | needs_user_input | `input.requested` |
 | 审批请求 | `input.requested`（结构化 responses 恢复） |
-| delegate | subagent operation |
+| investigate | subagent operation |
 | context reduction | `compaction` |
 | provider reasoning summary | `thinking` |
 | model / runtime error | `error` |
@@ -600,7 +600,7 @@ Security 3→10，Robustness 2→6。Linux Docker 中获得 symlink 类真实结
 
 ### M6 / M6b JSONL 接口
 M6 做事件流与 golden test；**M6b 单独做审批持久化**——
-需改 `ToolExecutor` 执行流与 session schema（现 `HH.approve()` 是同步 `input()`），
+需改 `ToolExecutor` 执行流与 session schema（现 `Jaxen.approve()` 是同步 `input()`），
 要求：批准前不得修改 workspace，恢复后只执行原来那一次精确调用。
 
 **验收**：三种 HITL 通过；`pre_approval_execution_count = 0`。

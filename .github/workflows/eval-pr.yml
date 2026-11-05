@@ -34,7 +34,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p artifacts/eval-v2
-          pnpm exec niceeval exp hh-agent-pilot --no-early-exit --rerun all --json \
+          pnpm exec niceeval exp jaxen-pilot --no-early-exit --rerun all --json \
             --junit artifacts/eval-v2/niceeval-pr-junit.xml \
             | tee artifacts/eval-v2/niceeval-pr.ndjson
           exit "${PIPESTATUS[0]}"
@@ -42,7 +42,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: hh-agent-pr-eval
+          name: jaxen-pr-eval
           path: |
             artifacts/eval-v2/
             artifacts/deterministic/harness-regression-v2.json

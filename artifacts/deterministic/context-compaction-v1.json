@@ -54,14 +54,14 @@
         "recent": true,
         "old": false
       },
-      "compression_ratio": 0.545,
+      "compression_ratio": 0.544,
       "summary_requests": 0,
       "rounds": [
         {
           "kind": "light",
           "cleared": 16,
-          "before_tokens": 24923,
-          "after_tokens": 11349
+          "before_tokens": 24951,
+          "after_tokens": 11377
         }
       ]
     },
@@ -91,8 +91,8 @@
         {
           "kind": "summary",
           "summarized_items": 35,
-          "before_tokens": 24923,
-          "after_tokens": 8861
+          "before_tokens": 24951,
+          "after_tokens": 8889
         }
       ]
     },
@@ -122,14 +122,14 @@
         {
           "kind": "summary",
           "summarized_items": 35,
-          "before_tokens": 24923,
-          "after_tokens": 8861
+          "before_tokens": 24951,
+          "after_tokens": 8889
         },
         {
           "kind": "summary",
           "summarized_items": 44,
-          "before_tokens": 31713,
-          "after_tokens": 10868
+          "before_tokens": 31741,
+          "after_tokens": 10896
         }
       ]
     },
@@ -153,14 +153,14 @@
         "recent": true,
         "old": false
       },
-      "compression_ratio": 0.684,
+      "compression_ratio": 0.683,
       "summary_requests": 1,
       "rounds": [
         {
           "kind": "light+trim",
           "cleared": 16,
-          "before_tokens": 24923,
-          "after_tokens": 7883,
+          "before_tokens": 24951,
+          "after_tokens": 7904,
           "summary_rejected": "request failed: summary backend unavailable"
         }
       ]
@@ -185,14 +185,14 @@
         "recent": true,
         "old": false
       },
-      "compression_ratio": 0.684,
+      "compression_ratio": 0.683,
       "summary_requests": 0,
       "rounds": [
         {
           "kind": "light+trim",
           "cleared": 16,
-          "before_tokens": 24923,
-          "after_tokens": 7883
+          "before_tokens": 24951,
+          "after_tokens": 7904
         }
       ]
     },
@@ -222,8 +222,8 @@
         {
           "kind": "light+trim",
           "cleared": 16,
-          "before_tokens": 25628,
-          "after_tokens": 7961,
+          "before_tokens": 25656,
+          "after_tokens": 7983,
           "summary_rejected": "request failed: summary backend unavailable"
         }
       ]
@@ -247,14 +247,14 @@
       "fact_retention": {
         "recent": true
       },
-      "compression_ratio": 0.692,
+      "compression_ratio": 0.691,
       "summary_requests": 1,
       "rounds": [
         {
           "kind": "summary",
           "summarized_items": 23,
-          "before_tokens": 15843,
-          "after_tokens": 4878
+          "before_tokens": 15871,
+          "after_tokens": 4906
         }
       ]
     },
@@ -283,8 +283,8 @@
         {
           "kind": "summary",
           "summarized_items": 69,
-          "before_tokens": 44491,
-          "after_tokens": 14730
+          "before_tokens": 44519,
+          "after_tokens": 14758
         }
       ]
     },
@@ -307,14 +307,14 @@
       "fact_retention": {
         "recent": true
       },
-      "compression_ratio": 0.645,
+      "compression_ratio": 0.644,
       "summary_requests": 1,
       "rounds": [
         {
           "kind": "summary",
           "summarized_items": 35,
-          "before_tokens": 25225,
-          "after_tokens": 8952
+          "before_tokens": 25253,
+          "after_tokens": 8980
         }
       ]
     },
@@ -344,8 +344,8 @@
         {
           "kind": "summary",
           "summarized_items": 23,
-          "before_tokens": 49456,
-          "after_tokens": 28858
+          "before_tokens": 49512,
+          "after_tokens": 28914
         }
       ]
     },
@@ -363,7 +363,7 @@
       "expected_kinds": [
         "summary"
       ],
-      "requests_checked": 21,
+      "requests_checked": 22,
       "violations": {
         "within_budget": 0,
         "protocol": 0,
@@ -384,22 +384,24 @@
       "stop_reason": "final_answer_returned",
       "compactions": [
         "light",
-        "light",
-        "light",
-        "light",
+        "trim",
+        "trim",
         "light+trim",
         "light+trim",
         "light+trim",
         "light+trim",
         "light+trim",
-        "light",
-        "light",
+        "light+trim",
+        "light+trim",
+        "light+trim",
+        "light+trim",
+        "light+trim",
         "light"
       ],
       "expected_kinds": [
         "trim"
       ],
-      "requests_checked": 23,
+      "requests_checked": 21,
       "violations": {
         "within_budget": 0,
         "protocol": 0,

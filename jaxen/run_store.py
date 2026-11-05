@@ -1,0 +1,106 @@
+"""运行工件落盘。
+
+session.json 负责保存“可恢复的会话状态”；RunStore 负责保存“单次运行的审计工件”，
+例如 run_state、trace 和 report。两者分开后，恢复现场和复盘证据不会混在一起。
+"""
+
+import json
+import tempfile
+from pathlib import Path
+
+
+def _run_id(value):
+    if hasattr(value, "run_id"):
+        return value.run_id
+    return str(value)
+
+
+class RunStore:
+    def __init__(self, root):
+        self.root = Path(root)
+        self.root.mkdir(parents=True, exist_ok=True)
+
+    def run_dir(self, run_id):
+        return self.root / _run_id(run_id)
+
+    # 创建run_state路径
+    def run_state_path(self, run_id):
+        return self.run_dir(run_id) / "run_state.json"
+
+    # 创建trace路径
+    def trace_path(self, run_id):
+        return self.run_dir(run_id) / "trace.jsonl"
+
+    # 完整对话记录：每轮发给模型的内容和模型的原始返回（trace 里只有截断后的摘要）
+    def transcript_path(self, run_id):
+        return self.run_dir(run_id) / "transcript.jsonl"
+
+    def report_path(self, run_id):
+        return self.run_dir(run_id) / "report.json"
+
+    # 调用在agent loop中，创建目录并保存初始状态
+    def start_run(self, run_state):
+        # 每次 ask() 都会生成一个 run 目录。
+        # 这样一次用户请求对应一组独立工件，后续排查更容易。
+        run_dir = self.run_dir(run_state)
+        run_dir.mkdir(parents=True, exist_ok=True)
+        self.write_run_state(run_state)
+        return run_dir
+
+    # 记录run_state（覆盖最新状态）
+    def write_run_state(self, run_state):
+        path = self.run_state_path(run_state)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self._write_json_atomic(path, run_state.to_dict())
+        return path
+
+    # 添加trace（不覆盖旧事件） event为传入的payload事件+时间
+    def append_trace(self, run_state, event):
+        # trace 采用 jsonl 追加写入，原因是 agent 运行过程是流式事件序列，
+        # 逐条落盘比“最后一次性写整份 trace”更稳，也更适合调试。
+        return self._append_jsonl(self.trace_path(run_state), event)
+
+    def append_transcript(self, run_state, entry):
+        return self._append_jsonl(self.transcript_path(run_state), entry)
+
+    @staticmethod
+    def _append_jsonl(path, payload):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, sort_keys=True, ensure_ascii=False))
+            handle.write("\n")
+        return path
+
+    # 写报告（记录最终结果和核心指标是什么）
+    def write_report(self, run_state, report):
+        path = self.report_path(run_state)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self._write_json_atomic(path, report)
+        return path
+
+    def load_run_state(self, run_id):
+        return json.loads(self.run_state_path(run_id).read_text(encoding="utf-8"))
+
+    def load_report(self, run_id):
+        return json.loads(self.report_path(run_id).read_text(encoding="utf-8"))
+
+    def _write_json_atomic(self, path, payload):
+        # 原子写：先写临时文件，再 replace。
+        # 这样即使中途异常，也不容易留下半截 JSON。
+        temp_name = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                "w",
+                encoding="utf-8",
+                delete=False,
+                dir=str(path.parent),
+                prefix=path.name + ".",
+                suffix=".tmp",
+            ) as handle:
+                json.dump(payload, handle, indent=2, sort_keys=True, ensure_ascii=False)
+                handle.write("\n")
+                temp_name = handle.name
+            Path(temp_name).replace(path)
+        finally:
+            if temp_name:
+                Path(temp_name).unlink(missing_ok=True)

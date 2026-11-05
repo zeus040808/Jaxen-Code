@@ -25,8 +25,8 @@ trace 中出现 `git log --all`、`pip download`、`curl`/`urllib` 访问外网�
 
 | 泄露口 | 做法 | 位置 |
 |---|---|---|
-| git 历史 | agent 开始前把 `/testbed` 的 `.git` 删除重建，只剩当前代码这一个提交（镜像自带的工作区改动也在这个提交里，之后的 diff 只含 agent 的改动） | `scripts/swebench/run_hh_predictions.py::reset_history` |
-| 联网 | agent 容器接入 `--internal` 的 Docker 网络（没有通往外网的路由）；唯一出口是 `egress_proxy.py`，只接受白名单里的 CONNECT 目标（DeepSeek API）。模型客户端用 urllib，读 `HTTPS_PROXY`，agent 代码不用改；agent 的 shell 命令继承同样的设置。每题记录被拒绝的请求数 `egress_denied` | `scripts/swebench/egress_proxy.py`、`run_hh_predictions.py::start_egress` |
+| git 历史 | agent 开始前把 `/testbed` 的 `.git` 删除重建，只剩当前代码这一个提交（镜像自带的工作区改动也在这个提交里，之后的 diff 只含 agent 的改动） | `scripts/swebench/run_jaxen_predictions.py::reset_history` |
+| 联网 | agent 容器接入 `--internal` 的 Docker 网络（没有通往外网的路由）；唯一出口是 `egress_proxy.py`，只接受白名单里的 CONNECT 目标（DeepSeek API）。模型客户端用 urllib，读 `HTTPS_PROXY`，agent 代码不用改；agent 的 shell 命令继承同样的设置。每题记录被拒绝的请求数 `egress_denied` | `scripts/swebench/egress_proxy.py`、`run_jaxen_predictions.py::start_egress` |
 
 只在提示词里写"不许联网"不可靠，模型照样会去查；去掉代理环境变量直连也不行，因为内网没有 DNS 和外网路由。
 

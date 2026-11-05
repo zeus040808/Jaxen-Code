@@ -118,19 +118,19 @@ def test_proxy_denies_plain_http_outside_allowlist():
 def test_shell_commands_inherit_proxy_but_not_secrets(tmp_path, monkeypatch):
     # shell 子进程要带上代理：评测里 agent 的 pip/curl 才会经过出口代理、被拒绝并计入 egress_denied
     # （之前不带代理，请求在内网直接 DNS 失败，计数一直是 0）；公司网络里日常用 pip 也靠它。密钥仍然不继承。
-    from hh_agent_pro.agent import CodingAgent
-    from hh_agent_pro.providers import FakeModelClient
-    from hh_agent_pro.session_store import SessionStore
-    from hh_agent_pro.workspace import WorkspaceContext
+    from jaxen.agent import CodingAgent
+    from jaxen.providers import FakeModelClient
+    from jaxen.session_store import SessionStore
+    from jaxen.workspace import WorkspaceContext
 
-    monkeypatch.setenv("HTTPS_PROXY", "http://hh-eval-proxy:8888")
+    monkeypatch.setenv("HTTPS_PROXY", "http://jaxen-eval-proxy:8888")
     monkeypatch.setenv("NO_PROXY", "localhost")
-    monkeypatch.setenv("HH_DEEPSEEK_API_KEY", "sk-test-not-real")
+    monkeypatch.setenv("JAXEN_DEEPSEEK_API_KEY", "sk-test-not-real")
     agent = CodingAgent(
         model_client=FakeModelClient([]),
         workspace=WorkspaceContext.build(tmp_path, repo_root_override=tmp_path),
-        session_store=SessionStore(tmp_path / ".hh" / "sessions"),
+        session_store=SessionStore(tmp_path / ".jaxen" / "sessions"),
     )
     env = agent.shell_env()
-    assert env["HTTPS_PROXY"] == "http://hh-eval-proxy:8888" and env["NO_PROXY"] == "localhost"
-    assert "HH_DEEPSEEK_API_KEY" not in env
+    assert env["HTTPS_PROXY"] == "http://jaxen-eval-proxy:8888" and env["NO_PROXY"] == "localhost"
+    assert "JAXEN_DEEPSEEK_API_KEY" not in env

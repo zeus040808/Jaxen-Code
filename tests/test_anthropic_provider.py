@@ -5,8 +5,8 @@ import json
 import urllib.error
 from unittest.mock import patch
 
-from hh_agent_pro.providers import AnthropicMessagesClient, ModelRequest
-from hh_agent_pro.providers.anthropic_messages import to_anthropic_messages, to_anthropic_tools, usage_details
+from jaxen.providers import AnthropicMessagesClient, ModelRequest
+from jaxen.providers.anthropic_messages import to_anthropic_messages, to_anthropic_tools, usage_details
 
 
 class FakeResponse(io.BytesIO):
@@ -64,7 +64,7 @@ def test_single_tool_use_becomes_internal_tool_call_and_request_is_anthropic_sha
         return reply([{"type": "text", "text": "Let me read it."},
                       {"type": "tool_use", "id": "t9", "name": "read_file", "input": {"path": "a.py"}}], stop="tool_use")
 
-    with patch("hh_agent_pro.providers.anthropic_messages.urllib.request.urlopen", fake_urlopen):
+    with patch("jaxen.providers.anthropic_messages.urllib.request.urlopen", fake_urlopen):
         out = client.complete(ModelRequest("rules", [{"role": "user", "content": "go"}], 1000,
                                            tools=[{"type": "function", "function": {"name": "read_file", "parameters": {}}}]))
     assert out == '<tool>{"name": "read_file", "args": {"path": "a.py"}}</tool>'
@@ -79,11 +79,11 @@ def test_multiple_tool_uses_become_a_batch_and_text_passes_through():
     client = _client()
     two_calls = reply([{"type": "tool_use", "id": "a", "name": "read_file", "input": {"path": "x"}},
                        {"type": "tool_use", "id": "b", "name": "read_file", "input": {"path": "y"}}], stop="tool_use")
-    with patch("hh_agent_pro.providers.anthropic_messages.urllib.request.urlopen", lambda r, timeout: two_calls):
+    with patch("jaxen.providers.anthropic_messages.urllib.request.urlopen", lambda r, timeout: two_calls):
         out = client.complete(ModelRequest("s", [{"role": "user", "content": "go"}], 100))
     assert out.startswith("<tool_batch>") and [a["id"] for a in client.last_native_assistant_message["tool_calls"]] == ["a", "b"]
 
-    with patch("hh_agent_pro.providers.anthropic_messages.urllib.request.urlopen",
+    with patch("jaxen.providers.anthropic_messages.urllib.request.urlopen",
                lambda r, timeout: reply([{"type": "text", "text": "<final>done</final>"}])):
         assert client.complete(ModelRequest("s", [{"role": "user", "content": "go"}], 100)) == "<final>done</final>"
 
@@ -100,7 +100,7 @@ def test_rate_limit_is_retried():
             raise urllib.error.HTTPError(request.full_url, 429, "busy", {}, io.BytesIO(b"slow down"))
         return reply([{"type": "text", "text": "ok"}])
 
-    with patch("hh_agent_pro.providers.anthropic_messages.urllib.request.urlopen", flaky):
+    with patch("jaxen.providers.anthropic_messages.urllib.request.urlopen", flaky):
         assert client.complete(ModelRequest("s", [{"role": "user", "content": "go"}], 100)) == "ok"
     assert calls["n"] == 2
 
@@ -108,14 +108,14 @@ def test_rate_limit_is_retried():
 def test_empty_response_is_resent_then_succeeds():
     client = _client()
     replies = [reply([{"type": "thinking", "thinking": "..."}]), reply([{"type": "text", "text": "<final>ok</final>"}])]
-    with patch("hh_agent_pro.providers.anthropic_messages.urllib.request.urlopen", lambda r, timeout: replies.pop(0)):
+    with patch("jaxen.providers.anthropic_messages.urllib.request.urlopen", lambda r, timeout: replies.pop(0)):
         assert client.complete(ModelRequest("s", [{"role": "user", "content": "go"}], 100)) == "<final>ok</final>"
     assert client.last_completion_metadata["input_tokens"] == 200 and client.last_completion_metadata["empty_response_retries"] == 1
 
 
 def test_empty_but_max_tokens_goes_to_truncation_recovery():
     client = _client()
-    with patch("hh_agent_pro.providers.anthropic_messages.urllib.request.urlopen",
+    with patch("jaxen.providers.anthropic_messages.urllib.request.urlopen",
                lambda r, timeout: reply([], stop="max_tokens")):
         assert client.complete(ModelRequest("s", [{"role": "user", "content": "go"}], 100)) == ""
     assert client.last_completion_metadata["output_truncated"] is True

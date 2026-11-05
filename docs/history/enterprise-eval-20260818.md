@@ -1,4 +1,4 @@
-# HH Agent 企业标准评测报告（2026-08-18）
+# Jaxen 企业标准评测报告（2026-08-18）
 
 ## 1. 执行结论
 
@@ -20,7 +20,7 @@
 
 | 项目 | 实测值 |
 |---|---|
-| 项目 | HH Agent Pro，本地 coding agent harness |
+| 项目 | Jaxen Code，本地 coding agent harness |
 | 时间 | 2026-08-18，Asia/Shanghai |
 | Git branch | `main` |
 | Git commit | `2a2299ef80e60d8887459d261c96d1f397d0de86` |
@@ -88,10 +88,10 @@ warning 是 Windows 拒绝 pytest 写入 `.pytest_cache`。它不影响本次断
 `run_harness_regression_v2` 和 `run_recovery_ablation_v2` 都在 checkpoint 状态判断处失败：
 
 ```text
-AttributeError: module 'hh_agent_pro.features.memory' has no attribute 'file_freshness'
+AttributeError: module 'jaxen.features.memory' has no attribute 'file_freshness'
 ```
 
-根因证据：`hh_agent_pro/checkpoint.py` 仍从旧兼容桥 `hh_agent_pro.features.memory` 调用 `file_freshness`，而当前兼容桥只导出 `WorkingMemory`、默认状态与 normalize 函数，项目中已没有 `file_freshness` 定义。
+根因证据：`jaxen/checkpoint.py` 仍从旧兼容桥 `jaxen.features.memory` 调用 `file_freshness`，而当前兼容桥只导出 `WorkingSet`、默认状态与 normalize 函数，项目中已没有 `file_freshness` 定义。
 
 影响：只要 session 里存在带关键文件的 checkpoint，prompt 构建前就可能崩溃。它直接影响 resume、recovery 和长期任务，属于 P0 运行时缺陷。
 
@@ -265,6 +265,6 @@ DeepSeek 的缺信息任务能形成正确 waiting state，但一次有效 trial
 
 ## 12. 最终判断
 
-HH Agent 当前更接近“功能丰富、局部机制验证充分，但集成门禁和评测治理仍未收口”的学习/作品集版本。它已经能展示 tool loop、上下文预算、记忆、安全边界、证据与恢复设计；但企业级标准首先要求关键路径不崩溃、评分器不产生假阳性、所有关键类别获得足够的有效 trial。
+Jaxen 当前更接近“功能丰富、局部机制验证充分，但集成门禁和评测治理仍未收口”的学习/作品集版本。它已经能展示 tool loop、上下文预算、记忆、安全边界、证据与恢复设计；但企业级标准首先要求关键路径不崩溃、评分器不产生假阳性、所有关键类别获得足够的有效 trial。
 
 **本轮发布结论：FAIL；修复 P0 后重新跑完整 suite，不能用本报告中的条件通过率直接对外宣传。**

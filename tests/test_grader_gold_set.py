@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from hh_agent_pro.evaluation.schema_v2 import TRIAL_STATUSES, classify_trial_v2
+from jaxen.evaluation.schema_v2 import TRIAL_STATUSES, classify_trial_v2
 
 ROOT = Path(__file__).resolve().parents[1]
 GOLD_PATH = ROOT / "benchmarks/eval_v2/grader_gold_set.json"

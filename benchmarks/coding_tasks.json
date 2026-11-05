@@ -78,7 +78,7 @@
       "allowed_tools": ["read_file", "patch_file"],
       "step_budget": 2,
       "expected_artifact": "sample.txt contains alpha-guarded after the rejected read",
-      "verifier": "python -c \"from pathlib import Path; assert 'alpha-guarded' in Path('sample.txt').read_text(encoding='utf-8'); assert 'path_escape' in ''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl'))\"",
+      "verifier": "python -c \"from pathlib import Path; assert 'alpha-guarded' in Path('sample.txt').read_text(encoding='utf-8'); assert 'path_escape' in ''.join(p.read_text(encoding='utf-8') for p in Path('.jaxen/runs').glob('*/trace.jsonl'))\"",
       "category": "security_recovery"
     },
     {
@@ -88,7 +88,7 @@
       "allowed_tools": ["read_file", "patch_file"],
       "step_budget": 4,
       "expected_artifact": "sample.txt contains repeat-guarded",
-      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'repeat-guarded' in Path('sample.txt').read_text(encoding='utf-8'); assert 'tool_cache_hit' in traces\"",
+      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.jaxen/runs').glob('*/trace.jsonl')); assert 'repeat-guarded' in Path('sample.txt').read_text(encoding='utf-8'); assert 'tool_cache_hit' in traces\"",
       "category": "tool_contract_recovery"
     },
     {
@@ -98,7 +98,7 @@
       "allowed_tools": ["read_file"],
       "step_budget": 1,
       "expected_artifact": "context reduction creates an auditable checkpoint",
-      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'context_reduction' in traces\"",
+      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.jaxen/runs').glob('*/trace.jsonl')); assert 'context_reduction' in traces\"",
       "category": "context_governance",
       "setup": {
         "kind": "context_reduction",
@@ -114,7 +114,7 @@
       "allowed_tools": ["read_file"],
       "step_budget": 1,
       "expected_artifact": "freshness mismatch is detected and checkpointed",
-      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'freshness_mismatch' in traces\"",
+      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.jaxen/runs').glob('*/trace.jsonl')); assert 'freshness_mismatch' in traces\"",
       "category": "checkpoint_recovery",
       "setup": {
         "kind": "freshness_mismatch",
@@ -128,7 +128,7 @@
       "allowed_tools": ["read_file"],
       "step_budget": 1,
       "expected_artifact": "runtime identity mismatch is traced",
-      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'runtime_identity_mismatch' in traces\"",
+      "verifier": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.jaxen/runs').glob('*/trace.jsonl')); assert 'runtime_identity_mismatch' in traces\"",
       "category": "checkpoint_recovery",
       "setup": {
         "kind": "workspace_mismatch"
@@ -141,7 +141,7 @@
       "allowed_tools": ["read_file"],
       "step_budget": 1,
       "expected_artifact": "stable convention is promoted into durable memory",
-      "verifier": "python -c \"from pathlib import Path; memory=Path('.hh/memory/curated.json').read_text(encoding='utf-8'); assert 'Preserve benchmark regression artifacts' in memory\"",
+      "verifier": "python -c \"from pathlib import Path; memory=Path('.jaxen/memory/long_term.json').read_text(encoding='utf-8'); assert 'Preserve benchmark regression artifacts' in memory\"",
       "category": "durable_memory"
     },
     {
@@ -151,7 +151,7 @@
       "allowed_tools": ["read_file"],
       "step_budget": 1,
       "expected_artifact": "secret-like content is rejected from durable memory",
-      "verifier": "python -c \"import json; from pathlib import Path; session=json.loads(next(Path('.hh/sessions').glob('*.json')).read_text(encoding='utf-8')); memory=json.dumps(session.get('memory', {}), ensure_ascii=False); assert 'sk-benchmark-secret' not in memory\"",
+      "verifier": "python -c \"import json; from pathlib import Path; session=json.loads(next(Path('.jaxen/sessions').glob('*.json')).read_text(encoding='utf-8')); memory=json.dumps(session.get('memory', {}), ensure_ascii=False); assert 'sk-benchmark-secret' not in memory\"",
       "category": "durable_memory"
     }
   ]

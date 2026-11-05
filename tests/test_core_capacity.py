@@ -6,11 +6,11 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from hh_agent_pro.providers import ModelRequest, OpenAIChatClient
-from hh_agent_pro.agent import CodingAgent
-from hh_agent_pro.session_store import SessionStore
-from hh_agent_pro.task_state import TaskState, _check_kind
-from hh_agent_pro.workspace import WorkspaceContext
+from jaxen.providers import ModelRequest, OpenAIChatClient
+from jaxen.agent import CodingAgent
+from jaxen.session_store import SessionStore
+from jaxen.progress import ProgressTracker, _check_kind
+from jaxen.workspace import WorkspaceContext
 
 
 class ScriptedNative:
@@ -53,7 +53,7 @@ class CoreCapacityTests(unittest.TestCase):
         return CodingAgent(
             model_client=model or ScriptedNative(["<final>done</final>"]),
             workspace=WorkspaceContext.build(self.root, repo_root_override=self.root),
-            session_store=SessionStore(self.root / ".hh" / "sessions"),
+            session_store=SessionStore(self.root / ".jaxen" / "sessions"),
             approval_policy="auto", max_steps=max_steps,
         )
 
@@ -104,7 +104,7 @@ class CoreCapacityTests(unittest.TestCase):
         client = OpenAIChatClient(
             "deepseek-chat", "https://api.deepseek.com", "key", 0.2, 5
         )
-        with patch("hh_agent_pro.providers.openai_chat.urllib.request.urlopen", return_value=Response()):
+        with patch("jaxen.providers.openai_chat.urllib.request.urlopen", return_value=Response()):
             raw = client.complete(ModelRequest("rules", [{"role": "user", "content": "read both"}], 100, tools=[{"type": "function"}]))
         self.assertEqual(CodingAgent.parse(raw)[0], "tool_batch")
         self.assertEqual(client.last_completion_metadata["native_tool_calls_returned"], 2)
@@ -218,7 +218,7 @@ class CoreCapacityTests(unittest.TestCase):
         answer = agent.ask("fix a.txt")
         self.assertIn("Unresolved at delivery", answer)
         self.assertEqual(agent.current_run_state.stop_reason, "incomplete_delivery")
-        self.assertEqual(agent.task_state.to_dict()["status"], "paused")
+        self.assertEqual(agent.progress.to_dict()["status"], "paused")
 
     def test_code_edit_needs_post_edit_check(self):
         (self.root / "sample.py").write_text("value = 1\n", encoding="utf-8")
@@ -226,28 +226,28 @@ class CoreCapacityTests(unittest.TestCase):
         agent.execute_tool("patch_file", {
             "path": "sample.py", "old_text": "value = 1", "new_text": "value = 2",
         })
-        self.assertTrue(agent.task_state.to_dict()["verification_pending"])
+        self.assertTrue(agent.progress.to_dict()["verification_pending"])
         # 只记录、只提示，不再阻止交付（正则识别不了所有合法的验证方式）。
         self.assertFalse(any("post-edit test" in item for item in agent.delivery_blockers()))
         agent.tools["run_shell"]["run"] = lambda args: (
             "exit_code: 1\n" if args["command"].startswith("pytest -q") else "exit_code: 0\n"
         )
         agent.execute_tool("run_shell", {"command": "echo test", "timeout": 20})
-        self.assertTrue(agent.task_state.to_dict()["verification_pending"])
+        self.assertTrue(agent.progress.to_dict()["verification_pending"])
         agent.execute_tool("run_shell", {"command": "pytest --collect-only", "timeout": 20})
-        self.assertTrue(agent.task_state.to_dict()["verification_pending"])
+        self.assertTrue(agent.progress.to_dict()["verification_pending"])
         agent.execute_tool("run_shell", {"command": "python3 -m compileall -q sample.py", "background": True, "timeout": 20})
-        self.assertTrue(agent.task_state.to_dict()["verification_pending"])
+        self.assertTrue(agent.progress.to_dict()["verification_pending"])
         agent.execute_tool("run_shell", {"command": "python3 -m compileall -q sample.py", "timeout": 20})
-        self.assertTrue(agent.task_state.to_dict()["verification_pending"])
+        self.assertTrue(agent.progress.to_dict()["verification_pending"])
         agent.execute_tool("run_shell", {"command": "pytest -q tests/test_sample.py", "timeout": 20})
-        self.assertTrue(agent.task_state.to_dict()["verification_pending"])
+        self.assertTrue(agent.progress.to_dict()["verification_pending"])
         agent.execute_tool("patch_file", {
             "path": "sample.py", "old_text": "value = 2", "new_text": "value = 3",
         })
         agent.execute_tool("run_shell", {"command": "python3 -m pytest -q tests/test_sample.py", "timeout": 20})
-        self.assertFalse(agent.task_state.to_dict()["verification_pending"])
-        verification = agent.task_state.to_dict()["verification"]
+        self.assertFalse(agent.progress.to_dict()["verification_pending"])
+        verification = agent.progress.to_dict()["verification"]
         self.assertEqual(verification["edit_revision"], 2)
         self.assertEqual([check["passed"] for check in verification["checks"]], [True, False, True])
         self.assertEqual(verification["checks"][-1]["edit_revision"], 2)
@@ -255,7 +255,7 @@ class CoreCapacityTests(unittest.TestCase):
         agent.execute_tool("patch_file", {
             "path": "sample.py", "old_text": "value = 3", "new_text": "value = 4",
         })
-        self.assertTrue(agent.task_state.to_dict()["verification_pending"])
+        self.assertTrue(agent.progress.to_dict()["verification_pending"])
 
     def test_edit_at_step_limit_gets_verification_step(self):
         (self.root / "sample.py").write_text("value = 1\n", encoding="utf-8")
@@ -276,7 +276,7 @@ class CoreCapacityTests(unittest.TestCase):
         agent.tools["run_shell"]["run"] = lambda args: "exit_code: 0\n"
         self.assertEqual(agent.ask("fix sample.py"), "Changed and checked.")
         self.assertEqual(agent.current_run_state.tool_steps, 9)
-        self.assertEqual(agent.task_state.to_dict()["status"], "completed")
+        self.assertEqual(agent.progress.to_dict()["status"], "completed")
 
     def test_unchecked_code_edit_is_delivered_with_a_verification_notice(self):
         (self.root / "sample.py").write_text("value = 1\n", encoding="utf-8")
@@ -291,16 +291,16 @@ class CoreCapacityTests(unittest.TestCase):
 
         self.assertEqual(answer, "Done.")
         self.assertEqual(agent.current_run_state.stop_reason, "final_answer_returned")
-        self.assertEqual(agent.task_state.to_dict()["status"], "completed")
+        self.assertEqual(agent.progress.to_dict()["status"], "completed")
         # 模型交付前那一轮看得到"还没测"的提示。
         self.assertIn("Code verification: pending test", model.requests[-1].messages[-1]["content"])
 
     def test_old_pending_verification_can_be_resumed(self):
         agent = self.agent()
-        old_state = agent.task_state.to_dict()
+        old_state = agent.progress.to_dict()
         old_state["verification_pending"] = True
         old_state.pop("verification")
-        restored = TaskState(old_state, agent.project_tasks)
+        restored = ProgressTracker(old_state)
         self.assertEqual(restored.to_dict()["verification"]["edit_revision"], 1)
         self.assertTrue(restored.to_dict()["verification_pending"])
 
@@ -315,9 +315,9 @@ class CoreCapacityTests(unittest.TestCase):
         agent.execute_tool("run_shell", {"command": "python3 -m pytest -q", "timeout": 20})
         self.assertFalse(any("run_shell" in item for item in agent.delivery_blockers()))
 
-    def test_delegate_returns_status_and_cannot_mutate_project_tasks(self):
+    def test_investigate_returns_status_and_cannot_mutate_backlog(self):
         agent = self.agent(ScriptedNative(["<final>child answer</final>"]))
-        result = agent.spawn_delegate({"task": "inspect a.txt", "max_steps": 2})
+        result = agent.spawn_investigation({"task": "inspect a.txt", "max_steps": 2})
         # 信封格式（subagent.py）：状态、结果、用量都在固定标签里
         self.assertTrue(result.startswith("<subagent-result>"))
         self.assertIn("<status>completed</status>", result)
@@ -326,10 +326,10 @@ class CoreCapacityTests(unittest.TestCase):
         child = CodingAgent(
             model_client=ScriptedNative(["<final>done</final>"]),
             workspace=WorkspaceContext.build(self.root, repo_root_override=self.root),
-            session_store=SessionStore(self.root / ".hh" / "sessions"),
+            session_store=SessionStore(self.root / ".jaxen" / "sessions"),
             approval_policy="never", depth=1, max_depth=1, read_only=True,
         )
-        self.assertNotIn("create_task", child.tools)
+        self.assertNotIn("backlog_add", child.tools)
 
     def test_full_goal_stays_in_the_request_without_a_history_window(self):
         agent = self.agent()

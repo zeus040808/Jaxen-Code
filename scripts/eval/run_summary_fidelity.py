@@ -16,9 +16,9 @@ from types import SimpleNamespace
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from hh_agent_pro.cli import _build_model_client  # noqa: E402
-from hh_agent_pro.config import load_project_env  # noqa: E402
-from hh_agent_pro.evaluation.summary_fidelity import grade, replay, summary_request, to_history  # noqa: E402
+from jaxen.cli import _build_model_client  # noqa: E402
+from jaxen.config import load_project_env  # noqa: E402
+from jaxen.evaluation.summary_fidelity import grade, replay, summary_request, to_history  # noqa: E402
 
 
 def samples(min_entries):

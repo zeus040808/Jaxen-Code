@@ -1,10 +1,10 @@
-# HH Agent Evaluation
+# Jaxen Evaluation
 
 For a detailed Chinese beginner guide to methodology, metrics, manual testing, automation, and result interpretation, see
-[`HH_AGENT_EVALUATION_GUIDE_ZH.md`](../learning/evaluation-guide.md).
+[`JAXEN_AGENT_EVALUATION_GUIDE_ZH.md`](../learning/evaluation-guide.md).
 
 For the complete zero-to-interview textbook based on the current Reliability-v1 results, see
-[`HH_AGENT_EVALUATION_TEXTBOOK_ZH.md`](../learning/evaluation-textbook.md).
+[`JAXEN_AGENT_EVALUATION_TEXTBOOK_ZH.md`](../learning/evaluation-textbook.md).
 
 ## Evaluation Layers
 
@@ -20,7 +20,7 @@ The project keeps deterministic runtime evaluation separate from real-model eval
 
 ```powershell
 python -m pytest -q
-python -m scripts.run_hh_benchmarks
+python scripts/eval/run_fixed_benchmark.py
 python -m scripts.run_real_provider_benchmark --max-new-tokens 512
 python -m scripts.run_reliability_benchmark --dry-run
 python -m scripts.run_reliability_benchmark --provider deepseek --max-new-tokens 1024
@@ -112,7 +112,7 @@ This is a small end-to-end compatibility sample, not a statistically strong gene
 
 These are two single-run real-model samples, so changes cannot be attributed only to the runtime patch. Automatic labels are not completed human review. The post-fix review queue is `artifacts/human-review-deepseek-after-loop-fixes.csv`.
 
-### Latest TaskState/Delivery-Gate Rerun
+### Latest ProgressTracker/Delivery-Gate Rerun
 
 - Latest raw auto-acceptable outcomes: 7/15 (46.7%).
 - Latest raw hard verification: 9/15 (60.0%).
@@ -125,7 +125,7 @@ These are two single-run real-model samples, so changes cannot be attributed onl
 
 An evaluator audit found two semantically valid clarification answers rejected by narrow text patterns and one fixture with an extra blank line omitted from its verifier expectation. The same-run audit interpretation is therefore 10/15 auto-acceptable and 12/15 hard-pass, but these calibrated numbers are not presented as the raw script output. A four-task calibration rerun passed 3/4; `missing_target_file` still ended at the malformed-response retry limit.
 
-The latest real-model run did not reproduce the previous post-fix score. With one run per task and one provider timeout, this is evidence of unresolved variance rather than proof that the TaskState changes caused a regression.
+The latest real-model run did not reproduce the previous post-fix score. With one run per task and one provider timeout, this is evidence of unresolved variance rather than proof that the ProgressTracker changes caused a regression.
 
 ## Resume-Safe Claims
 
@@ -152,6 +152,6 @@ The latest real-model run did not reproduce the previous post-fix score. With on
 - `artifacts/human-review-deepseek-after-task-state.csv`
 - `artifacts/reliability-v1-deepseek-calibration-rerun.json`
 - `artifacts/human-review-deepseek-calibration-rerun.csv`
-- `docs/metrics/hh-benchmark-core-report.md`
-- `docs/metrics/HH_RELIABILITY_DEEPSEEK_RESULT_V1_ZH.md`
-- `docs/metrics/HH_LOOP_RELIABILITY_FIXES_ZH.md`
+- `docs/metrics/jaxen-benchmark-core-report.md`
+- `docs/metrics/JAXEN_RELIABILITY_DEEPSEEK_RESULT_V1_ZH.md`
+- `docs/metrics/JAXEN_LOOP_RELIABILITY_FIXES_ZH.md`

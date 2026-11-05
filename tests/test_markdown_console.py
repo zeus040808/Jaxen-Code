@@ -6,7 +6,7 @@
   * 表格用 len() 算列宽，CJK 占两列，整张表错位
 """
 
-from hh_agent_pro.markdown_console import MarkdownConsole, display_width
+from jaxen.markdown_console import MarkdownConsole, display_width
 
 
 def _plain(text, encoding=None):
@@ -20,7 +20,7 @@ def test_cjk_counts_as_two_columns():
 
 
 def test_markup_syntax_does_not_reach_the_screen():
-    out = _plain("## 标题\n\n- **名称**：HH\n- 用 `rg` 搜索\n")
+    out = _plain("## 标题\n\n- **名称**：Jaxen\n- 用 `rg` 搜索\n")
 
     for noise in ("##", "**", "`"):
         assert noise not in out, f"{noise!r} 不该出现在终端输出里"

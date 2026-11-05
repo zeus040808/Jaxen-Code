@@ -18,12 +18,12 @@
 from pathlib import Path
 
 
-from hh_agent_pro.agent_loop import MAX_DELIVERY_DEFERRALS
-from hh_agent_pro.providers import FakeModelClient
-from hh_agent_pro.run_store import RunStore
-from hh_agent_pro.agent import CodingAgent
-from hh_agent_pro.session_store import SessionStore
-from hh_agent_pro.workspace import WorkspaceContext
+from jaxen.agent_loop import MAX_DELIVERY_DEFERRALS
+from jaxen.providers import FakeModelClient
+from jaxen.run_store import RunStore
+from jaxen.agent import CodingAgent
+from jaxen.session_store import SessionStore
+from jaxen.workspace import WorkspaceContext
 
 
 def _build_agent(tmp_path, scripted, *, max_steps):
@@ -35,8 +35,8 @@ def _build_agent(tmp_path, scripted, *, max_steps):
     return CodingAgent(
         model_client=FakeModelClient(list(scripted)),
         workspace=workspace,
-        session_store=SessionStore(root / ".hh" / "sessions"),
-        run_store=RunStore(root / ".hh" / "runs"),
+        session_store=SessionStore(root / ".jaxen" / "sessions"),
+        run_store=RunStore(root / ".jaxen" / "runs"),
         approval_policy="auto",
         max_steps=max_steps,
         max_new_tokens=256,
@@ -78,7 +78,7 @@ def test_exhausted_tool_budget_does_not_trap_the_final_answer(tmp_path):
 
     assert agent.current_run_state.status == "stopped"
     assert agent.current_run_state.stop_reason == "incomplete_delivery"
-    assert agent.task_state.to_dict()["status"] == "paused"
+    assert agent.progress.to_dict()["status"] == "paused"
     # 驳回次数必须有上限，不能把预算烧光。
     assert _count(events, "completion_deferred") <= MAX_DELIVERY_DEFERRALS
     assert _count(events, "completion_forced") == 1

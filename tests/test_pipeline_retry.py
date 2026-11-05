@@ -14,7 +14,7 @@ import run_pipeline  # noqa: E402
 
 
 def fake_predictions_script(tmp_path, stop_reasons):
-    """替身：像 run_hh_predictions.py 一样，已有预测就跳过；否则追加一行预测和一行运行记录。"""
+    """替身：像 run_jaxen_predictions.py 一样，已有预测就跳过；否则追加一行预测和一行运行记录。"""
     preds = tmp_path / "run.predictions.jsonl"
     meta = tmp_path / "run.agent-runs.jsonl"
     calls = []

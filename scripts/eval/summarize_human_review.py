@@ -1,4 +1,4 @@
-"""Validate and summarize a completed HH reliability human-review CSV."""
+"""Validate and summarize a completed Jaxen reliability human-review CSV."""
 
 import argparse
 import json
@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from hh_agent_pro.evaluation.reliability import summarize_human_review
+from jaxen.evaluation.reliability import summarize_human_review
 
 
 def main():

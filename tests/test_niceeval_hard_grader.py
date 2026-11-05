@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CRITERIA = ROOT / "evals/niceeval/criteria"
 sys.path.insert(0, str(ROOT / "evals/niceeval/scripts"))
 sys.path.insert(0, str(CRITERIA))
-SPEC = importlib.util.spec_from_file_location("hh_hard_grader", CRITERIA / "hard_grader.py")
+SPEC = importlib.util.spec_from_file_location("jaxen_hard_grader", CRITERIA / "hard_grader.py")
 HARD_GRADER = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 SPEC.loader.exec_module(HARD_GRADER)

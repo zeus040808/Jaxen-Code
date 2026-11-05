@@ -1,4 +1,4 @@
-"""Hidden deterministic grader for HH Agent coding trials."""
+"""Hidden deterministic grader for Jaxen coding trials."""
 
 import argparse
 import json
@@ -6,7 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from hh_agent_pro.evaluation.schema_v2 import classify_trial_v2
+from jaxen.evaluation.schema_v2 import classify_trial_v2
 
 from snapshot_workspace import snapshot
 

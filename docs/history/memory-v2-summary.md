@@ -1,6 +1,6 @@
-# HH Agent Pro 记忆系统 V2 优化总结
+# Jaxen Code 记忆系统 V2 优化总结
 
-> 本文只讨论 `hh_agent_pro`。设计参考来自用户提供的 `Hermes-Agent记忆机制设计参考.txt`，实现仍遵守 HH Agent Pro 的“小、透明、能讲清楚”目标，没有照搬 Hermes 的所有基础设施。
+> 本文只讨论 `jaxen`。设计参考来自用户提供的 `Hermes-Agent记忆机制设计参考.txt`，实现仍遵守 Jaxen Code 的“小、透明、能讲清楚”目标，没有照搬 Hermes 的所有基础设施。
 
 ## 1. 结论先行
 
@@ -18,11 +18,11 @@ V2 将这些问题拆成四个明确层次：
 | 层次 | 负责什么 | 存储 | 进入 prompt 的方式 | 如何删除 |
 | --- | --- | --- | --- | --- |
 | Working memory | 当前 Session 的任务摘要、最近文件、文件短摘要、少量可复用事实 | Session JSON 的 `memory` | 每轮注入仪表盘；按当前问题召回 3 条相关笔记 | Session reset、上限淘汰、文件修改使摘要失效 |
-| Task state | 子任务、证据、阻塞、下一步 | Session JSON 的 `task_state` + 项目 task store | 作为执行状态单独渲染 | 由 task 生命周期管理，不再冒充长期记忆 |
-| Curated durable memory | 稳定偏好、约定、决策、依赖、纠正和验证事实 | `.hh/memory/curated.json` | Session 创建时生成冻结快照，每轮复用 | `replace` / `remove` / 原子 `batch` |
-| Session archive | 跨 Session 的完整历史检索和工具调用取证 | `.hh/sessions/archive.sqlite3`，SQLite + FTS5 | 不默认塞入 prompt；按需 `session_search`，再 `session_read` 展开上下文 | Session JSON 是权威记录；索引可重建 |
+| Task state | 子任务、证据、阻塞、下一步 | Session JSON 的 `progress` + 项目 task store | 作为执行状态单独渲染 | 由 task 生命周期管理，不再冒充长期记忆 |
+| Curated durable memory | 稳定偏好、约定、决策、依赖、纠正和验证事实 | `.jaxen/memory/curated.json` | Session 创建时生成冻结快照，每轮复用 | `replace` / `remove` / 原子 `batch` |
+| Session archive | 跨 Session 的完整历史检索和工具调用取证 | `.jaxen/sessions/archive.sqlite3`，SQLite + FTS5 | 不默认塞入 prompt；按需 `session_search`，再 `session_read` 展开上下文 | Session JSON 是权威记录；索引可重建 |
 
-旧 Markdown `.hh/memory/topics/*.md` 没有被删除：第一次创建 V2 store 时会无损导入 `curated.json`，旧的自动 promotion 还会双写一段兼容期，避免既有 benchmark 和用户数据突然失效。
+旧 Markdown `.jaxen/memory/topics/*.md` 没有被删除：第一次创建 V2 store 时会无损导入 `curated.json`，旧的自动 promotion 还会双写一段兼容期，避免既有 benchmark 和用户数据突然失效。
 
 ## 2. 从 Hermes 学到了什么，又没有照搬什么
 
@@ -113,7 +113,7 @@ V2 没有拿 SQLite 替代 Session：
 
 ## 4.1 精选记忆 CRUD 与原子提交
 
-核心实现在 `hh_agent_pro/memory/curated_store.py`。
+核心实现在 `jaxen/memory/long_term.py`。
 
 `apply_batch()` 的流程是：
 
@@ -148,7 +148,7 @@ V2 没有拿 SQLite 替代 Session：
 
 ## 4.2 准入与安全
 
-`hh_agent_pro/memory/policy.py` 负责验证：
+`jaxen/memory/policy.py` 负责验证：
 
 - namespace、scope、kind、provenance 的允许集合；
 - workspace/project 必须提供 `scope_key`；
@@ -163,17 +163,17 @@ V2 没有拿 SQLite 替代 Session：
 
 ## 4.3 冻结快照注入
 
-`CodingAgent.__init__()` 创建 `CuratedMemoryStore` 后立即：
+`CodingAgent.__init__()` 创建 `LongTermMemory` 后立即：
 
 ```python
-self.curated_memory_snapshot = self.curated_memory.render_snapshot()
+self.long_term_memory_snapshot = self.long_term_memory.render_snapshot()
 ```
 
-之后 `durable_memory_text()` 只返回这份字符串。`memory_update` 会立即落盘，但工具结果明确说明“next session 生效”。好处是：
+之后 `long_term_memory_text()` 只返回这份字符串。`memory_update` 会立即落盘，但工具结果明确说明“next session 生效”。好处是：
 
 - 同一个 Session 中 system context 不会因为 Agent 自己写了记忆而漂移；
 - 写入成功不等于当前推理立刻接受新事实；
-- 新 Session 和恢复后重新构造 `HH` 时自然刷新。
+- 新 Session 和恢复后重新构造 `Jaxen` 时自然刷新。
 
 快照分为：
 
@@ -183,7 +183,7 @@ self.curated_memory_snapshot = self.curated_memory.render_snapshot()
 
 ## 4.4 Session archive
 
-`hh_agent_pro/memory/session_archive.py` 建立三张逻辑表：
+`jaxen/memory/session_archive.py` 建立三张逻辑表：
 
 ```text
 sessions
@@ -198,7 +198,7 @@ messages_fts (FTS5 virtual table)
 3. 写入 archive，得到 `archive_message_id`；
 4. 保存 Session JSON。
 
-若 archive 写入失败，Session JSON 仍会保存，错误放在 `last_archive_error`；下次创建 `HH` 时 `sync_session()` 会根据 `(session_id, archive_sequence)` 幂等补齐。这体现了“Session 是权威，索引可重建”。
+若 archive 写入失败，Session JSON 仍会保存，错误放在 `last_archive_error`；下次创建 `Jaxen` 时 `sync_session()` 会根据 `(session_id, archive_sequence)` 幂等补齐。这体现了“Session 是权威，索引可重建”。
 
 FTS 索引内容包含 `tool name + args JSON + result content`，因此 `run_shell` 和命令参数也可发现。中文无空格文本在 FTS5 `unicode61` 下不总能按用户期望切词，搜索无结果时会使用参数化 `LIKE` 兜底。
 
@@ -245,7 +245,7 @@ prompt 同时加入准入规则，告诉模型不要存 secret、原始工具输
 
 ### 5.2 旧 Markdown durable memory
 
-如果 `.hh/memory/curated.json` 尚不存在，`HH` 初始化时读取四个旧 topic：
+如果 `.jaxen/memory/curated.json` 尚不存在，`Jaxen` 初始化时读取四个旧 topic：
 
 - project-conventions → `memory/convention/workspace`；
 - key-decisions → `memory/decision/workspace`；
@@ -344,22 +344,22 @@ prompt 同时加入准入规则，告诉模型不要存 secret、原始工具输
 
 ### 新增
 
-- `hh_agent_pro/memory/models.py`：数据对象和确定性错误类型；
-- `hh_agent_pro/memory/policy.py`：准入、安全扫描、中英文 tokenizer；
-- `hh_agent_pro/memory/curated_store.py`：作用域、CRUD、唯一匹配、版本、容量、锁和原子提交；
-- `hh_agent_pro/memory/session_archive.py`：SQLite schema、同步、append、FTS/LIKE search、around read；
-- `hh_agent_pro/evaluation/memory_v2.py`：V1/V2 能力探针；
+- `jaxen/memory/models.py`：数据对象和确定性错误类型；
+- `jaxen/memory/policy.py`：准入、安全扫描、中英文 tokenizer；
+- `jaxen/memory/long_term.py`：作用域、CRUD、唯一匹配、版本、容量、锁和原子提交；
+- `jaxen/memory/session_archive.py`：SQLite schema、同步、append、FTS/LIKE search、around read；
+- `jaxen/evaluation/memory_v2.py`：V1/V2 能力探针；
 - `scripts/eval/run_memory_ablation.py`：可重复生成对照 artifact；
 - `tests/test_memory.py`：专项行为和不变量测试。
 
 ### 修改
 
-- `hh_agent_pro/features/memory.py`：移除运行时重复字段，拆分 process note，中文召回，旧 durable 不再参与动态检索；
-- `hh_agent_pro/context_manager.py`：working、durable、task state 分成独立 prompt section 和预算，并兼容旧 `memory` 总预算配置；
-- `hh_agent_pro/agent.py`：创建 curated/archive、冻结注入、历史双写与恢复、旧 promotion 迁移、ToolContext 接线；
-- `hh_agent_pro/tools.py`：四个记忆/历史工具及校验；
-- `hh_agent_pro/tool_context.py`：向工具提供受限 memory/archive 依赖；
-- `hh_agent_pro/prompt_prefix.py`：精选记忆准入、纠错、冻结和历史证据规则。
+- `jaxen/features/memory.py`：移除运行时重复字段，拆分 process note，中文召回，旧 durable 不再参与动态检索；
+- `jaxen/context_manager.py`：working、durable、task state 分成独立 prompt section 和预算，并兼容旧 `memory` 总预算配置；
+- `jaxen/agent.py`：创建 curated/archive、冻结注入、历史双写与恢复、旧 promotion 迁移、ToolContext 接线；
+- `jaxen/tools.py`：四个记忆/历史工具及校验；
+- `jaxen/tool_context.py`：向工具提供受限 memory/archive 依赖；
+- `jaxen/prompt_prefix.py`：精选记忆准入、纠错、冻结和历史证据规则。
 
 ## 8. 对 `run_state`、trace 与 Session history 的最终定位
 
@@ -379,8 +379,8 @@ prompt 同时加入准入规则，告诉模型不要存 secret、原始工具输
 - 中文 tokenizer 是字/双字重叠，不理解复杂同义词；事实数量显著增长后再考虑 BM25 调权或 embedding。
 - prompt-injection 检测是规则扫描，不可能覆盖所有语义攻击；高风险工具仍必须依赖执行层审批。
 - 旧 Markdown 双写是迁移期策略，未来应在版本升级后停止双写，只保留一次性导入和只读导出。
-- `global_user` 当前保存在 workspace 的 `.hh/memory` 下，所以“跨 workspace”是同一个 store root 的语义；若要真正跨仓库共享，应将 user profile 单独放到用户级配置目录，并明确隐私边界。
-- archive 当前提供 search/read，没有单独做 CLI 命令；Agent 已可通过工具使用，后续可增加人类友好的 `hh sessions search/read`。
+- `global_user` 当前保存在 workspace 的 `.jaxen/memory` 下，所以“跨 workspace”是同一个 store root 的语义；若要真正跨仓库共享，应将 user profile 单独放到用户级配置目录，并明确隐私边界。
+- archive 当前提供 search/read，没有单独做 CLI 命令；Agent 已可通过工具使用，后续可增加人类友好的 `jaxen sessions search/read`。
 - 未使用真实 DeepSeek/通义做长期对话语义评估；本次结论只基于确定性能力测试、全量回归和 scripted ablation，不夸大为真实模型质量证明。
 
 ## 10. 最终判断

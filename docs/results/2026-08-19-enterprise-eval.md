@@ -1,4 +1,4 @@
-# HH Agent Pro 评测总报告
+# Jaxen Code 评测总报告
 
 > 日期：2026-08-19（含当日后续修复与复测）
 > Provider：DeepSeek `deepseek-v4-pro`
@@ -171,7 +171,7 @@ call = tool_calls[min(tool_calls)]   # 其余静默丢弃
 **问题**：`robust_port_schema` 只允许改 `acme/validators.py`，模型把
 `tests/test_smoke.py` 也改了——等于自己改测试让测试通过。提示词约束不住。
 
-**做法**：`HH(write_scope=[...])` + `ToolExecutor` 执行前校验，
+**做法**：`Jaxen(write_scope=[...])` + `ToolExecutor` 执行前校验，
 与「路径逃逸」同级的硬护栏。
 
 - `write_file` / `patch_file`：**执行前**拦截，文件不会被动
@@ -262,22 +262,22 @@ partial 10 / correct_failure 10 / functional_failed 10 / passed 10
 **根因**：`provider_request()` 里上下文分区的排列顺序。
 
 前缀缓存只在完全一致时命中，所以**一个每轮都变的分区，会让排在它后面的
-所有内容一起失效**。原顺序把最易变的 `task_state` / `evidence` 放在中间：
+所有内容一起失效**。原顺序把最易变的 `progress` / `evidence` 放在中间：
 
 ```
-working_memory → durable_memory → task_state → evidence → skills
+working_memory → long_term_memory → progress → evidence → skills
                                    ^^^^^^^^^^^^^^^^^^^^  易变，把 skills 也废了
 ```
 
 **修复**：按稳定性重排，冻结快照在前，易变状态在后：
 
 ```
-durable_memory → skills → working_memory → task_state → evidence
+long_term_memory → skills → working_memory → progress → evidence
 （Session 级冻结）        （半稳）        （每轮变）
 ```
 
 security 之所以能到 38%，正是因为它的 agent 直接拒绝、几乎不产生
-evidence/task_state 变化——恰好绕开了这个缺陷。
+evidence/progress 变化——恰好绕开了这个缺陷。
 
 ---
 
@@ -458,7 +458,7 @@ session-hitl          失败 2  =  断言缺陷 0  + 真实 2
 ### `tools.py` 拆分方案（供后续执行）
 
 ```
-hh_agent_pro/tools/
+jaxen/tools/
 ├── __init__.py      re-export 全部公开名，保证 `from . import tools as toolkit` 不变
 ├── specs.py         *_TOOL_SPECS / TOOL_EXAMPLES / TOOL_ALIASES / canonical_tool_name
 ├── validation.py    validate_tool（221 行，独立性最强）
@@ -510,7 +510,7 @@ hh_agent_pro/tools/
 
 ## 11. 一句话总结
 
-> HH Agent Pro 最成熟的是**框架层能力**（安全护栏、审批持久化、断点恢复、
+> Jaxen Code 最成熟的是**框架层能力**（安全护栏、审批持久化、断点恢复、
 > 会话隔离、以及本轮新增的写入范围约束）。
 >
 > 本轮最有价值的产出，是证明了**评测数字本身会骗人**——

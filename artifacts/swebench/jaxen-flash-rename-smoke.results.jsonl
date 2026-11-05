@@ -1,0 +1,1 @@
+{"instance_id": "pytest-dev__pytest-7432", "gold_resolved": true, "outcome": "resolved", "agent_status": "completed", "stop_reason": "final_answer_returned", "usage": {"cacheReadTokens": 71680, "cacheWriteTokens": 0, "inputTokens": 116330, "outputTokens": 6764, "requests": 12}, "patch_lines": 13, "agent_latency_s": 56.0, "pipeline_latency_s": 142.9}

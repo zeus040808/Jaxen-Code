@@ -1,4 +1,4 @@
-# HH Agent Loop 可靠性修复与回归报告
+# Jaxen Loop 可靠性修复与回归报告
 
 ## 1. 为什么要修复
 
@@ -12,7 +12,7 @@
 
 - `artifacts/reliability-v1-deepseek.json`
 - `artifacts/reliability-runs/deepseek/`
-- `docs/metrics/HH_RELIABILITY_DEEPSEEK_RESULT_V1_ZH.md`
+- `docs/metrics/JAXEN_RELIABILITY_DEEPSEEK_RESULT_V1_ZH.md`
 
 ## 2. 修复后的控制逻辑
 
@@ -80,13 +80,13 @@ flowchart TD
 
 `run_shell` 不再根据 `pytest`、`build`、`compile` 等关键词自动进入后台。只有模型明确传入 `background: true` 才会后台运行。普通验证命令保持前台执行，退出码和输出立即回到当前 Agent Loop。
 
-显式后台任务仍被支持。每次模型决策前，Agent Loop 都会收集已完成任务，将 `<task_notification>` 写入 session history 和下一轮 prompt，同时记录 `background_notification` trace。
+显式后台任务仍被支持。每次模型决策前，Agent Loop 都会收集已完成任务，将 `<job_notification>` 写入 session history 和下一轮 prompt，同时记录 `background_notification` trace。
 
 ## 4. 自动测试结果
 
 ### 4.1 代码测试
 
-- Pytest：118/118 通过，其中新增 4 项 TaskState、交付门与恢复合同测试。
+- Pytest：118/118 通过，其中新增 4 项 ProgressTracker、交付门与恢复合同测试。
 - 新增覆盖：显式后台结果同 Run 回填、审批拒绝终止、重复失败指纹、完成前校验、等待用户状态。
 
 ### 4.2 Deterministic Runtime 回归
@@ -143,6 +143,6 @@ flowchart TD
 
 可以说：
 
-> 我先用 15 项真实模型可靠性评估从 trace 中发现后台验证结果未回填、缺信息状态不明确和失败重复调用问题。随后增加“工具名、规范化参数、错误码”失败指纹、结构化 tool outcome、TaskState、完成前验收以及 waiting/blocked 状态，并将后台执行改为显式开启。118 项 pytest 和 14 项 deterministic Harness 全部通过。单次 DeepSeek 回归中，正确失败候选从 2/6 提升到 5/6，完全重复调用从 8 次降到 2 次，未回收后台任务从 6 次降到 0；总体自动可接受结果仍为 9/15，因此我没有把过程改进夸大为任务成功率提升。
+> 我先用 15 项真实模型可靠性评估从 trace 中发现后台验证结果未回填、缺信息状态不明确和失败重复调用问题。随后增加“工具名、规范化参数、错误码”失败指纹、结构化 tool outcome、ProgressTracker、完成前验收以及 waiting/blocked 状态，并将后台执行改为显式开启。118 项 pytest 和 14 项 deterministic Harness 全部通过。单次 DeepSeek 回归中，正确失败候选从 2/6 提升到 5/6，完全重复调用从 8 次降到 2 次，未回收后台任务从 6 次降到 0；总体自动可接受结果仍为 9/15，因此我没有把过程改进夸大为任务成功率提升。
 
 这段表述同时说明了问题发现、工程修复、验证证据和数据边界。

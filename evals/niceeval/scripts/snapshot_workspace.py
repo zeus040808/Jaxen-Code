@@ -8,7 +8,7 @@ from pathlib import Path
 
 IGNORED_NAMES = {
     ".git",
-    ".hh",
+    ".jaxen",
     "__pycache__",
     ".pytest_cache",
     ".ruff_cache",

@@ -1,13 +1,13 @@
 # SWE-bench Verified 评测
 
-用官方公开基准测 HH Agent 在真实仓库、真实 issue 上的修复能力。判分完全交给
+用官方公开基准测 Jaxen 在真实仓库、真实 issue 上的修复能力。判分完全交给
 官方 harness（隐藏测试 FAIL_TO_PASS / PASS_TO_PASS），不使用本项目自己的判分器。
 
 ## 流程
 
 ```text
 SWE-bench/SWE-bench_Verified 实例
-→ scripts/swebench/run_hh_predictions.py
+→ scripts/swebench/run_jaxen_predictions.py
    每个实例在它自己的官方镜像里跑 agent（/testbed 已在 base_commit，依赖环境已装好）
    agent 以 JSONL 协议运行，--toolset core，拿 git diff 作为补丁
 → <run>.predictions.jsonl  +  <run>.agent-runs.jsonl（token、请求数、stop_reason、耗时）
@@ -47,14 +47,21 @@ SWE-bench/SWE-bench_Verified 实例
 模型接口不可用造成的 `model_error`，流水线会自动处理：删掉这道题的预测、等 `--infra-wait` 秒（默认 120）后重跑，
 最多 `--infra-retries` 次（默认 2）；运行记录保留（失败那次的 token 仍计入预算），结果行里记 `infra_retries`。
 
-评测版本：对照实验（审查开/关、同模型基线）统一用 git 标签 `eval-v3`（提交 a34b05b）的代码。为了不受工作区里
-正在进行的修改影响，把标签导出成单独的目录，用 `--agent-src` 挂进容器：
+评测版本：中等 50 道 42/50 用的是 git 标签 `eval-v3`（提交 a34b05b）的代码。这个标签早于 2026-11-05 的改名
+（包名、环境变量前缀、状态目录都变了），它的代码只能配它自己的脚本跑：
 
 ```bash
-mkdir -p /tmp/hh-eval-v3 && git archive eval-v3 hh_agent_pro | tar -x -C /tmp/hh-eval-v3
+git worktree add /tmp/jaxen-eval-v3 eval-v3   # 整个标签检出到单独目录，用里面自带的 run_pipeline.py
 ```
 
-然后给 `run_pipeline.py` 加 `--agent-src /tmp/hh-eval-v3/hh_agent_pro`。
+改名之后的对照实验（审查开 / 关、同模型基线）不再混用 eval-v3：先在改名后的提交上打新的评测标签，用它重测基线，
+再做对照。导出方式：
+
+```bash
+mkdir -p /tmp/jaxen-eval && git archive <新标签> jaxen | tar -x -C /tmp/jaxen-eval
+```
+
+然后给 `run_pipeline.py` 加 `--agent-src /tmp/jaxen-eval/jaxen`。
 
 手工补跑个别实例时注意两点（2026-11-03 踩过）：
 - 要把这道题从 `<run-name>.results.jsonl` 和 `.predictions.jsonl` 里都删掉（先备份），`.agent-runs.jsonl` 可以保留。
@@ -67,7 +74,7 @@ mkdir -p /tmp/hh-eval-v3 && git archive eval-v3 hh_agent_pro | tar -x -C /tmp/hh
 
 ```bash
 SWE=.venv-swebench/bin/python
-$SWE -I scripts/swebench/run_hh_predictions.py \
+$SWE -I scripts/swebench/run_jaxen_predictions.py \
     --instance-ids pytest-dev__pytest-7432 \
     --run-name hh-flash-smoke-20261030 --out-dir artifacts/swebench
 $SWE -I -m swebench.harness.run_evaluation -d SWE-bench/SWE-bench_Verified \

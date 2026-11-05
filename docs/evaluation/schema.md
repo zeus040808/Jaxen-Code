@@ -1,4 +1,4 @@
-# HH Agent Eval Schema v2
+# Jaxen Eval Schema v2
 
 Schema v2 把“任务定义”“一次 trial 的事实”和“聚合门禁”分开。Python grader
 是文件、测试、diff、边界和安全结果的权威；NiceEval 负责调度、隔离、事件与展示。
@@ -8,7 +8,7 @@ Schema v2 把“任务定义”“一次 trial 的事实”和“聚合门禁”
 任务必须声明版本、suite、评估单元、能力/难度/风险/来源、fixture digest、预算、
 审批与只读策略、允许和必须修改的路径、硬检查、reference solution、人工审核策略，
 以及 Nightly 3 次、Release 5 次 trial。权威校验位于
-`hh_agent_pro/evaluation/schema_v2.py`，当前迁移后的 15 个任务位于
+`jaxen/evaluation/schema_v2.py`，当前迁移后的 15 个任务位于
 `benchmarks/eval_v2/reliability_tasks_v2.json`。
 
 ## Trial 状态

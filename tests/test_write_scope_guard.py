@@ -14,11 +14,11 @@ from pathlib import Path
 
 import pytest
 
-from hh_agent_pro.providers import FakeModelClient
-from hh_agent_pro.run_store import RunStore
-from hh_agent_pro.agent import CodingAgent
-from hh_agent_pro.session_store import SessionStore
-from hh_agent_pro.workspace import WorkspaceContext
+from jaxen.providers import FakeModelClient
+from jaxen.run_store import RunStore
+from jaxen.agent import CodingAgent
+from jaxen.session_store import SessionStore
+from jaxen.workspace import WorkspaceContext
 
 
 def _build_agent(tmp_path, write_scope, scripted=None):
@@ -32,8 +32,8 @@ def _build_agent(tmp_path, write_scope, scripted=None):
     return CodingAgent(
         model_client=FakeModelClient(list(scripted or ["<final>done</final>"])),
         workspace=workspace,
-        session_store=SessionStore(root / ".hh" / "sessions"),
-        run_store=RunStore(root / ".hh" / "runs"),
+        session_store=SessionStore(root / ".jaxen" / "sessions"),
+        run_store=RunStore(root / ".jaxen" / "runs"),
         approval_policy="auto",
         write_scope=write_scope,
         max_steps=4,

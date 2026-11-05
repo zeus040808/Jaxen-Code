@@ -7,7 +7,7 @@
 .venv/bin/python scripts/eval/run_fault_injection.py   # 结果写入 artifacts/deterministic/fault-injection-v1.json
 ```
 
-代码：`hh_agent_pro/evaluation/fault_injection.py`（场景表、假服务器、运行器、判分），门禁测试 `tests/test_fault_injection.py`。
+代码：`jaxen/evaluation/fault_injection.py`（场景表、假服务器、运行器、判分），门禁测试 `tests/test_fault_injection.py`。
 
 ## 做法
 
@@ -20,7 +20,7 @@
 
 每个场景：在新的临时目录里放一个小仓库（`add()` 写成减法 + 一个单元测试）→ 新建 agent → 跑任务 → 判分 → 删目录。
 
-**隔离**：临时目录（`.hh` 状态也在里面）；每个场景新建 agent；urllib 补丁用完即恢复；运行期间清掉 `*_API_KEY`、
+**隔离**：临时目录（`.jaxen` 状态也在里面）；每个场景新建 agent；urllib 补丁用完即恢复；运行期间清掉 `*_API_KEY`、
 `*_TOKEN` 和代理变量，假服务器之外不可能联网；CLI 前后比对项目仓库的 `git status`，评测改了真实代码就报错。
 假服务器还会拒绝复用的 `Request` 对象，模拟代理把第二次请求变成 `CONNECT host:80`（fix8 的场景）。
 

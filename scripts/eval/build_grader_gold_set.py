@@ -43,7 +43,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from hh_agent_pro.evaluation.schema_v2 import TRIAL_STATUSES
+from jaxen.evaluation.schema_v2 import TRIAL_STATUSES
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_SOURCE = REPO_ROOT / "artifacts/eval-v2/trial-results-nightly-v2.jsonl"

@@ -1,10 +1,10 @@
-# HH Agent Reliability-v1 DeepSeek 实测结果
+# Jaxen Reliability-v1 DeepSeek 实测结果
 
-> 历史基线说明：本文记录 2026-08-05 Agent Loop 可靠性修复前的结果，保留用于问题复盘，不应替换或删除。修复后的独立结果和前后对比见 [`HH_LOOP_RELIABILITY_FIXES_ZH.md`](loop-reliability-fixes.md)。
+> 历史基线说明：本文记录 2026-08-05 Agent Loop 可靠性修复前的结果，保留用于问题复盘，不应替换或删除。修复后的独立结果和前后对比见 [`JAXEN_LOOP_RELIABILITY_FIXES_ZH.md`](loop-reliability-fixes.md)。
 
 ## 1. 运行信息
 
-- 评估集：`hh-agent-reliability-v1`
+- 评估集：`jaxen-reliability-v1`
 - Provider：DeepSeek OpenAI Chat Compatible
 - 模型：`deepseek-chat`
 - 任务数：15

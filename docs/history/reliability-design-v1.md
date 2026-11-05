@@ -1,8 +1,8 @@
-# HH Agent Reliability-v1 评估规范
+# Jaxen Reliability-v1 评估规范
 
 ## 1. 目标
 
-这套评估不是为了证明 HH Agent “全部正确”，而是为了真实回答三件事：
+这套评估不是为了证明 Jaxen “全部正确”，而是为了真实回答三件事：
 
 1. Agent 最终是否完成用户目标。
 2. Agent 的工具调用、恢复过程和执行效率是否可靠。
@@ -73,7 +73,7 @@
 - `overlapping_read_calls`：对同一文件重复读取重叠区间的次数。
 - `background_task_starts`：工具返回“后台任务已启动”的次数。
 - `background_result_events`：同一 Run 内实际回收的后台结果数。
-- `uncollected_background_tasks`：启动后未在本轮回填给模型的后台任务估计数。
+- `uncollected_background_jobs`：启动后未在本轮回填给模型的后台任务估计数。
 - `tool_error_code_counts`：失败原因分布。
 - `security_event_counts`：审批拒绝、只读阻断、路径逃逸等安全事件。
 - 模型、工具和整次 Run 的耗时。

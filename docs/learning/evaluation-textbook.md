@@ -1,6 +1,6 @@
-# HH Agent Pro 测试与评估：从零基础到大厂面试
+# Jaxen Code 测试与评估：从零基础到大厂面试
 
-> 版本说明：正文第 11 章保留首次正式 DeepSeek 运行作为历史基线；第 22 章记录 2026-08-05 最新 TaskState/交付门回归、评估器校准和当前缺陷。Agent Loop 第一轮修复对比见 [`HH_LOOP_RELIABILITY_FIXES_ZH.md`](../history/loop-reliability-fixes.md)。
+> 版本说明：正文第 11 章保留首次正式 DeepSeek 运行作为历史基线；第 22 章记录 2026-08-05 最新 ProgressTracker/交付门回归、评估器校准和当前缺陷。Agent Loop 第一轮修复对比见 [`JAXEN_LOOP_RELIABILITY_FIXES_ZH.md`](../history/loop-reliability-fixes.md)。
 
 > 适用对象：从未系统学习过软件测试、benchmark、pytest 或 Agent 评估的人。
 >
@@ -12,7 +12,7 @@
 
 **Agent 评估，就是给 Agent 一组事先设计好的任务，完整记录它每一步做了什么，再用程序和人工共同判断：结果对不对、过程是否合理、失败是否安全。**
 
-HH Agent Pro 不是普通聊天机器人。它会：
+Jaxen Code 不是普通聊天机器人。它会：
 
 1. 读取仓库。
 2. 调用模型。
@@ -179,7 +179,7 @@ Benchmark 是一套固定任务、固定输入、固定评分方式，用来测�
 
 ```powershell
 python -m pytest -q
-python -m scripts.run_hh_benchmarks --quick
+python scripts/eval/run_fixed_benchmark.py --quick
 ```
 
 如果原来通过的任务失败了，就出现了回归。
@@ -222,13 +222,13 @@ Trace 是一次 Agent 执行的事件流水账。
 - 创建了哪些 checkpoint。
 - 最后为什么停止。
 
-HH 使用 JSONL 格式，每一行是一个 JSON 事件。
+Jaxen 使用 JSONL 格式，每一行是一个 JSON 事件。
 
 ## 1.11 Artifact
 
 Artifact 是测试或评估完成后保存在磁盘上的证据文件。
 
-HH 的 artifact 包括：
+Jaxen 的 artifact 包括：
 
 - 汇总 JSON。
 - 每项任务的 trace。
@@ -270,7 +270,7 @@ Memory 关闭：重复读取 60 次
 
 这是错误的。
 
-HH Agent Pro 当前有五层验证：
+Jaxen Code 当前有五层验证：
 
 | 层级 | 使用方式 | 主要回答的问题 |
 | --- | --- | --- |
@@ -339,17 +339,17 @@ Reliability-v1 自动可接受 9/15
 
 ---
 
-# 第 3 章：HH 项目的测试地图
+# 第 3 章：Jaxen 项目的测试地图
 
 ## 3.1 `tests/`：pytest 测试
 
 | 文件 | 主要覆盖内容 |
 | --- | --- |
-| `test_background_tasks.py` | 后台判定、任务启动、失败通知 |
+| `test_background_jobs.py` | 后台判定、任务启动、失败通知 |
 | `test_compaction.py` | Token 估算、工具结果落盘、中段裁切、LLM 摘要 |
-| `test_cron_scheduler.py` | Cron 匹配、持久化、触发、取消 |
+| `test_scheduler.py` | Cron 匹配、持久化、触发、取消 |
 | `test_extensions.py` | Run artifact、任务工具、后台通知、Session、Checkpoint、模型失败 |
-| `test_hh_coder_agent.py` | 简化 Agent 的文件工具、任务、后台、Cron、重试 |
+| 早期简化版 agent 的测试（已删除） | 简化 Agent 的文件工具、任务、后台、Cron、重试 |
 | `test_memory.py` | 长期记忆读写、索引、检索、注入、整理 |
 | `test_reliability_evaluation.py` | 新评估集、轨迹统计、结果分类、人工 CSV |
 | `test_task_system.py` | 任务创建、依赖、认领、完成、状态约束 |
@@ -374,7 +374,7 @@ benchmarks/reliability_tasks_v1.json
 
 15 个真实可靠性任务。
 
-## 3.3 `hh_agent_pro/evaluation/`：评估程序
+## 3.3 `jaxen/evaluation/`：评估程序
 
 ```text
 evaluator.py
@@ -528,13 +528,13 @@ python -m pytest tests/test_reliability_evaluation.py -vv
 快速版本：
 
 ```powershell
-python -m scripts.run_hh_benchmarks --quick
+python scripts/eval/run_fixed_benchmark.py --quick
 ```
 
 完整重复实验：
 
 ```powershell
-python -m scripts.run_hh_benchmarks
+python scripts/eval/run_fixed_benchmark.py
 ```
 
 ## 5.2 内部流程
@@ -543,7 +543,7 @@ python -m scripts.run_hh_benchmarks
 flowchart TD
     A["读取 coding_tasks.json"] --> B["验证任务格式"]
     B --> C["复制 fixture 到临时仓库"]
-    C --> D["创建 Fake Model 与 HH"]
+    C --> D["创建 Fake Model 与 Jaxen"]
     D --> E["Fake Model 返回固定工具调用"]
     E --> F["真实 ToolExecutor 执行工具"]
     F --> G["生成 run_state / trace / report"]
@@ -757,7 +757,7 @@ Provider 配置来自项目 `.env`。脚本调用 `_provider_profile()`，确认
 flowchart TD
     A["加载 reliability_tasks_v1.json"] --> B["复制 fixture 到临时目录"]
     B --> C["记录运行前文件 hash"]
-    C --> D["创建 Workspace / SessionStore / RunStore / HH"]
+    C --> D["创建 Workspace / SessionStore / RunStore / Jaxen"]
     D --> E["应用任务 setup，例如陈旧 Memory 或工作区外秘密"]
     E --> F["agent.ask(prompt)"]
     F --> G["Agent Loop 多轮模型与工具调用"]
@@ -1127,7 +1127,7 @@ tool_runtime
 ```text
 background_task_starts = 6
 background_result_events = 0
-uncollected_background_tasks = 6
+uncollected_background_jobs = 6
 ```
 
 ### Trace 证据
@@ -1139,7 +1139,7 @@ uncollected_background_tasks = 6
 `AgentLoop.run()` 只在主循环开始前调用：
 
 ```python
-for notification in agent.background_tasks.collect():
+for notification in agent.background_jobs.collect():
     ...
 ```
 
@@ -1310,7 +1310,7 @@ Failure Handling 不完全成功
 
 ---
 
-# 第 13 章：每个 HH 功能目前掌握到什么程度
+# 第 13 章：每个 Jaxen 功能目前掌握到什么程度
 
 ## 13.1 Provider 接入
 
@@ -1587,9 +1587,9 @@ Reliability-v1 没有让真实模型执行长期多任务协作，因此不能�
 
 ## 13.14 Skills
 
-当前 `hh_agent_pro` 源码中没有完整的 Skills 功能实现和对应测试。
+当前 `jaxen` 源码中没有完整的 Skills 功能实现和对应测试。
 
-因此简历或面试中不能把 Skills 当作 HH Agent Pro 已经验证完成的能力。
+因此简历或面试中不能把 Skills 当作 Jaxen Code 已经验证完成的能力。
 
 若以后新增，应测试：
 
@@ -1716,7 +1716,7 @@ python -m pytest -q
 第三步，运行快速 deterministic benchmark：
 
 ```powershell
-python -m scripts.run_hh_benchmarks --quick
+python scripts/eval/run_fixed_benchmark.py --quick
 ```
 
 第四步，只运行对应 Reliability 任务：
@@ -1864,7 +1864,7 @@ python -m scripts.run_reliability_benchmark --dry-run
 
 ## 18.1 一分钟项目评估介绍
 
-> 我把 HH Agent Pro 的评估拆成代码测试、Runtime 回归、模块消融和真实模型可靠性四层。代码层使用 pytest，目前 121 项通过；Runtime 层使用 14 个 scripted deterministic 任务验证工具、预算和 artifact，14/14 通过；上下文、Memory、Recovery 和安全分别做了消融或固定回归；真实模型层使用 DeepSeek 跑 15 个五分类任务，覆盖正常完成、信息缺失、工具失败、高风险动作和上下文噪音。最新原始自动结果是 7/15，安全违规为 0；复核还发现 3 个评估器误判，因此我同时保留原始分和校准说明，不把单次模型波动包装成稳定提升。
+> 我把 Jaxen Code 的评估拆成代码测试、Runtime 回归、模块消融和真实模型可靠性四层。代码层使用 pytest，目前 121 项通过；Runtime 层使用 14 个 scripted deterministic 任务验证工具、预算和 artifact，14/14 通过；上下文、Memory、Recovery 和安全分别做了消融或固定回归；真实模型层使用 DeepSeek 跑 15 个五分类任务，覆盖正常完成、信息缺失、工具失败、高风险动作和上下文噪音。最新原始自动结果是 7/15，安全违规为 0；复核还发现 3 个评估器误判，因此我同时保留原始分和校准说明，不把单次模型波动包装成稳定提升。
 
 ## 18.2 面试官问：为什么 pytest 100%，Agent 只有 60%？
 
@@ -1942,7 +1942,7 @@ Skills 已完整实现
 
 ```powershell
 python -m pytest -q
-python -m scripts.run_hh_benchmarks --quick
+python scripts/eval/run_fixed_benchmark.py --quick
 python -m scripts.run_reliability_benchmark --dry-run
 ```
 
@@ -2014,7 +2014,7 @@ normal_fix_slugify
 
 # 第 21 章：最终总复盘
 
-HH Agent Pro 已经不是完全黑盒，因为它具备：
+Jaxen Code 已经不是完全黑盒，因为它具备：
 
 - Session：保存可恢复会话。
 - RunState：保存一次执行的最新状态。
@@ -2040,7 +2040,7 @@ HH Agent Pro 已经不是完全黑盒，因为它具备：
 - 工具预算接近上限时预留验证和最终交付步骤。
 - 降低模型生成畸形工具参数后的空转重试。
 - 提升失败测试诊断、Windows 命令兼容和修复后复测能力。
-- 让 Project Tasks/TaskState 从“可调用能力”变成真实长任务中稳定采用的规划机制。
+- 让 Project Tasks/ProgressTracker 从“可调用能力”变成真实长任务中稳定采用的规划机制。
 - Provider 读取超时的结构化重试与故障注入测试。
 - 步骤效率和阶段性收口。
 - 真实任务重复实验、隐藏 verifier 和跨 Provider。
@@ -2061,7 +2061,7 @@ HH Agent Pro 已经不是完全黑盒，因为它具备：
 
 ```powershell
 python -m pytest -q
-python -m scripts.run_hh_benchmarks
+python scripts/eval/run_fixed_benchmark.py
 python -m scripts.run_reliability_benchmark `
   --provider deepseek `
   --max-new-tokens 1024 `
@@ -2166,11 +2166,11 @@ Security 最初只显示 21/27。检查后发现 Runtime 已把路径逃逸从�
 
 建议：Workspace Prompt 明确 shell/OS；提供仓库相对命令约束；把“测试失败证据 -> 定位源码 -> 修改 -> 同命令复测”写成 acceptance criteria。
 
-### 缺陷四：TaskState 已实现，但真实模型没有使用任务工具
+### 缺陷四：ProgressTracker 已实现，但真实模型没有使用任务工具
 
-本轮工具统计只有 `list_files/read_file/search/patch_file/run_shell`，Project Tasks 相关工具调用为 0。说明 TaskState 能自动记录证据和交付状态，但模型没有主动拆分、认领、完成子任务。
+本轮工具统计只有 `list_files/read_file/search/patch_file/run_shell`，Project Tasks 相关工具调用为 0。说明 ProgressTracker 能自动记录证据和交付状态，但模型没有主动拆分、认领、完成子任务。
 
-这不是 TaskState 代码错误，而是“能力存在但未被策略采用”。需要专门设计长任务评估，强制包含 2-3 个可验证子任务，再观察创建、认领、证据和完成状态是否闭环。
+这不是 ProgressTracker 代码错误，而是“能力存在但未被策略采用”。需要专门设计长任务评估，强制包含 2-3 个可验证子任务，再观察创建、认领、证据和完成状态是否闭环。
 
 ### 缺陷五：Provider 超时没有形成稳健恢复
 
@@ -2214,6 +2214,6 @@ python -m scripts.summarize_human_review `
 
 ## 22.8 当前可用于面试的最新表述
 
-> 我对 HH Agent Pro 做了四层评估：121 项 pytest 全部通过，14 项 deterministic Runtime 任务全部通过；60 个上下文样本平均压缩 31.89%，Memory 消融把重复读取从 60 次降到 0，Recovery 固定样本保持 100%，Windows 可执行安全回归为 27/27。真实 DeepSeek Reliability-v1 最新单次原始结果为 7/15，安全违规为 0。审计发现 2 个文本规则误判和 1 个 fixture 缺陷，校准解释为 10/15；四题补跑达到 3/4。剩余主要问题是步数预算收口、畸形工具参数、Windows 测试失败恢复、TaskState 采用率和 Provider 超时恢复。由于真实模型每题只跑一次，我不把单轮变化解释为稳定提升。
+> 我对 Jaxen Code 做了四层评估：121 项 pytest 全部通过，14 项 deterministic Runtime 任务全部通过；60 个上下文样本平均压缩 31.89%，Memory 消融把重复读取从 60 次降到 0，Recovery 固定样本保持 100%，Windows 可执行安全回归为 27/27。真实 DeepSeek Reliability-v1 最新单次原始结果为 7/15，安全违规为 0。审计发现 2 个文本规则误判和 1 个 fixture 缺陷，校准解释为 10/15；四题补跑达到 3/4。剩余主要问题是步数预算收口、畸形工具参数、Windows 测试失败恢复、ProgressTracker 采用率和 Provider 超时恢复。由于真实模型每题只跑一次，我不把单轮变化解释为稳定提升。
 
 这段话的价值不在于分数高，而在于你能清楚区分产品缺陷、模型波动和评估器缺陷。

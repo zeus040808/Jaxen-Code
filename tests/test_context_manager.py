@@ -3,12 +3,12 @@
 import json
 from pathlib import Path
 
-from hh_agent_pro.agent import CodingAgent
-from hh_agent_pro.context_manager import CLEARED_TOOL_RESULT, KEEP_RECENT_TOOL_RESULTS, SUMMARY_PREFIX, estimate_tokens
-from hh_agent_pro.providers import FakeModelClient
-from hh_agent_pro.run_store import RunStore
-from hh_agent_pro.session_store import SessionStore
-from hh_agent_pro.workspace import WorkspaceContext
+from jaxen.agent import CodingAgent
+from jaxen.context_manager import CLEARED_TOOL_RESULT, KEEP_RECENT_TOOL_RESULTS, SUMMARY_PREFIX, estimate_tokens
+from jaxen.providers import FakeModelClient
+from jaxen.run_store import RunStore
+from jaxen.session_store import SessionStore
+from jaxen.workspace import WorkspaceContext
 
 
 def _build_agent(tmp_path, outputs=("<final>done</final>",), **kwargs):
@@ -19,8 +19,8 @@ def _build_agent(tmp_path, outputs=("<final>done</final>",), **kwargs):
     return CodingAgent(
         model_client=FakeModelClient(list(outputs)),
         workspace=workspace,
-        session_store=SessionStore(root / ".hh" / "sessions"),
-        run_store=RunStore(root / ".hh" / "runs"),
+        session_store=SessionStore(root / ".jaxen" / "sessions"),
+        run_store=RunStore(root / ".jaxen" / "runs"),
         approval_policy="auto",
         **kwargs,
     )
@@ -220,7 +220,7 @@ def test_trim_fallback_keeps_a_long_user_request_in_full(tmp_path):
     # 2026-11-05 压缩评测发现：超过 1000 字符的请求（SWE-bench 的 issue 常见）后半段会消失。
     agent = _build_agent(tmp_path, outputs=())  # 没有可用输出：摘要请求失败
     request = "Fix the parser. " + "Details about the bug. " * 120 + "END-OF-REQUEST-MARKER"
-    agent.task_state.begin(request, "run_test")
+    agent.progress.begin(request, "run_test")
     agent.record({"role": "user", "content": request})
     for index in range(30):
         _tool_exchange(agent, index, "x" * 3000)

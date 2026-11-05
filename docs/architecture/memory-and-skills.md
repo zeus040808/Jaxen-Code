@@ -1,4 +1,4 @@
-# HH Agent Pro 记忆与 Skills 重构：Hermes 风格的清晰四层设计
+# Jaxen Code 记忆与 Skills 重构：Hermes 风格的清晰四层设计
 
 ## 1. 先说结论
 
@@ -12,7 +12,7 @@
 一次工具失败又可能同时进入：
 
 - `process_notes`；
-- `task_state`；
+- `progress`；
 - ToolExecutor 的失败状态；
 - trace。
 
@@ -23,14 +23,14 @@
 | 层 | 一句话用途 | 存储 | 是否默认注入 Prompt |
 |---|---|---|---|
 | 当前工作状态 | 这一轮在做什么、最近碰过哪些文件 | Session JSON 的 `memory` 字段 | 是，极小块 |
-| 精选长期记忆 | 用户偏好、稳定事实、项目约定和决策 | `.hh/memory/curated.json` | 是，会话开始时冻结 |
+| 精选长期记忆 | 用户偏好、稳定事实、项目约定和决策 | `.jaxen/memory/long_term.json` | 是，会话开始时冻结 |
 | 会话档案 | 过去真正说过、调用过什么 | Session JSON + SQLite FTS5 | 否，搜索时才读取 |
-| Skills | 成功做事的方法和检查流程 | `.hh/skills/<name>/SKILL.md` | 只注入名称和描述；正文按需读取 |
+| Skills | 成功做事的方法和检查流程 | `.jaxen/skills/<name>/SKILL.md` | 只注入名称和描述；正文按需读取 |
 
 另外三类经常被误叫成记忆的对象，现在明确排除：
 
-- `EvidenceLedger` 是当前任务的代码证据，不是跨任务记忆；
-- `TaskState` 是任务控制状态，不是记忆；
+- `SourceEvidence` 是当前任务的代码证据，不是跨任务记忆；
+- `ProgressTracker` 是任务控制状态，不是记忆；
 - trace 是调试事件流，不是模型回忆来源。
 
 最重要的原则是：
@@ -43,7 +43,7 @@
 
 这次不是推倒重写。下面这些能力本身是可用的，而且与 Hermes 的方向高度一致，因此被保留：
 
-### 2.1 `CuratedMemoryStore` 的骨架是好的
+### 2.1 `LongTermMemory` 的骨架是好的
 
 它已经具有：
 
@@ -59,9 +59,9 @@
 
 这些正是 Hermes 持久记忆的关键特征。核心实现仍在：
 
-- `hh_agent_pro/memory/curated_store.py`
-- `CuratedMemoryStore.apply_batch()`
-- `CuratedMemoryStore.render_snapshot()`
+- `jaxen/memory/long_term.py`
+- `LongTermMemory.apply_batch()`
+- `LongTermMemory.render_snapshot()`
 
 ### 2.2 `SessionArchive` 的方向是好的
 
@@ -158,10 +158,10 @@
 - 新任务覆盖 `task_summary`；
 - 文件列表只保留最近 8 个。
 
-核心代码在 `hh_agent_pro/memory/working.py`：
+核心代码在 `jaxen/memory/working_set.py`：
 
 ```python
-def default_working_state():
+def default_working_set_state():
     return {
         "schema_version": SCHEMA_VERSION,
         "task_summary": "",
@@ -169,7 +169,7 @@ def default_working_state():
     }
 
 
-class WorkingMemory:
+class WorkingSet:
     def set_task_summary(self, summary):
         self.state["task_summary"] = clip(str(summary).strip(), 300)
         return self
@@ -182,11 +182,11 @@ class WorkingMemory:
         return self
 ```
 
-为什么没有文件摘要：文件摘要已经由 EvidenceLedger 保存。Working State 只负责导航，不负责内容证据。
+为什么没有文件摘要：文件摘要已经由 SourceEvidence 保存。Working State 只负责导航，不负责内容证据。
 
 为什么没有 episodic notes：过去发生的事件已经在 Session history 和 SQLite 中。
 
-为什么没有 process notes：失败和重试已经由 ToolExecutor 与 TaskState 管理。
+为什么没有 process notes：失败和重试已经由 ToolExecutor 与 ProgressTracker 管理。
 
 ### 4.2 精选长期记忆 Curated Durable Memory
 
@@ -208,7 +208,7 @@ class WorkingMemory:
 存储位置：
 
 ```text
-.hh/memory/curated.json
+.jaxen/memory/long_term.json
 ```
 
 两个逻辑目标：
@@ -225,7 +225,7 @@ namespace=memory, scope=workspace/project
 
 1. 创建 `CodingAgent` 时读取磁盘；
 2. 调用 `render_snapshot()`；
-3. 保存到 `curated_memory_snapshot`；
+3. 保存到 `long_term_memory_snapshot`；
 4. 当前 Session 后续即使写入新记忆，也不改变这份 Prompt 快照；
 5. 下一 Session 才看到新内容。
 
@@ -261,12 +261,12 @@ def apply_batch(self, operations):
 
 #### 自动捕获长期事实
 
-`DurableMemoryLearner` 只处理两类高置信输入：
+`LongTermMemoryLearner` 只处理两类高置信输入：
 
 - 用户明确说“请记住……”；
 - 用户明确表达稳定偏好，如“我偏好……”。
 
-它不会让模型自由猜测。代码位于 `hh_agent_pro/memory/learner.py`：
+它不会让模型自由猜测。代码位于 `jaxen/memory/learner.py`：
 
 ```python
 def capture(self, user_message, session_id=""):
@@ -335,7 +335,7 @@ Skill 保存的是“怎么做”，不是“是什么”。
 目录结构：
 
 ```text
-.hh/skills/
+.jaxen/skills/
 └── learned-app-a1b2c3d4/
     └── SKILL.md
 ```
@@ -456,7 +456,7 @@ verified_after_edit = any(
 自动沉淀可用以下参数关闭：
 
 ```powershell
-python -m hh_agent_pro --no-auto-skills
+python -m jaxen --no-auto-skills
 ```
 
 ---
@@ -479,13 +479,13 @@ flowchart TD
     AS --> F["保存 Run report / checkpoint / trace"]
 ```
 
-成功结束处的真实调用顺序位于 `hh_agent_pro/agent_loop.py`：
+成功结束处的真实调用顺序位于 `jaxen/agent_loop.py`：
 
 ```python
 agent.record({"role": "assistant", "content": final, "created_at": now()})
 run_state.finish_success(final)
-agent.task_state.mark_completed(final)
-agent.auto_capture_durable_memory(user_message)
+agent.progress.mark_completed(final)
+agent.auto_capture_long_term_memory(user_message)
 agent.auto_deposit_skill(user_message, final, run_state)
 self._finalize_run(...)
 ```
@@ -501,15 +501,15 @@ self._finalize_run(...)
 ```text
 1. prefix
 2. working_memory
-3. durable_memory
-4. task_state
+3. long_term_memory
+4. progress
 5. evidence
 6. skills
 7. history
 8. current_request
 ```
 
-对应 `hh_agent_pro/context_manager.py` 的 `SECTION_ORDER`。
+对应 `jaxen/context_manager.py` 的 `SECTION_ORDER`。
 
 这样排序的理由：
 
@@ -528,8 +528,8 @@ def _assemble_prompt(self, rendered):
         [
             rendered["prefix"].rendered,
             rendered["working_memory"].rendered,
-            rendered["durable_memory"].rendered,
-            rendered["task_state"].rendered,
+            rendered["long_term_memory"].rendered,
+            rendered["progress"].rendered,
             rendered["evidence"].rendered,
             rendered["skills"].rendered,
             rendered["history"].rendered,
@@ -538,7 +538,7 @@ def _assemble_prompt(self, rendered):
     ).strip()
 ```
 
-旧的 `relevant_memory` section 已删除，因为它召回的正是 `episodic_notes/process_notes`，与 Session/TaskState 重叠。现在按需召回只发生在两个清晰入口：
+旧的 `relevant_memory` section 已删除，因为它召回的正是 `episodic_notes/process_notes`，与 Session/ProgressTracker 重叠。现在按需召回只发生在两个清晰入口：
 
 - 找过去说过什么：`session_search/session_read`；
 - 找过去成功的方法：`skills_list/skill_view`。
@@ -549,7 +549,7 @@ def _assemble_prompt(self, rendered):
 
 旧 Session 不需要手动改 JSON。
 
-`normalize_working_state()` 会读取：
+`normalize_working_set_state()` 会读取：
 
 - 新的 `task_summary/recent_files`；
 - 或旧的 `working.task_summary/working.recent_files`；
@@ -564,7 +564,7 @@ def _assemble_prompt(self, rendered):
 
 原因不是丢数据：这些旧内容仍在原 Session 文件历史中，且 SQLite archive 可检索。只是不再把它们恢复成会持续注入的新运行状态。
 
-原来的 `hh_agent_pro/features/memory.py` 已缩成兼容导入桥。真正实现全部集中在 `hh_agent_pro/memory/`，解决“一个 memory 目录外面又有一个 memory.py”的结构混乱。
+原来的 `jaxen/features/memory.py` 已缩成兼容导入桥。真正实现全部集中在 `jaxen/memory/`，解决“一个 memory 目录外面又有一个 memory.py”的结构混乱。
 
 ---
 
@@ -584,7 +584,7 @@ def _assemble_prompt(self, rendered):
 ### 8.2 Skill 安全
 
 - Skill name 只能是小写字母、数字和连字符；
-- 路径解析后必须仍位于 `.hh/skills`；
+- 路径解析后必须仍位于 `.jaxen/skills`；
 - 不跟随作为 Skill 目录的符号链接；
 - 单文件最大 16,000 字符；
 - 索引最大 8,000 字符；
@@ -609,7 +609,7 @@ Skill 中也明确写着：路径和命令是 recipe，不是不可变化的事�
 启动：
 
 ```powershell
-python -m hh_agent_pro
+python -m jaxen
 ```
 
 查看工作状态和长期记忆：
@@ -658,16 +658,16 @@ python -m hh_agent_pro
 
 新增：
 
-- `hh_agent_pro/memory/working.py`：极小当前工作状态；
-- `hh_agent_pro/memory/learner.py`：明确事实和偏好的保守自动捕获；
-- `hh_agent_pro/skills/store.py`：Skill 发现、索引、读取、CRUD、安全和原子落盘；
-- `hh_agent_pro/skills/learner.py`：已验证复杂流程自动沉淀；
+- `jaxen/memory/working_set.py`：极小当前工作状态；
+- `jaxen/memory/learner.py`：明确事实和偏好的保守自动捕获；
+- `jaxen/skills/store.py`：Skill 发现、索引、读取、CRUD、安全和原子落盘；
+- `jaxen/skills/learner.py`：已验证复杂流程自动沉淀；
 - `tests/test_skills.py`：Skill 功能测试；
 - 本文档。
 
 核心修改：
 
-- `agent.py`：装配新的 WorkingMemory、SkillStore、两个 learner；
+- `agent.py`：装配新的 WorkingSet、SkillStore、两个 learner；
 - `agent_loop.py`：成功交付后触发自动事实捕获与 Skill 沉淀；
 - `tools.py`：加入 `skills_list / skill_view / skill_manage`；
 - `tool_context.py`：把受限 SkillStore 传给工具层；
@@ -732,11 +732,11 @@ python -m hh_agent_pro
 
 ```text
 当前任务位置       → Working State
-稳定事实/偏好      → Curated Memory
+稳定事实/偏好      → long-term memory
 过去真实事件       → Session Archive
 可复用成功做法     → Skill
 本轮代码阅读依据   → Evidence
-任务推进/失败重试  → TaskState + ToolExecutor
+任务推进/失败重试  → ProgressTracker + ToolExecutor
 调试运行过程       → trace
 ```
 

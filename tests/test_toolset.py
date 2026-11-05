@@ -8,16 +8,16 @@ from pathlib import Path
 
 import pytest
 
-from hh_agent_pro.cli import build_arg_parser
-from hh_agent_pro.providers import FakeModelClient
-from hh_agent_pro.run_store import RunStore
-from hh_agent_pro.agent import CodingAgent
-from hh_agent_pro.session_store import SessionStore
-from hh_agent_pro.workspace import WorkspaceContext
+from jaxen.cli import build_arg_parser
+from jaxen.providers import FakeModelClient
+from jaxen.run_store import RunStore
+from jaxen.agent import CodingAgent
+from jaxen.session_store import SessionStore
+from jaxen.workspace import WorkspaceContext
 
 CORE = {
     "list_files", "read_file", "read_files", "search", "glob", "repo_map", "runtime_info",
-    "run_shell", "write_file", "patch_file", "todo_write", "delegate",
+    "run_shell", "write_file", "patch_file", "todo_write", "investigate",
 }
 
 
@@ -28,8 +28,8 @@ def _build_agent(tmp_path, **kwargs):
     return CodingAgent(
         model_client=FakeModelClient(["<final>done</final>"]),
         workspace=workspace,
-        session_store=SessionStore(root / ".hh" / "sessions"),
-        run_store=RunStore(root / ".hh" / "runs"),
+        session_store=SessionStore(root / ".jaxen" / "sessions"),
+        run_store=RunStore(root / ".jaxen" / "runs"),
         approval_policy="auto",
         **kwargs,
     )
@@ -46,7 +46,7 @@ def test_full_toolset_keeps_extended_tools_for_api_callers(tmp_path):
 
     assert agent.toolset == "full"
     assert CORE <= set(agent.tools)
-    assert {"memory_update", "create_task", "schedule_cron", "skill_view", "session_search"} <= set(agent.tools)
+    assert {"memory_update", "backlog_add", "record_claim", "skill_view", "session_search"} <= set(agent.tools)
 
 
 def test_core_prompt_omits_rules_for_missing_tools(tmp_path):

@@ -5,15 +5,15 @@ RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.l
     && apt-get -o Acquire::Retries=5 install -y --no-install-recommends git ripgrep \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /opt/hh-agent
-COPY hh_agent_pro/ /opt/hh-agent/hh_agent_pro/
+WORKDIR /opt/jaxen
+COPY jaxen/ /opt/jaxen/jaxen/
 
-ENV PYTHONPATH=/opt/hh-agent \
+ENV PYTHONPATH=/opt/jaxen \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 RUN pip install --no-cache-dir pytest==8.4.2
 
-RUN python3 -c "import hh_agent_pro; print('hh-agent image ready')" \
+RUN python3 -c "import jaxen; print('jaxen image ready')" \
     && git --version \
     && rg --version

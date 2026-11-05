@@ -1,15 +1,15 @@
-# HH Agent
+# Jaxen
 
 ## 项目是什么
 从零实现的本地 coding agent harness(Codex 的简化版),
 跑在终端、作用于本地代码仓库。学习 + 求职作品集项目。
-参考架构:learn-Codex s01–s20 / HH Agent Pro。
+参考架构:learn-Codex s01–s20 / Jaxen Code。
 
 ## 技术栈
 - Python 3.x,OpenAI SDK(走 DeepSeek/通义 OpenAI 兼容接口)
 
 ## 运行 / 测试
-- 运行:python -m hh_agent
+- 运行:python -m jaxen
 - 测试:pytest
 （命令随项目补充）
 

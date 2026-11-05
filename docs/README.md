@@ -15,14 +15,14 @@
 | 文档 | 一句话 |
 |---|---|
 | [overview.md](architecture/overview.md) | 总体介绍、运行方式与能力清单 |
-| [module-map.md](architecture/module-map.md) | 模块职责与调用链 |
+| [module-map.md](architecture/module-map.md) | **先看这篇**：概念与模块地图（每个概念叫什么、活多久、谁驱动、和谁有关系），含 2026-11-05 命名整理对照表 |
 | [harness-upgrades-20261030.md](architecture/harness-upgrades-20261030.md) | 2026-10-30 对照 Claude Code 的 harness 升级（预算、工具、门禁、工具集） |
 | [context-engineering.md](architecture/context-engineering.md) | 上下文三层结构、token 预算、轻压缩与摘要压缩 |
 | [ui-prototype.md](architecture/ui-prototype.md) | 图形界面（Codex 式布局，AI Elements 组件）：经 CLI 的 JSONL 协议驱动 agent，与 CLI 兼容 |
 | [review-subagent.md](architecture/review-subagent.md) | 审查子 agent：交付前由 harness 强制触发的只读审查、`/review` 命令、开关与实测 |
 | [memory-and-skills.md](architecture/memory-and-skills.md) | 三层记忆与可复用流程（skill） |
 | [session-and-failure.md](architecture/session-and-failure.md) | Session 数据结构与失败字段语义 |
-| [task-state-and-delivery.md](architecture/task-state-and-delivery.md) | 任务进度追踪与交付门禁 |
+| [progress-and-delivery.md](architecture/progress-and-delivery.md) | 进度账本（目标级）与交付门禁；和长任务待办互不依赖 |
 
 ## evaluation — 评测方法
 

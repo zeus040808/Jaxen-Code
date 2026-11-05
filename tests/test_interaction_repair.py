@@ -3,17 +3,17 @@ import os
 
 import pytest
 
-from hh_agent_pro.providers import ModelRequest, OpenAIChatClient
-from hh_agent_pro.run_state import (
+from jaxen.providers import ModelRequest, OpenAIChatClient
+from jaxen.run_state import (
     STOP_REASON_INTERRUPTED,
     STOP_REASON_MODEL_PROTOCOL_ERROR,
     STOP_REASON_OUTPUT_TRUNCATED,
 )
-from hh_agent_pro.agent import CodingAgent
-from hh_agent_pro.session_store import SessionStore
-from hh_agent_pro.streaming import CallbackEventSink
-from hh_agent_pro.tools import provider_tool_schemas, shell_command_is_read_only
-from hh_agent_pro.workspace import WorkspaceContext
+from jaxen.agent import CodingAgent
+from jaxen.session_store import SessionStore
+from jaxen.events import CallbackEventSink
+from jaxen.tools import provider_tool_schemas, shell_command_is_read_only
+from jaxen.workspace import WorkspaceContext
 
 
 class ScriptedModel:
@@ -33,7 +33,7 @@ def make_agent(tmp_path, model=None, approval="auto", event_sink=None):
     return CodingAgent(
         model_client=model or ScriptedModel(),
         workspace=WorkspaceContext.build(tmp_path),
-        session_store=SessionStore(tmp_path / ".hh" / "sessions"),
+        session_store=SessionStore(tmp_path / ".jaxen" / "sessions"),
         approval_policy=approval,
         max_steps=6,
         event_sink=event_sink,
@@ -41,7 +41,7 @@ def make_agent(tmp_path, model=None, approval="auto", event_sink=None):
 
 
 def test_runtime_info_is_redacted_and_does_not_read_dotenv(tmp_path, monkeypatch):
-    monkeypatch.setenv("HH_DEEPSEEK_API_KEY", "secret-value-that-must-not-appear")
+    monkeypatch.setenv("JAXEN_DEEPSEEK_API_KEY", "secret-value-that-must-not-appear")
     agent = make_agent(tmp_path)
 
     result = agent.run_tool("runtime_info", {})
@@ -71,7 +71,7 @@ def test_read_files_reads_multiple_utf8_files_in_one_safe_call(tmp_path):
 
     assert result.metadata["tool_status"] == "ok"
     assert "甲" in result.content and "乙" in result.content
-    assert agent.memory.to_dict()["recent_files"] == ["a.py", "b.py"]
+    assert agent.working_set.to_dict()["recent_files"] == ["a.py", "b.py"]
 
 
 def test_read_files_creates_per_file_structural_evidence(tmp_path):
@@ -80,7 +80,7 @@ def test_read_files_creates_per_file_structural_evidence(tmp_path):
         encoding="utf-8",
     )
     (tmp_path / "working.py").write_text(
-        '"""Current task working set."""\n\nclass WorkingMemory:\n    pass\n\ndef render_context():\n    return ""\n',
+        '"""Current task working set."""\n\nclass WorkingSet:\n    pass\n\ndef render_context():\n    return ""\n',
         encoding="utf-8",
     )
     agent = make_agent(tmp_path, approval="never")
@@ -131,7 +131,7 @@ def test_shell_read_only_classification_is_narrow():
 
 def test_safe_task_tool_does_not_accidentally_require_approval(tmp_path):
     agent = make_agent(tmp_path, approval="never")
-    result = agent.execute_tool("list_tasks", {})
+    result = agent.execute_tool("backlog_list", {})
     assert result.metadata["tool_status"] == "ok"
 
 
@@ -152,7 +152,7 @@ def test_deepseek_native_tool_schema_and_streamed_tool_call(monkeypatch):
             return False
 
     monkeypatch.setattr(
-        "hh_agent_pro.providers.openai_chat.urllib.request.urlopen",
+        "jaxen.providers.openai_chat.urllib.request.urlopen",
         lambda request, timeout: Response(),
     )
     client = OpenAIChatClient(
@@ -210,7 +210,7 @@ def test_deepseek_thinking_tool_turn_replays_exact_reasoning_content(monkeypatch
         requests.append(json.loads(request.data.decode("utf-8")))
         return responses.pop(0)
 
-    monkeypatch.setattr("hh_agent_pro.providers.openai_chat.urllib.request.urlopen", fake_open)
+    monkeypatch.setattr("jaxen.providers.openai_chat.urllib.request.urlopen", fake_open)
     client = OpenAIChatClient(
         "deepseek-v4-pro", "https://api.deepseek.com", "key", 0.2, 5
     )
@@ -287,7 +287,7 @@ def test_deepseek_stream_preserves_length_finish_reason(monkeypatch):
             return False
 
     monkeypatch.setattr(
-        "hh_agent_pro.providers.openai_chat.urllib.request.urlopen",
+        "jaxen.providers.openai_chat.urllib.request.urlopen",
         lambda request, timeout: Response(),
     )
     client = OpenAIChatClient(
@@ -530,7 +530,7 @@ def test_deepseek_request_separates_system_rules_and_role_aware_tool_messages(mo
         captured.update(json.loads(request.data.decode("utf-8")))
         return Response()
 
-    monkeypatch.setattr("hh_agent_pro.providers.openai_chat.urllib.request.urlopen", fake_open)
+    monkeypatch.setattr("jaxen.providers.openai_chat.urllib.request.urlopen", fake_open)
     client = OpenAIChatClient("deepseek-chat", "https://api.deepseek.com", "key", 0.2, 5)
     messages = [
         {"role": "user", "content": "inspect"},
@@ -548,7 +548,7 @@ def test_deepseek_request_separates_system_rules_and_role_aware_tool_messages(mo
 
 
 def test_interleaved_large_reads_reuse_evidence_instead_of_reaching_step_limit(tmp_path):
-    for name, symbol in (("a.py", "AStore"), ("b.py", "BPolicy"), ("c.py", "WorkingMemory")):
+    for name, symbol in (("a.py", "AStore"), ("b.py", "BPolicy"), ("c.py", "WorkingSet")):
         (tmp_path / name).write_text(
             f'class {symbol}:\n    pass\n\n' + "# padding\n" * 450,
             encoding="utf-8",

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "suite_id": "hh-agent-reliability-v1",
+  "suite_id": "jaxen-reliability-v1",
   "description": "A deliberately mixed Agent evaluation set. It measures successful work, correct failure, process quality, and safety without assuming every task should pass.",
   "human_rubric": {
     "outcome_labels": [

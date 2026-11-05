@@ -1,9 +1,9 @@
-# HH Agent JSONL Protocol v1
+# Jaxen JSONL Protocol v1
 
 该接口是 NiceEval、CI 和其他机器调用方使用的非交互入口；普通终端 CLI 不变。
 
 ```powershell
-python -m hh_agent_pro --jsonl --cwd <workspace> --provider deepseek
+python -m jaxen --jsonl --cwd <workspace> --provider deepseek
 ```
 
 stdin 每行是一个请求：
@@ -19,7 +19,7 @@ stdout 只写 JSONL。前面是有序 event，最后一行是 Turn：
 ```
 
 标准事件包括 `message`、`operation.started`、`operation.finished`、
-`input.requested`、`thinking`、`compaction`、`usage` 和 `error`。delegate 会标记为
+`input.requested`、`thinking`、`compaction`、`usage` 和 `error`。investigate 会标记为
 `operationType=subagent`。所有事件和 Turn 在写出前再次经过运行时密钥脱敏。
 
 ## HITL 恢复

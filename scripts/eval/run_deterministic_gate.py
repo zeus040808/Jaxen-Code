@@ -9,8 +9,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from hh_agent_pro.evaluation.evaluator import run_harness_regression_v2
-from hh_agent_pro.evaluation.metrics import (
+from jaxen.evaluation.evaluator import run_harness_regression_v2
+from jaxen.evaluation.deterministic_suites import (
     run_security_regression_v1,
     run_tool_contract_regression_v1,
 )

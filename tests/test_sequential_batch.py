@@ -8,11 +8,11 @@ import json
 import sys
 from pathlib import Path
 
-from hh_agent_pro.providers import FakeModelClient
-from hh_agent_pro.run_store import RunStore
-from hh_agent_pro.agent import CodingAgent
-from hh_agent_pro.session_store import SessionStore
-from hh_agent_pro.workspace import WorkspaceContext
+from jaxen.providers import FakeModelClient
+from jaxen.run_store import RunStore
+from jaxen.agent import CodingAgent
+from jaxen.session_store import SessionStore
+from jaxen.workspace import WorkspaceContext
 
 
 def _build_agent(tmp_path, scripted, **kwargs):
@@ -23,8 +23,8 @@ def _build_agent(tmp_path, scripted, **kwargs):
     return CodingAgent(
         model_client=FakeModelClient(list(scripted)),
         workspace=workspace,
-        session_store=SessionStore(root / ".hh" / "sessions"),
-        run_store=RunStore(root / ".hh" / "runs"),
+        session_store=SessionStore(root / ".jaxen" / "sessions"),
+        run_store=RunStore(root / ".jaxen" / "runs"),
         **{"approval_policy": "auto", **kwargs},
     )
 

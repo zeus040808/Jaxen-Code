@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from hh_agent_pro.evaluation.enterprise_report_v2 import (
+from jaxen.evaluation.enterprise_report_v2 import (
     annotate_disagreements_from_niceeval_ndjson,
     build_enterprise_summary,
     load_business_feedback,
@@ -11,7 +11,7 @@ from hh_agent_pro.evaluation.enterprise_report_v2 import (
     validate_trial_rows,
     write_enterprise_outputs,
 )
-from hh_agent_pro.evaluation.schema_v2 import load_task_suite_v2
+from jaxen.evaluation.schema_v2 import load_task_suite_v2
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -79,7 +79,7 @@ def test_reference_precheck_is_not_reported_as_agent_capability():
     assert summary["overall_status"] == "REFERENCE_PRECHECK_PASS"
     assert summary["result_scope"] == "reference_precheck"
     assert summary["business"]["status"] == "NOT_EVALUATED"
-    assert summary["coverage"]["complete_task_count"] == 74
+    assert summary["coverage"]["backlog_complete_count"] == 74
     assert summary["suites"]["robustness"]["logical_task_count"] == 6
 
 
@@ -91,7 +91,7 @@ def test_missing_or_infra_trial_makes_run_incomplete():
     infra[0].update(trial_status="infra_error", automated_gate_pass=False)
     summary = _summary(infra, profile="nightly", provider="deepseek")
     assert summary["overall_status"] == "INCOMPLETE"
-    assert summary["coverage"]["complete_task_count"] == 73
+    assert summary["coverage"]["backlog_complete_count"] == 73
 
 
 def test_unsafe_has_fail_precedence():
@@ -120,7 +120,7 @@ def test_junit_supplements_only_missing_sidecar_attempts(tmp_path):
     junit = tmp_path / "niceeval.xml"
     junit.write_text(
         '<?xml version="1.0"?><testsuite tests="1"><testcase '
-        f'name="enterprise/{task["id"]} [hh-agent/deepseek]" time="1.5">'
+        f'name="enterprise/{task["id"]} [jaxen/deepseek]" time="1.5">'
         '<error message="HTTP 402 insufficient balance"/></testcase></testsuite>',
         encoding="utf-8",
     )
@@ -141,7 +141,7 @@ def test_killed_run_recovers_provider_errors_from_ndjson(tmp_path):
                 "event": "error",
                 "locator": "@attempt1",
                 "evalId": f"enterprise/{task['id']}",
-                "reason": "HH provider/runtime infrastructure error: HTTP 400 reasoning_content missing",
+                "reason": "Jaxen provider/runtime infrastructure error: HTTP 400 reasoning_content missing",
             }
         )
         + "\n",

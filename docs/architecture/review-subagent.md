@@ -10,7 +10,7 @@
 | 依据 | 数据 |
 |---|---|
 | 失败类型 | 隔离环境和新题评测里，"在症状处兜底"（xarray-6938、sphinx-7462）、"漏改第二个文件"（django-13212、pylint-4551）、"需求没覆盖全"（django-16631）占失败的一半以上，主 agent 自己复查发现不了 |
-| 现有子 agent 没人用 | 唯一的子 agent `delegate`（只读调查）由模型自己决定是否调用，全部 SWE-bench 记录（约 150 次运行）里调用次数为 0 |
+| 现有子 agent 没人用 | 唯一的子 agent `investigate`（只读调查）由模型自己决定是否调用，全部 SWE-bench 记录（约 150 次运行）里调用次数为 0 |
 
 所以审查不能做成"可选工具"，要在固定时机由 harness 触发。审查者只看到需求和 diff、看不到主 agent 的推理，相当于换一双眼睛。
 
@@ -18,13 +18,13 @@
 
 | 部分 | 做法 | 位置 |
 |---|---|---|
-| 审查清单 | 根因还是症状、谁还受影响（调用方/包装/前后同类代码）、需求是否覆盖全（含后续状态）、范围是否合适、有没有与新原则矛盾的旧代码；只报会让改动出错或不完整的问题 | `hh_agent_pro/skills/builtin/code-review/SKILL.md`（skill 格式，唯一来源） |
-| 只读子 agent | 和 `delegate` 共用 `readonly_child()`：只能读、搜、看结构，不能改文件和执行命令；审查最多 12 步 | `agent.py` |
-| 审查流程 | 取 `git diff HEAD` + 未跟踪新文件（跳过 `.hh/`、`__pycache__`、二进制）→ 拼审查任务 → 解析 `VERDICT: approve / issues` 和问题列表；格式不对按通过处理，不卡交付 | `review.py` |
+| 审查清单 | 根因还是症状、谁还受影响（调用方/包装/前后同类代码）、需求是否覆盖全（含后续状态）、范围是否合适、有没有与新原则矛盾的旧代码；只报会让改动出错或不完整的问题 | `jaxen/skills/builtin/code-review/SKILL.md`（skill 格式，唯一来源） |
+| 只读子 agent | 和 `investigate` 共用 `readonly_child()`：只能读、搜、看结构，不能改文件和执行命令；审查最多 12 步 | `agent.py` |
+| 审查流程 | 取 `git diff HEAD` + 未跟踪新文件（跳过 `.jaxen/`、`__pycache__`、二进制）→ 拼审查任务 → 解析 `VERDICT: approve / issues` 和问题列表；格式不对按通过处理，不卡交付 | `review.py` |
 | 触发时机 | 交付检查通过之后、拼装最终回答之前；条件：开关打开、本次运行还没审查过、工作区有改动、还有工具步数 | `agent_loop.py` |
 | 有问题时 | 把意见作为一条运行时提示交回主 agent；主 agent 可以不采纳，但要在答案里说明理由；第二次交付不再审查 | `review.feedback_notice` |
-| 审查需求的原文 | 用运行开始时的完整用户消息（`task_state.goal` 被截断到 1000 字，不够） | `agent_loop.py` |
-| token 用量 | 子 agent 的用量经 `UsageForwardingSink` 转给父 agent，算进本轮；工具卡片和回答不转发，不混进父 agent 的界面。顺带修好了 `delegate` 用量不计入的老问题 | `streaming.py` |
+| 审查需求的原文 | 用运行开始时的完整用户消息（`progress.goal` 被截断到 1000 字，不够） | `agent_loop.py` |
+| token 用量 | 子 agent 的用量经 `UsageForwardingSink` 转给父 agent，算进本轮；工具卡片和回答不转发，不混进父 agent 的界面。顺带修好了 `investigate` 用量不计入的老问题 | `events.py` |
 | 界面显示 | 审查过程显示为一张 `code_review` 工具卡片（结论和问题列表） | — |
 | 用户命令 | `/review [说明]`：审查当前未提交改动，只出报告不改代码；CLI、JSONL、界面按钮都走 `agent.ask()` 里同一个分支 | `agent.py`、`jsonl_protocol.py`、`App.tsx` |
 
@@ -36,7 +36,7 @@
 | `auto` | 改了**非测试的源代码**才审查；只改文档、配置、测试时跳过 | CLI 对真实模型 |
 | `always` | 有任何改动就审查 | 想要最严格时 |
 
-不按改动行数判断：xarray-6938 只改了 1 行，恰恰是"在症状处兜底"、最该审的那种。源代码按 `task_state.CODE_SUFFIXES` 判断，
+不按改动行数判断：xarray-6938 只改了 1 行，恰恰是"在症状处兜底"、最该审的那种。源代码按 `progress.CODE_SUFFIXES` 判断，
 测试文件按路径判断（`tests/`、`test_*.py`、`*_test.py`、`*.spec.ts` 等）。默认档位最终要靠"审查开/关"评测数据来定。
 
 ## 同步执行与时间上限
@@ -55,21 +55,21 @@
 
 ```xml
 <subagent-result>
-<kind>delegate</kind>
+<kind>investigate</kind>
 <status>completed</status>
 <stop-reason>final_answer_returned</stop-reason>
 <summary>前 300 个字符</summary>
 <result>结果（最多 4000 字符）</result>
-<output-file>.hh/subagents/delegate-1a2b3c4d.md</output-file>   <!-- 只有结果过长时才有 -->
+<output-file>.jaxen/subagents/investigate-1a2b3c4d.md</output-file>   <!-- 只有结果过长时才有 -->
 <files>- 读过的文件: 摘要（最多 12 个）</files>
 <usage><input-tokens/><output-tokens/><requests/><tool-uses/><duration-ms/></usage>
 </subagent-result>
 ```
 
-- 结果太长时完整内容写进 `.hh/subagents/`，信封里只放截断版和路径，父 agent 需要细节再 `read_file`：上下文保持精简。
+- 结果太长时完整内容写进 `.jaxen/subagents/`，信封里只放截断版和路径，父 agent 需要细节再 `read_file`：上下文保持精简。
 - 用量由 `UsageForwardingSink` 累计（同时转给父 agent，算进本轮总数），工具次数取子 agent 的 `tool_steps`，耗时单独计。
 - 审查子 agent 也走同一个 `run_child()`：结论交回主 agent 时用 `feedback_notice`（只在有问题时），用量写进 trace 的 `review_completed`。
-- 以前 `delegate` 返回 `delegate_result:` 加一段 JSON，没有用量和耗时；依赖旧格式的 2 个测试已改为检查信封字段。
+- 以前 `investigate` 返回 `investigate_result:` 加一段 JSON，没有用量和耗时；依赖旧格式的 2 个测试已改为检查信封字段。
 
 ## 实测（deepseek-flash，示例仓库）
 
@@ -96,6 +96,6 @@ xarray-6938 两种修法都合理、隐藏测试锁定了其中一种，审查�
 
 2026-11-03 增补：三档触发（7 个参数化用例）、`auto` 模式只改文档时不审查、信封带用量且长结果写文件、子 agent 只拿到剩余时间。
 
-`tests/test_review.py`（12 个）：结论解析、diff 收集（含新文件，跳过 `.hh/`、编译产物、二进制）、有问题交回主 agent 且只审一轮、
+`tests/test_review.py`（12 个）：结论解析、diff 收集（含新文件，跳过 `.jaxen/`、编译产物、二进制）、有问题交回主 agent 且只审一轮、
 通过时直接交付、没改代码或关掉开关时不审查、`/review` 只出报告不改代码、JSONL 下 `/review` 是完成的一轮并带回答、
 子 agent 只转发用量、CLI 默认值随 provider 变化。全量 `pytest` 304 passed；确定性回归均 100%。

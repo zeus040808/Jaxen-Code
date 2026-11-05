@@ -1,16 +1,16 @@
 """P1-e：会话内轻量 todo 列表（对应 Claude Code 的 TodoWrite）。
 
 长任务里模型容易做着做着忘了还剩哪几步。todo_write 每次整体替换列表，
-列表渲染进每轮都会发送的 Task progress，模型每一步都能看到完整计划。
+列表渲染进每轮都会发送的 Goal progress，模型每一步都能看到完整计划。
 """
 
 from pathlib import Path
 
-from hh_agent_pro.providers import FakeModelClient
-from hh_agent_pro.run_store import RunStore
-from hh_agent_pro.agent import CodingAgent
-from hh_agent_pro.session_store import SessionStore
-from hh_agent_pro.workspace import WorkspaceContext
+from jaxen.providers import FakeModelClient
+from jaxen.run_store import RunStore
+from jaxen.agent import CodingAgent
+from jaxen.session_store import SessionStore
+from jaxen.workspace import WorkspaceContext
 
 
 def _build_agent(tmp_path, scripted=("<final>done</final>",)):
@@ -20,8 +20,8 @@ def _build_agent(tmp_path, scripted=("<final>done</final>",)):
     return CodingAgent(
         model_client=FakeModelClient(list(scripted)),
         workspace=workspace,
-        session_store=SessionStore(root / ".hh" / "sessions"),
-        run_store=RunStore(root / ".hh" / "runs"),
+        session_store=SessionStore(root / ".jaxen" / "sessions"),
+        run_store=RunStore(root / ".jaxen" / "runs"),
         approval_policy="auto",
     )
 
@@ -43,7 +43,7 @@ def test_todo_write_replaces_list_and_renders_marks(tmp_path):
     assert "[>] Fix the parser" in result.content
     assert "[ ] Run the tests" in result.content
     agent.execute_tool("todo_write", {"todos": TODOS[:1]})
-    assert [item["content"] for item in agent.task_state.to_dict()["todos"]] == ["Reproduce the bug"]
+    assert [item["content"] for item in agent.progress.to_dict()["todos"]] == ["Reproduce the bug"]
 
 
 def test_todos_appear_in_next_model_request(tmp_path):
@@ -61,7 +61,7 @@ def test_invalid_status_is_rejected(tmp_path):
     result = agent.execute_tool("todo_write", {"todos": [{"content": "x", "status": "done"}]})
 
     assert result.metadata["tool_status"] != "ok"
-    assert agent.task_state.to_dict()["todos"] == []
+    assert agent.progress.to_dict()["todos"] == []
 
 
 def test_new_task_starts_with_empty_todos(tmp_path):
@@ -71,8 +71,8 @@ def test_new_task_starts_with_empty_todos(tmp_path):
         "<final>second done</final>",
     ])
     agent.ask("first task")
-    assert agent.task_state.to_dict()["todos"]
+    assert agent.progress.to_dict()["todos"]
 
     agent.ask("an unrelated second task")
 
-    assert agent.task_state.to_dict()["todos"] == []
+    assert agent.progress.to_dict()["todos"] == []

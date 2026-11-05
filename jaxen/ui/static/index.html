@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jaxen</title>
+<style>
+:root {
+  --bg: #ffffff; --sidebar: #f7f7f8; --panel: #fbfbfc; --text: #1f2328; --muted: #6e7781; --faint: #9aa1a9;
+  --border: #e5e7eb; --hover: #eef0f2; --active: #e7e9ec; --bubble: #f2f3f5; --accent: #1f2328; --accent-text: #fff;
+  --code: #f6f8fa; --add: #e6ffec; --add-text: #116329; --del: #ffebe9; --del-text: #82071e;
+  --warn-bg: #fff8e5; --warn-border: #f0d68a; --ok: #1a7f37; --err: #cf222e; --run: #9a6700;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1e; --sidebar: #161617; --panel: #1f1f22; --text: #e6e6e6; --muted: #9a9a9f; --faint: #6c6c72;
+    --border: #2e2e32; --hover: #26262a; --active: #2c2c31; --bubble: #2a2a2e; --accent: #e6e6e6; --accent-text: #161617;
+    --code: #232327; --add: #12261a; --add-text: #7ee2a8; --del: #2d1517; --del-text: #ff9b9b;
+    --warn-bg: #2b2414; --warn-border: #6b5520; --ok: #4ac26b; --err: #ff6b6b; --run: #d29922;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+  font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+button { font: inherit; color: inherit; cursor: pointer; }
+.app { display: grid; grid-template-columns: 260px 1fr; height: 100vh; }
+.app.review { grid-template-columns: 260px 1fr minmax(360px, 42%); }
+
+/* 侧边栏 */
+.sidebar { background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; min-width: 0; }
+.brand { display: flex; align-items: center; gap: 8px; padding: 14px 16px 10px; font-weight: 600; }
+.brand .logo { width: 22px; height: 22px; border-radius: 6px; background: var(--accent); color: var(--accent-text);
+  display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+.new-thread { margin: 4px 10px 8px; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px;
+  border: 0; background: transparent; text-align: left; }
+.new-thread:hover, .thread:hover { background: var(--hover); }
+.section-label { padding: 10px 16px 4px; font-size: 12px; color: var(--faint); }
+.threads { flex: 1; overflow-y: auto; padding: 0 8px; }
+.thread { display: block; width: 100%; border: 0; background: transparent; text-align: left; padding: 7px 10px; border-radius: 8px; }
+.thread.active { background: var(--active); }
+.thread .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.thread .m { font-size: 12px; color: var(--faint); }
+.workspace { border-top: 1px solid var(--border); padding: 10px 12px 12px; }
+.workspace label { font-size: 12px; color: var(--faint); display: block; margin-bottom: 4px; }
+.workspace input { width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg);
+  color: var(--text); font: 12px var(--mono); }
+
+/* 主区域 */
+.app { overflow: hidden; }
+/* min-height: 0 让对话区在自己内部滚动，而不是把整列撑高、带着侧边栏一起滚走 */
+.main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.sidebar, .review-panel { min-height: 0; }
+.topbar { height: 48px; display: flex; align-items: center; gap: 10px; padding: 0 16px; border-bottom: 1px solid var(--border); }
+.topbar .title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip { font: 12px var(--mono); color: var(--muted); background: var(--bubble); padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.spacer { flex: 1; }
+.usage { font-size: 12px; color: var(--faint); white-space: nowrap; }
+.ghost { border: 1px solid var(--border); background: transparent; border-radius: 8px; padding: 5px 10px; font-size: 13px;
+  white-space: nowrap; flex: none; }
+.topbar .title { min-width: 0; }
+/* 窗口不够宽时，打开改动面板就把侧边栏让出来（Codex 也是这样） */
+@media (max-width: 1100px) {
+  .app.review { grid-template-columns: 1fr minmax(320px, 45%); }  /* 侧边栏隐藏后不占格子 */
+  .app.review .sidebar { display: none; }
+  .app.review .usage { display: none; }
+}
+.ghost:hover { background: var(--hover); }
+.ghost.on { background: var(--active); }
+.scroll { flex: 1; overflow-y: auto; min-height: 0; }
+.conversation { max-width: 780px; margin: 0 auto; padding: 24px 24px 40px; }
+.empty { text-align: center; padding-top: 18vh; }
+.empty h1 { font-size: 26px; font-weight: 600; margin: 0 0 6px; }
+.empty p { color: var(--muted); margin: 0 0 22px; }
+.suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.suggestions button { border: 1px solid var(--border); background: var(--bg); border-radius: 999px; padding: 7px 14px; color: var(--muted); }
+.suggestions button:hover { background: var(--hover); color: var(--text); }
+
+.msg-user { display: flex; justify-content: flex-end; margin: 18px 0; }
+.msg-user div { background: var(--bubble); border-radius: 18px; padding: 9px 14px; max-width: 85%; white-space: pre-wrap; word-break: break-word; }
+.msg-assistant { margin: 14px 0; word-break: break-word; }
+.msg-assistant p { margin: 0 0 10px; }
+.msg-assistant h1, .msg-assistant h2, .msg-assistant h3 { font-size: 15px; margin: 16px 0 8px; }
+.msg-assistant ul, .msg-assistant ol { margin: 0 0 10px; padding-left: 22px; }
+.msg-assistant code { font: 12.5px var(--mono); background: var(--code); padding: 1px 5px; border-radius: 4px; }
+.msg-assistant pre { background: var(--code); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; overflow-x: auto; }
+.msg-assistant pre code { background: none; padding: 0; }
+.msg-assistant table { border-collapse: collapse; margin: 0 0 12px; display: block; overflow-x: auto; }
+.msg-assistant th, .msg-assistant td { border: 1px solid var(--border); padding: 5px 10px; text-align: left; vertical-align: top; }
+.msg-assistant th { background: var(--panel); }
+.thinking { color: var(--muted); font-size: 13px; margin: 6px 0; display: flex; gap: 8px; align-items: baseline; }
+.thinking::before { content: "•"; color: var(--faint); }
+.error { color: var(--err); border: 1px solid var(--err); border-radius: 8px; padding: 8px 12px; margin: 10px 0; white-space: pre-wrap; font-size: 13px; }
+
+.tool { border: 1px solid var(--border); border-radius: 10px; margin: 8px 0; overflow: hidden; background: var(--bg); }
+.tool-head { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: transparent; padding: 7px 12px; text-align: left; }
+.tool-head:hover { background: var(--hover); }
+.tool .icon { width: 18px; text-align: center; color: var(--muted); font: 12px var(--mono); }
+.tool .name { font-weight: 500; white-space: nowrap; }
+.tool .summary { font: 12px var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+.dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.dot.running { background: var(--run); animation: pulse 1s infinite; }
+.dot.ok { background: var(--ok); }
+.dot.failed { background: var(--err); }
+@keyframes pulse { 50% { opacity: .3; } }
+.tool pre { margin: 0; border-top: 1px solid var(--border); background: var(--panel); padding: 10px 12px; max-height: 320px;
+  overflow: auto; font: 12px/1.5 var(--mono); white-space: pre-wrap; word-break: break-word; }
+
+.approval { border: 1px solid var(--warn-border); background: var(--warn-bg); border-radius: 10px; padding: 12px 14px; margin: 10px 0; }
+.approval .q { font-weight: 500; margin-bottom: 6px; }
+.approval pre { font: 12px var(--mono); margin: 0 0 10px; white-space: pre-wrap; word-break: break-word; color: var(--muted); }
+.approval .actions { display: flex; gap: 8px; }
+.primary { background: var(--accent); color: var(--accent-text); border: 0; border-radius: 8px; padding: 6px 14px; }
+.approval .done { font-size: 13px; color: var(--muted); }
+
+/* 输入框 */
+.composer-wrap { padding: 0 24px 18px; }
+.composer { max-width: 780px; margin: 0 auto; border: 1px solid var(--border); border-radius: 18px; background: var(--bg);
+  box-shadow: 0 1px 3px rgba(0,0,0,.05); padding: 10px 12px 8px; }
+.composer textarea { width: 100%; border: 0; outline: 0; resize: none; background: transparent; color: var(--text);
+  font: inherit; min-height: 44px; max-height: 220px; }
+.composer .row { display: flex; align-items: center; gap: 8px; }
+.composer select { border: 0; background: var(--bubble); color: var(--muted); border-radius: 999px; padding: 4px 10px; font-size: 12px; }
+.send { width: 32px; height: 32px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-text);
+  display: grid; place-items: center; font-size: 16px; }
+.send:disabled { opacity: .35; cursor: default; }
+.hint { max-width: 780px; margin: 6px auto 0; font-size: 12px; color: var(--faint); text-align: center; }
+
+/* 改动面板 */
+.review-panel { border-left: 1px solid var(--border); display: none; flex-direction: column; min-width: 0; background: var(--panel); }
+.app.review .review-panel { display: flex; }
+.review-panel .topbar { background: var(--bg); }
+.diff { flex: 1; overflow: auto; font: 12px/1.5 var(--mono); }
+.diff .file { position: sticky; top: 0; background: var(--bg); border-bottom: 1px solid var(--border); padding: 6px 12px; font-weight: 600; }
+.diff .line { white-space: pre; padding: 0 12px; }
+.diff .add { background: var(--add); color: var(--add-text); }
+.diff .del { background: var(--del); color: var(--del-text); }
+.diff .hunk { color: var(--muted); background: var(--bubble); }
+.diff .none { padding: 24px; color: var(--muted); font-family: inherit; }
+
+@media (max-width: 760px) {
+  .app, .app.review { grid-template-columns: 1fr; }
+  .sidebar, .review-panel { display: none !important; }
+  .conversation, .composer-wrap { padding-left: 16px; padding-right: 16px; }
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="sidebar">
+    <div class="brand"><span class="logo">J</span>Jaxen</div>
+    <button class="new-thread" id="newThread">＋ 新建对话</button>
+    <div class="section-label">对话</div>
+    <div class="threads" id="threads"></div>
+    <div class="workspace">
+      <label for="cwd">工作区</label>
+      <input id="cwd" spellcheck="false">
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <span class="title" id="title">新对话</span>
+      <span class="chip" id="branch"></span>
+      <span class="spacer"></span>
+      <span class="usage" id="usage"></span>
+      <button class="ghost" id="toggleReview">查看改动</button>
+    </div>
+    <div class="scroll" id="scroll"><div class="conversation" id="conversation"></div></div>
+    <div class="composer-wrap">
+      <div class="composer">
+        <textarea id="input" placeholder="让 Jaxen 读代码、改代码、跑测试…（Enter 发送，Shift+Enter 换行）"></textarea>
+        <div class="row">
+          <select id="approval" title="风险操作（写文件、执行命令）怎么处理">
+            <option value="auto">完全自动</option>
+            <option value="ask">风险操作先问我</option>
+            <option value="never">禁止风险操作</option>
+          </select>
+          <select id="model" title="模型">
+            <option value="">deepseek-flash（默认）</option>
+            <option value="deepseek-v4-pro">deepseek-v4-pro</option>
+          </select>
+          <span class="spacer"></span>
+          <button class="send" id="send" title="发送">↑</button>
+        </div>
+      </div>
+      <div class="hint">界面通过 CLI 的 JSONL 协议驱动同一个 agent；终端里的 <code>python -m jaxen</code> 照常可用。</div>
+    </div>
+  </main>
+
+  <section class="review-panel">
+    <div class="topbar"><span class="title">工作区改动</span><span class="spacer"></span>
+      <button class="ghost" id="refreshDiff">刷新</button></div>
+    <div class="diff" id="diff"></div>
+  </section>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const store = {
+  get(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } },
+  set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} },
+};
+let threads = store.get("jaxen.threads", []);
+let activeId = store.get("jaxen.active", null);
+let running = null;  // {turnId, controller}
+
+const escapeHtml = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+// —— 极简 Markdown：代码块、标题、列表、表格、行内代码、粗体 ——
+function inline(text) {
+  return escapeHtml(text).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+}
+function markdown(src) {
+  const lines = String(src || "").split("\n"); const out = []; let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (line.startsWith("```")) {
+      const code = []; i++;
+      while (i < lines.length && !lines[i].startsWith("```")) code.push(lines[i++]);
+      out.push(`<pre><code>${escapeHtml(code.join("\n"))}</code></pre>`); i++; continue;
+    }
+    const heading = line.match(/^(#{1,4})\s+(.*)/);
+    if (heading) { out.push(`<h3>${inline(heading[2])}</h3>`); i++; continue; }
+    if (/^\s*\|.*\|\s*$/.test(line) && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1] || "")) {
+      const cells = (row) => row.trim().replace(/^\||\|$/g, "").split("|").map((c) => inline(c.trim()));
+      let html = "<table><tr>" + cells(line).map((c) => `<th>${c}</th>`).join("") + "</tr>"; i += 2;
+      while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) html += "<tr>" + cells(lines[i++]).map((c) => `<td>${c}</td>`).join("") + "</tr>";
+      out.push(html + "</table>"); continue;
+    }
+    if (/^\s*([-*]|\d+\.)\s+/.test(line)) {
+      const ordered = /^\s*\d+\./.test(line); const items = [];
+      while (i < lines.length && /^\s*([-*]|\d+\.)\s+/.test(lines[i])) items.push(lines[i++].replace(/^\s*([-*]|\d+\.)\s+/, ""));
+      out.push(`<${ordered ? "ol" : "ul"}>${items.map((t) => `<li>${inline(t)}</li>`).join("")}</${ordered ? "ol" : "ul"}>`); continue;
+    }
+    if (!line.trim()) { i++; continue; }
+    const para = [];
+    while (i < lines.length && lines[i].trim() && !/^(```|#{1,4}\s|\s*([-*]|\d+\.)\s|\s*\|)/.test(lines[i])) para.push(lines[i++]);
+    if (!para.length) para.push(lines[i++]);
+    out.push(`<p>${para.map(inline).join("<br>")}</p>`);
+  }
+  return out.join("");
+}
+
+// —— 工具卡片 ——
+const ICONS = { read_file: "≡", read_files: "≡", search: "⌕", glob: "⌕", repo_map: "⌘", list_files: "▤",
+  run_shell: "$", patch_file: "✎", write_file: "✎", todo_write: "☐", investigate: "⇄" };
+function toolSummary(name, input) {
+  input = input || {};
+  if (input.command) return input.command;
+  if (input.pattern) return input.pattern + (input.path && input.path !== "." ? `  in ${input.path}` : "");
+  if (input.paths) return input.paths.join(", ");
+  if (input.path) return input.path;
+  if (input.task) return input.task;
+  return JSON.stringify(input).slice(0, 120);
+}
+
+// 每轮是一个新的 CLI 进程，usage 只统计本轮；对话总量 = 之前各轮之和 + 本轮
+const USAGE_KEYS = ["inputTokens", "outputTokens", "requests"];
+function totalUsage(t) {
+  const total = {};
+  for (const key of USAGE_KEYS) total[key] = ((t.usageBase || {})[key] || 0) + ((t.usage || {})[key] || 0);
+  return total;
+}
+function thread() { return threads.find((t) => t.id === activeId); }
+function save() { store.set("jaxen.threads", threads.slice(0, 50)); store.set("jaxen.active", activeId); }
+
+function renderThreads() {
+  $("threads").innerHTML = threads.map((t) => `
+    <button class="thread ${t.id === activeId ? "active" : ""}" data-id="${t.id}">
+      <div class="t">${escapeHtml(t.title)}</div>
+      <div class="m">${new Date(t.updated).toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
+    </button>`).join("");
+}
+
+function renderConversation() {
+  const t = thread();
+  $("title").textContent = t ? t.title : "新对话";
+  const u = t && totalUsage(t);
+  $("usage").textContent = u && u.requests ? `输入 ${(u.inputTokens / 1000).toFixed(1)}k · 输出 ${(u.outputTokens / 1000).toFixed(1)}k · ${u.requests} 次请求` : "";
+  if (!t || !t.blocks.length) {
+    $("conversation").innerHTML = `<div class="empty"><h1>我能帮你做什么？</h1><p>在 <code>${escapeHtml($("cwd").value)}</code> 里工作</p>
+      <div class="suggestions">
+        <button data-suggest="用三句话介绍这个仓库的结构和主要模块">介绍这个仓库</button>
+        <button data-suggest="运行测试，如果有失败的就找出原因并修复">跑测试并修复失败</button>
+        <button data-suggest="找出 TODO 或明显的 bug，列出来但先不要改">找潜在问题</button>
+      </div></div>`;
+    return;
+  }
+  $("conversation").innerHTML = t.blocks.map((b, index) => {
+    if (b.type === "user") return `<div class="msg-user"><div>${escapeHtml(b.text)}</div></div>`;
+    if (b.type === "assistant") return `<div class="msg-assistant">${markdown(b.text)}</div>`;
+    if (b.type === "thinking") return `<div class="thinking">${escapeHtml(b.text)}</div>`;
+    if (b.type === "error") return `<div class="error">${escapeHtml(b.text)}</div>`;
+    if (b.type === "tool") return `<div class="tool">
+      <button class="tool-head" data-toggle="${index}">
+        <span class="icon">${ICONS[b.name] || "•"}</span><span class="name">${escapeHtml(b.name)}</span>
+        <span class="summary">${escapeHtml(toolSummary(b.name, b.input))}</span><span class="dot ${b.status}"></span>
+      </button>${b.open && b.output ? `<pre>${escapeHtml(b.output)}</pre>` : ""}</div>`;
+    if (b.type === "approval") return `<div class="approval"><div class="q">${escapeHtml(b.question)}</div>
+      <pre>${escapeHtml(b.name)} ${escapeHtml(JSON.stringify(b.args || {}, null, 2))}</pre>
+      ${b.decision ? `<div class="done">${b.decision === "approve" ? "已批准" : "已拒绝"}</div>` :
+        `<div class="actions"><button class="primary" data-approve="${index}">批准</button><button class="ghost" data-deny="${index}">拒绝</button></div>`}</div>`;
+    return "";
+  }).join("") + (running ? `<div class="thinking">运行中…</div>` : "");
+  const scroll = $("scroll");
+  if (scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight < 200) scroll.scrollTop = scroll.scrollHeight;
+}
+
+function render() { renderThreads(); renderConversation(); $("send").textContent = running ? "■" : "↑"; $("send").title = running ? "停止" : "发送"; }
+
+// —— 处理 agent 事件（jaxen/jsonl_protocol.py 的输出）——
+function onEvent(t, row) {
+  if (row.kind === "ui") { running.turnId = row.turnId; return; }
+  if (row.kind === "turn") {
+    if (row.sessionId) t.sessionId = row.sessionId;
+    if (row.usage && Object.keys(row.usage).length) t.usage = row.usage;
+    if (row.status === "failed" && row.finalAnswer && !t.blocks.some((b, i) => i >= t.turnStart && b.type === "assistant"))
+      t.blocks.push({ type: "error", text: row.finalAnswer });
+    return;
+  }
+  const blocks = t.blocks;
+  if (row.type === "operation.started") blocks.push({ type: "tool", id: row.operationId, name: row.name, input: row.input, status: "running" });
+  else if (row.type === "operation.finished") {
+    const card = [...blocks].reverse().find((b) => b.type === "tool" && b.id === row.operationId && b.status === "running");
+    if (card) { card.output = row.output; card.status = (row.metadata || {}).tool_status === "ok" ? "ok" : "failed"; }
+  }
+  // provider_status 是"请求完成"一类的底层状态，每步都有，界面上只会刷屏。
+  else if (row.type === "thinking" && row.text && row.source !== "provider_status") {
+    const last = blocks[blocks.length - 1];
+    if (last && last.type === "thinking") last.text = row.text; else blocks.push({ type: "thinking", text: row.text });
+  }
+  else if (row.type === "message") blocks.push({ type: "assistant", text: row.content });
+  else if (row.type === "input.requested") {
+    // 被拦下等审批的那次工具调用不算失败，标成"等待中"
+    const pending = [...blocks].reverse().find((b) => b.type === "tool" && b.name === row.name);
+    if (pending && pending.status === "failed") pending.status = "running";
+    blocks.push({ type: "approval", inputId: row.inputId, question: row.question, name: row.name, args: row.arguments });
+  }
+  else if (row.type === "usage") t.usage = row.usage;
+  else if (row.type === "error") blocks.push({ type: "error", text: row.message });
+}
+
+async function sendTurn(text, responses) {
+  let t = thread();
+  if (!t) {
+    t = { id: crypto.randomUUID(), title: text.slice(0, 40) || "新对话", blocks: [], sessionId: null, cwd: $("cwd").value, updated: Date.now() };
+    threads.unshift(t); activeId = t.id;
+  }
+  if (text) t.blocks.push({ type: "user", text });
+  t.usageBase = totalUsage(t); t.usage = null;
+  t.turnStart = t.blocks.length; t.updated = Date.now();
+  running = { turnId: null, controller: new AbortController() };
+  render(); save();
+  try {
+    const response = await fetch("/api/turn", {
+      method: "POST", signal: running.controller.signal, headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, sessionId: t.sessionId, responses: responses || [], cwd: t.cwd,
+        approval: $("approval").value, model: $("model").value }),
+    });
+    if (!response.ok) throw new Error((await response.json()).error || response.statusText);
+    const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = "";
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let newline;
+      while ((newline = buffer.indexOf("\n")) >= 0) {
+        const line = buffer.slice(0, newline); buffer = buffer.slice(newline + 1);
+        if (line.trim()) { try { onEvent(t, JSON.parse(line)); } catch {} }
+      }
+      renderConversation();
+    }
+  } catch (err) {
+    if (err.name !== "AbortError") t.blocks.push({ type: "error", text: String(err.message || err) });
+    else t.blocks.push({ type: "thinking", text: "已停止" });
+  }
+  running = null; t.updated = Date.now(); save(); render(); loadDiff();
+}
+
+function submit() {
+  if (running) {  // 停止
+    fetch("/api/cancel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ turnId: running.turnId }) });
+    running.controller.abort(); return;
+  }
+  const text = $("input").value.trim();
+  if (!text) return;
+  $("input").value = ""; autosize();
+  sendTurn(text);
+}
+
+async function loadInfo() {
+  const t = thread();
+  const cwd = (t && t.cwd) || $("cwd").value;
+  const info = await (await fetch("/api/info" + (cwd ? `?cwd=${encodeURIComponent(cwd)}` : ""))).json();
+  if (info.error) { $("branch").textContent = info.error; return; }
+  if (!$("cwd").value) $("cwd").value = info.workspace;
+  $("branch").textContent = info.branch ? `⎇ ${info.branch}` : "";
+}
+
+async function loadDiff() {
+  if (!$("app").classList.contains("review")) return;
+  const t = thread(); const cwd = (t && t.cwd) || $("cwd").value;
+  const data = await (await fetch(`/api/diff?cwd=${encodeURIComponent(cwd)}`)).json();
+  if (data.error) { $("diff").innerHTML = `<div class="none">${escapeHtml(data.error)}</div>`; return; }
+  if (!data.diff && !data.untracked.length) { $("diff").innerHTML = `<div class="none">工作区没有未提交的改动。</div>`; return; }
+  const html = data.diff.split("\n").map((line) => {
+    if (line.startsWith("diff --git")) return `<div class="file">${escapeHtml(line.replace(/^diff --git a\/(\S+).*/, "$1"))}</div>`;
+    if (/^(index |--- |\+\+\+ )/.test(line)) return "";
+    const cls = line.startsWith("@@") ? "hunk" : line.startsWith("+") ? "add" : line.startsWith("-") ? "del" : "";
+    return `<div class="line ${cls}">${escapeHtml(line) || " "}</div>`;
+  }).join("");
+  const untracked = data.untracked.length ? `<div class="file">未跟踪的新文件</div>` + data.untracked.map((f) => `<div class="line add">+ ${escapeHtml(f)}</div>`).join("") : "";
+  $("diff").innerHTML = html + untracked;
+}
+
+function autosize() { const el = $("input"); el.style.height = "auto"; el.style.height = Math.min(el.scrollHeight, 220) + "px"; }
+
+// —— 交互 ——
+$("send").onclick = submit;
+$("input").addEventListener("input", autosize);
+$("input").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); submit(); } });
+$("newThread").onclick = () => { if (running) return; activeId = null; save(); render(); loadInfo(); $("input").focus(); };
+$("threads").onclick = (e) => {
+  const button = e.target.closest("[data-id]"); if (!button || running) return;
+  activeId = button.dataset.id; const t = thread(); if (t && t.cwd) $("cwd").value = t.cwd;
+  save(); render(); loadInfo(); loadDiff();
+};
+$("conversation").onclick = (e) => {
+  const t = thread(); const target = e.target.closest("[data-toggle],[data-approve],[data-deny],[data-suggest]"); if (!target) return;
+  if (target.dataset.suggest) { $("input").value = target.dataset.suggest; submit(); return; }
+  if (!t) return;
+  if (target.dataset.toggle) { const b = t.blocks[+target.dataset.toggle]; b.open = !b.open; save(); renderConversation(); return; }
+  if (running) return;
+  const b = t.blocks[+(target.dataset.approve || target.dataset.deny)];
+  b.decision = target.dataset.approve ? "approve" : "deny";
+  sendTurn("", [{ inputId: b.inputId, approved: b.decision === "approve" }]);
+};
+$("cwd").addEventListener("change", () => { const t = thread(); if (t && !t.blocks.length) t.cwd = $("cwd").value; loadInfo(); loadDiff(); });
+$("toggleReview").onclick = () => { $("app").classList.toggle("review"); $("toggleReview").classList.toggle("on"); loadDiff(); };
+$("refreshDiff").onclick = loadDiff;
+// 记住审批模式和模型：刷新页面后不能悄悄回到"完全自动"，那等于放宽了权限
+for (const id of ["approval", "model"]) {
+  const saved = store.get("jaxen." + id, null);
+  if (saved !== null && [...$(id).options].some((o) => o.value === saved)) $(id).value = saved;
+  $(id).addEventListener("change", () => store.set("jaxen." + id, $(id).value));
+}
+
+(async () => {
+  const t = thread(); if (t && t.cwd) $("cwd").value = t.cwd;
+  await loadInfo(); render(); $("input").focus();
+})();
+</script>
+</body>
+</html>

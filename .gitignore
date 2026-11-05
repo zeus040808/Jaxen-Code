@@ -29,8 +29,8 @@ package-lock.json
 .DS_Store
 Thumbs.db
 
-# HH Agent 本地运行时数据
-.hh/
+# Jaxen 本地运行时数据
+.jaxen/
 .pico/
 .tmp/
 .transcripts/
@@ -41,4 +41,4 @@ artifacts/eval-v2/**/evidence/
 artifacts/swebench/traces/
 artifacts/swebench/harness/
 *.ndjson
-*.hh-orig
+*.jaxen-orig

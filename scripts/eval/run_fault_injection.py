@@ -15,7 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from hh_agent_pro.evaluation.fault_injection import run_suite  # noqa: E402
+from jaxen.evaluation.fault_injection import run_suite  # noqa: E402
 
 
 def git_status():

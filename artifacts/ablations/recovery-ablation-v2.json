@@ -1,7 +1,7 @@
 {
   "artifact_type": "recovery-ablation-v2",
-  "captured_at": "2026-08-05T09:39:08.542938Z",
-  "repetitions": 3,
+  "captured_at": "2026-11-05T09:22:46.972717Z",
+  "repetitions": 1,
   "schema_version": 2,
   "task_count": 10,
   "variants": {
@@ -25,50 +25,6 @@
           "resume_status": "no-checkpoint",
           "resume_succeeded": false,
           "stale_reanchored": false,
-          "task_id": "checkpoint_resume_goal",
-          "variant": "resume_disabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "checkpoint_resume",
-          "false_accept": false,
-          "final_answer": "missing recovery state.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": false,
-          "stale_reanchored": false,
-          "task_id": "checkpoint_resume_goal",
-          "variant": "resume_disabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "checkpoint_resume",
-          "false_accept": false,
-          "final_answer": "missing recovery state.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": false,
-          "stale_reanchored": false,
-          "task_id": "checkpoint_resume_files",
-          "variant": "resume_disabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "checkpoint_resume",
-          "false_accept": false,
-          "final_answer": "missing recovery state.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": false,
-          "stale_reanchored": false,
-          "task_id": "checkpoint_resume_files",
-          "variant": "resume_disabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "checkpoint_resume",
-          "false_accept": false,
-          "final_answer": "missing recovery state.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": false,
-          "stale_reanchored": false,
           "task_id": "checkpoint_resume_files",
           "variant": "resume_disabled",
           "workspace_drift_detected": false
@@ -81,50 +37,6 @@
           "resume_succeeded": false,
           "stale_reanchored": false,
           "task_id": "partial_stale_single",
-          "variant": "resume_disabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "partial_stale",
-          "false_accept": false,
-          "final_answer": "missing recovery state.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": false,
-          "stale_reanchored": false,
-          "task_id": "partial_stale_single",
-          "variant": "resume_disabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "partial_stale",
-          "false_accept": false,
-          "final_answer": "missing recovery state.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": false,
-          "stale_reanchored": false,
-          "task_id": "partial_stale_single",
-          "variant": "resume_disabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "partial_stale",
-          "false_accept": false,
-          "final_answer": "missing recovery state.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": false,
-          "stale_reanchored": false,
-          "task_id": "partial_stale_multi",
-          "variant": "resume_disabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "partial_stale",
-          "false_accept": false,
-          "final_answer": "missing recovery state.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": false,
-          "stale_reanchored": false,
-          "task_id": "partial_stale_multi",
           "variant": "resume_disabled",
           "workspace_drift_detected": false
         },
@@ -157,50 +69,6 @@
           "resume_status": "no-checkpoint",
           "resume_succeeded": false,
           "stale_reanchored": false,
-          "task_id": "workspace_mismatch_fingerprint",
-          "variant": "resume_disabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "workspace_mismatch",
-          "false_accept": false,
-          "final_answer": "missing recovery state.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": false,
-          "stale_reanchored": false,
-          "task_id": "workspace_mismatch_fingerprint",
-          "variant": "resume_disabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "workspace_mismatch",
-          "false_accept": false,
-          "final_answer": "missing recovery state.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": false,
-          "stale_reanchored": false,
-          "task_id": "workspace_mismatch_runtime",
-          "variant": "resume_disabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "workspace_mismatch",
-          "false_accept": false,
-          "final_answer": "missing recovery state.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": false,
-          "stale_reanchored": false,
-          "task_id": "workspace_mismatch_runtime",
-          "variant": "resume_disabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "workspace_mismatch",
-          "false_accept": false,
-          "final_answer": "missing recovery state.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": false,
-          "stale_reanchored": false,
           "task_id": "workspace_mismatch_runtime",
           "variant": "resume_disabled",
           "workspace_drift_detected": false
@@ -223,50 +91,6 @@
           "resume_status": "no-checkpoint",
           "resume_succeeded": false,
           "stale_reanchored": false,
-          "task_id": "schema_mismatch_version",
-          "variant": "resume_disabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "schema_mismatch",
-          "false_accept": false,
-          "final_answer": "missing recovery state.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": false,
-          "stale_reanchored": false,
-          "task_id": "schema_mismatch_version",
-          "variant": "resume_disabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "schema_mismatch",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": true,
-          "stale_reanchored": false,
-          "task_id": "schema_mismatch_missing",
-          "variant": "resume_disabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "schema_mismatch",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": true,
-          "stale_reanchored": false,
-          "task_id": "schema_mismatch_missing",
-          "variant": "resume_disabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "schema_mismatch",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": true,
-          "stale_reanchored": false,
           "task_id": "schema_mismatch_missing",
           "variant": "resume_disabled",
           "workspace_drift_detected": false
@@ -279,50 +103,6 @@
           "resume_succeeded": false,
           "stale_reanchored": false,
           "task_id": "partial_success_shell",
-          "variant": "resume_disabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "partial_success_recovery",
-          "false_accept": false,
-          "final_answer": "missing recovery state.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": false,
-          "stale_reanchored": false,
-          "task_id": "partial_success_shell",
-          "variant": "resume_disabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "partial_success_recovery",
-          "false_accept": false,
-          "final_answer": "missing recovery state.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": false,
-          "stale_reanchored": false,
-          "task_id": "partial_success_shell",
-          "variant": "resume_disabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "partial_success_recovery",
-          "false_accept": false,
-          "final_answer": "missing recovery state.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": false,
-          "stale_reanchored": false,
-          "task_id": "partial_success_tool",
-          "variant": "resume_disabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "partial_success_recovery",
-          "false_accept": false,
-          "final_answer": "missing recovery state.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": false,
-          "stale_reanchored": false,
-          "task_id": "partial_success_tool",
           "variant": "resume_disabled",
           "workspace_drift_detected": false
         },
@@ -340,7 +120,7 @@
       ],
       "summary": {
         "resume_false_accept_rate": 0.0,
-        "resume_success_rate": 0.1,
+        "resume_success_rate": 0.0,
         "stale_reanchor_rate": 0.0,
         "workspace_drift_detection_rate": 0.0
       }
@@ -365,50 +145,6 @@
           "resume_status": "partial-stale",
           "resume_succeeded": true,
           "stale_reanchored": true,
-          "task_id": "checkpoint_resume_goal",
-          "variant": "resume_enabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "checkpoint_resume",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "partial-stale",
-          "resume_succeeded": true,
-          "stale_reanchored": true,
-          "task_id": "checkpoint_resume_goal",
-          "variant": "resume_enabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "checkpoint_resume",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "partial-stale",
-          "resume_succeeded": true,
-          "stale_reanchored": true,
-          "task_id": "checkpoint_resume_files",
-          "variant": "resume_enabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "checkpoint_resume",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "partial-stale",
-          "resume_succeeded": true,
-          "stale_reanchored": true,
-          "task_id": "checkpoint_resume_files",
-          "variant": "resume_enabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "checkpoint_resume",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "partial-stale",
-          "resume_succeeded": true,
-          "stale_reanchored": true,
           "task_id": "checkpoint_resume_files",
           "variant": "resume_enabled",
           "workspace_drift_detected": false
@@ -421,50 +157,6 @@
           "resume_succeeded": true,
           "stale_reanchored": true,
           "task_id": "partial_stale_single",
-          "variant": "resume_enabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "partial_stale",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "partial-stale",
-          "resume_succeeded": true,
-          "stale_reanchored": true,
-          "task_id": "partial_stale_single",
-          "variant": "resume_enabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "partial_stale",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "partial-stale",
-          "resume_succeeded": true,
-          "stale_reanchored": true,
-          "task_id": "partial_stale_single",
-          "variant": "resume_enabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "partial_stale",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "partial-stale",
-          "resume_succeeded": true,
-          "stale_reanchored": true,
-          "task_id": "partial_stale_multi",
-          "variant": "resume_enabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "partial_stale",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "partial-stale",
-          "resume_succeeded": true,
-          "stale_reanchored": true,
-          "task_id": "partial_stale_multi",
           "variant": "resume_enabled",
           "workspace_drift_detected": false
         },
@@ -497,50 +189,6 @@
           "resume_status": "workspace-mismatch",
           "resume_succeeded": true,
           "stale_reanchored": false,
-          "task_id": "workspace_mismatch_fingerprint",
-          "variant": "resume_enabled",
-          "workspace_drift_detected": true
-        },
-        {
-          "category": "workspace_mismatch",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "workspace-mismatch",
-          "resume_succeeded": true,
-          "stale_reanchored": false,
-          "task_id": "workspace_mismatch_fingerprint",
-          "variant": "resume_enabled",
-          "workspace_drift_detected": true
-        },
-        {
-          "category": "workspace_mismatch",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "workspace-mismatch",
-          "resume_succeeded": true,
-          "stale_reanchored": false,
-          "task_id": "workspace_mismatch_runtime",
-          "variant": "resume_enabled",
-          "workspace_drift_detected": true
-        },
-        {
-          "category": "workspace_mismatch",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "workspace-mismatch",
-          "resume_succeeded": true,
-          "stale_reanchored": false,
-          "task_id": "workspace_mismatch_runtime",
-          "variant": "resume_enabled",
-          "workspace_drift_detected": true
-        },
-        {
-          "category": "workspace_mismatch",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "workspace-mismatch",
-          "resume_succeeded": true,
-          "stale_reanchored": false,
           "task_id": "workspace_mismatch_runtime",
           "variant": "resume_enabled",
           "workspace_drift_detected": true
@@ -559,53 +207,9 @@
         {
           "category": "schema_mismatch",
           "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "schema-mismatch",
-          "resume_succeeded": true,
-          "stale_reanchored": false,
-          "task_id": "schema_mismatch_version",
-          "variant": "resume_enabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "schema_mismatch",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "schema-mismatch",
-          "resume_succeeded": true,
-          "stale_reanchored": false,
-          "task_id": "schema_mismatch_version",
-          "variant": "resume_enabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "schema_mismatch",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
+          "final_answer": "missing recovery state.",
           "resume_status": "no-checkpoint",
-          "resume_succeeded": true,
-          "stale_reanchored": false,
-          "task_id": "schema_mismatch_missing",
-          "variant": "resume_enabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "schema_mismatch",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": true,
-          "stale_reanchored": false,
-          "task_id": "schema_mismatch_missing",
-          "variant": "resume_enabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "schema_mismatch",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "no-checkpoint",
-          "resume_succeeded": true,
+          "resume_succeeded": false,
           "stale_reanchored": false,
           "task_id": "schema_mismatch_missing",
           "variant": "resume_enabled",
@@ -619,50 +223,6 @@
           "resume_succeeded": true,
           "stale_reanchored": true,
           "task_id": "partial_success_shell",
-          "variant": "resume_enabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "partial_success_recovery",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "partial-stale",
-          "resume_succeeded": true,
-          "stale_reanchored": true,
-          "task_id": "partial_success_shell",
-          "variant": "resume_enabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "partial_success_recovery",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "partial-stale",
-          "resume_succeeded": true,
-          "stale_reanchored": true,
-          "task_id": "partial_success_shell",
-          "variant": "resume_enabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "partial_success_recovery",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "partial-stale",
-          "resume_succeeded": true,
-          "stale_reanchored": true,
-          "task_id": "partial_success_tool",
-          "variant": "resume_enabled",
-          "workspace_drift_detected": false
-        },
-        {
-          "category": "partial_success_recovery",
-          "false_accept": false,
-          "final_answer": "recovery state restored.",
-          "resume_status": "partial-stale",
-          "resume_succeeded": true,
-          "stale_reanchored": true,
-          "task_id": "partial_success_tool",
           "variant": "resume_enabled",
           "workspace_drift_detected": false
         },
@@ -680,7 +240,7 @@
       ],
       "summary": {
         "resume_false_accept_rate": 0.0,
-        "resume_success_rate": 1.0,
+        "resume_success_rate": 0.9,
         "stale_reanchor_rate": 1.0,
         "workspace_drift_detection_rate": 1.0
       }

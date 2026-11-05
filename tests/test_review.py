@@ -1,7 +1,7 @@
 """审查子 agent（review.py）：交付前独立复查一轮、/review 命令、用量转发。
 
 问题：失败题里"在症状处兜底""漏改第二个文件""需求没覆盖全"占一半，主 agent 自己复查发现不了；
-现有的调查子 agent（delegate）让模型自己决定用不用，全部 SWE-bench 记录里一次都没被用过。
+现有的调查子 agent（investigate）让模型自己决定用不用，全部 SWE-bench 记录里一次都没被用过。
 改法：由 harness 在交付前强制派一个只读、上下文全新的审查子 agent，有问题交回主 agent，最多一轮。
 """
 
@@ -10,13 +10,13 @@ import subprocess
 
 import pytest
 
-from hh_agent_pro.agent import CodingAgent
-from hh_agent_pro.cli import _review_mode, build_arg_parser
-from hh_agent_pro.providers import FakeModelClient
-from hh_agent_pro.review import needs_review, parse_review, workspace_diff
-from hh_agent_pro.session_store import SessionStore
-from hh_agent_pro.streaming import UsageForwardingSink
-from hh_agent_pro.workspace import WorkspaceContext
+from jaxen.agent import CodingAgent
+from jaxen.cli import _review_mode, build_arg_parser
+from jaxen.providers import FakeModelClient
+from jaxen.review import needs_review, parse_review, workspace_diff
+from jaxen.session_store import SessionStore
+from jaxen.events import UsageForwardingSink
+from jaxen.workspace import WorkspaceContext
 
 
 @pytest.fixture
@@ -32,7 +32,7 @@ def make_agent(root, outputs, review=True):
     return CodingAgent(
         model_client=FakeModelClient(outputs),
         workspace=WorkspaceContext.build(root, repo_root_override=root),
-        session_store=SessionStore(root / ".hh" / "sessions"),
+        session_store=SessionStore(root / ".jaxen" / "sessions"),
         approval_policy="auto", max_steps=8, review_changes=review,
     )
 
@@ -64,14 +64,14 @@ def test_parse_review(answer, verdict, issues):
 def test_workspace_diff_includes_new_files_and_skips_agent_state(repo):
     (repo / "calc.py").write_text("def average(v):\n    return sum(v) / len(v)\n", encoding="utf-8")
     (repo / "new_helper.py").write_text("X = 1\n", encoding="utf-8")
-    (repo / ".hh").mkdir()
-    (repo / ".hh" / "state.json").write_text("{}", encoding="utf-8")
+    (repo / ".jaxen").mkdir()
+    (repo / ".jaxen" / "state.json").write_text("{}", encoding="utf-8")
     (repo / "__pycache__").mkdir()
     (repo / "__pycache__" / "calc.cpython-312.pyc").write_bytes(b"\x00\x01bytecode")
     (repo / "logo.png").write_bytes(b"\x89PNG\x00\x00")
     diff = workspace_diff(repo)
     assert "-    return sum(v) / len(v) + 1" in diff and "new file: new_helper.py" in diff
-    assert ".hh" not in diff
+    assert ".jaxen" not in diff
     assert "__pycache__" not in diff and "logo.png" not in diff  # 编译产物和二进制文件不交给审查者
 
 
@@ -164,15 +164,15 @@ def test_auto_mode_skips_docs_only_changes(repo):
 
 
 def test_subagent_envelope_carries_usage_and_spills_long_results(repo):
-    from hh_agent_pro.subagent import MAX_INLINE_RESULT_CHARS
+    from jaxen.subagent import MAX_INLINE_RESULT_CHARS
 
     long_answer = "finding " * (MAX_INLINE_RESULT_CHARS // 4)
     agent = make_agent(repo, ["<final>" + long_answer + "</final>"])
-    result = agent.spawn_delegate({"task": "survey", "max_steps": 3})
-    assert result.startswith("<subagent-result>") and "<kind>delegate</kind>" in result
+    result = agent.spawn_investigation({"task": "survey", "max_steps": 3})
+    assert result.startswith("<subagent-result>") and "<kind>investigate</kind>" in result
     assert "<duration-ms>" in result and "<requests>" in result
     path = result.split("<output-file>")[1].split("</output-file>")[0]
-    assert path.startswith(".hh/subagents/delegate-")
+    assert path.startswith(".jaxen/subagents/investigate-")
     assert (repo / path).read_text(encoding="utf-8").strip() == long_answer.strip()  # 完整结果在文件里
     assert len(result) < len(long_answer)  # 信封里只放截断版和摘要
 
@@ -188,7 +188,7 @@ def test_child_only_gets_the_parents_remaining_time(repo):
 
 def test_review_command_over_jsonl_is_a_completed_turn_with_a_message(repo):
     import io
-    from hh_agent_pro.jsonl_protocol import process_request
+    from jaxen.jsonl_protocol import process_request
 
     (repo / "calc.py").write_text("def average(v):\n    return sum(v) / len(v)\n", encoding="utf-8")
     stream = io.StringIO()
@@ -212,7 +212,7 @@ def test_child_runs_are_marked_with_depth_so_analysis_can_skip_them(repo):
     agent = make_agent(repo, [PATCH, "<final>fixed</final>", "<final>VERDICT: approve</final>"])
     agent.ask("fix average")
     runs = []
-    for trace in sorted((repo / ".hh" / "runs").glob("*/trace.jsonl")):
+    for trace in sorted((repo / ".jaxen" / "runs").glob("*/trace.jsonl")):
         events = [json.loads(line) for line in trace.read_text(encoding="utf-8").splitlines() if line.strip()]
         runs.append(events)
     depths = sorted(next(e for e in events if e["event"] == "run_started")["depth"] for events in runs)

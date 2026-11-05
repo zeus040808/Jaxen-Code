@@ -11,11 +11,11 @@ import subprocess
 
 import pytest
 
-from hh_agent_pro.agent import CodingAgent
-from hh_agent_pro.agent_loop import agent_source_hash
-from hh_agent_pro.providers import FakeModelClient
-from hh_agent_pro.session_store import SessionStore
-from hh_agent_pro.workspace import WorkspaceContext
+from jaxen.agent import CodingAgent
+from jaxen.agent_loop import agent_source_hash
+from jaxen.providers import FakeModelClient
+from jaxen.session_store import SessionStore
+from jaxen.workspace import WorkspaceContext
 
 LONG_LINE = "x = 1  # " + "padding " * 200  # 远超 trace 的 500 字符截断
 
@@ -46,7 +46,7 @@ def make_agent(root, model, review=False):
     return CodingAgent(
         model_client=model,
         workspace=WorkspaceContext.build(root, repo_root_override=root),
-        session_store=SessionStore(root / ".hh" / "sessions"),
+        session_store=SessionStore(root / ".jaxen" / "sessions"),
         approval_policy="auto", max_steps=8, review_changes=review,
     )
 
@@ -102,7 +102,7 @@ def test_run_started_records_version_config_and_parent(repo):
     agent = make_agent(repo, model, review=True)
     agent.ask("fix average")
     starts = {}
-    for trace in (repo / ".hh" / "runs").glob("*/trace.jsonl"):
+    for trace in (repo / ".jaxen" / "runs").glob("*/trace.jsonl"):
         event = next(e for e in read_jsonl(trace) if e["event"] == "run_started")
         starts[trace.parent.name] = event
     main = next(e for e in starts.values() if e["depth"] == 0)

@@ -99,7 +99,7 @@ async function applySetup(task: EvalTask, t: TestContext) {
   if (task.setup?.kind === "stale_memory") {
     const timestamp = "2026-01-01T00:00:00+00:00";
     await t.sandbox.writeText(
-      ".hh/memory/curated.json",
+      ".jaxen/memory/curated.json",
       JSON.stringify({
         schema_version: 2,
         revision: 1,
@@ -131,7 +131,7 @@ export function definePilotEval(taskId: string) {
 
   return defineEval({
     description: `[${task.eval_unit}] ${task.id}: ${task.capability}`,
-    tags: ["hh-agent", "pilot", task.suite, task.eval_unit, `risk:${task.risk}`],
+    tags: ["jaxen", "pilot", task.suite, task.eval_unit, `risk:${task.risk}`],
     timeoutMs: task.budgets.timeout_ms,
     metadata: {
       taskId: task.id,
@@ -145,14 +145,14 @@ export function definePilotEval(taskId: string) {
       risk: task.risk,
       fixtureDigest: task.fixture_digest,
     },
-    diff: { ignore: [".hh/**", "**/__pycache__/**", "**/*.pyc"] },
+    diff: { ignore: [".jaxen/**", "**/__pycache__/**", "**/*.pyc"] },
     async test(t) {
       await t.sandbox.uploadDirectory(task.fixture_repo, undefined, {
         ignore: ["**/__pycache__/**", "**/*.pyc", "**/*.pyo"],
       });
       await applySetup(task, t);
       await t.sandbox.writeText(
-        "/tmp/hh-eval-policy.json",
+        "/tmp/jaxen-eval-policy.json",
         JSON.stringify({
           approval: task.approval_policy,
           readOnly: task.read_only,
@@ -163,7 +163,7 @@ export function definePilotEval(taskId: string) {
       );
       if (String(t.flags.provider ?? "deepseek") === "fake") {
         await t.sandbox.writeText(
-          "/tmp/hh-eval-fake-script.json",
+          "/tmp/jaxen-eval-fake-script.json",
           JSON.stringify({ taskId, outputs }),
         );
       }
@@ -174,7 +174,7 @@ export function definePilotEval(taskId: string) {
       await t.sandbox.runCommandOrThrow("python3", [
         "/tmp/snapshot_workspace.py",
         "--workspace", t.sandbox.workdir,
-        "--output", "/tmp/hh-before.json",
+        "--output", "/tmp/jaxen-before.json",
       ]);
 
       const turn = await t.send(task.prompt);
@@ -185,17 +185,17 @@ export function definePilotEval(taskId: string) {
         "evals/niceeval/criteria/hard_grader.py",
         "/tmp/hard_grader.py",
       );
-      await t.sandbox.writeText("/tmp/hh-task.json", JSON.stringify(task));
-      await t.sandbox.writeText("/tmp/hh-turn.json", JSON.stringify(turn.data ?? {}));
+      await t.sandbox.writeText("/tmp/jaxen-task.json", JSON.stringify(task));
+      await t.sandbox.writeText("/tmp/jaxen-turn.json", JSON.stringify(turn.data ?? {}));
       const grader = await t.sandbox.runCommand("python3", [
         "/tmp/hard_grader.py",
         "--workspace", t.sandbox.workdir,
-        "--before", "/tmp/hh-before.json",
-        "--task", "/tmp/hh-task.json",
-        "--turn", "/tmp/hh-turn.json",
+        "--before", "/tmp/jaxen-before.json",
+        "--task", "/tmp/jaxen-task.json",
+        "--turn", "/tmp/jaxen-turn.json",
       ]);
       if (grader.exitCode !== 0) {
-        throw new Error(`HH hard grader failed (exit=${grader.exitCode}): ${grader.stdout || grader.stderr}`);
+        throw new Error(`Jaxen hard grader failed (exit=${grader.exitCode}): ${grader.stdout || grader.stderr}`);
       }
       const result = JSON.parse(grader.stdout) as Record<string, JsonValue>;
       t.check(result.automated_gate_pass, isTrue("Python hard grader gate"));

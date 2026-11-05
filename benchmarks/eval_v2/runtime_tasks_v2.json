@@ -366,7 +366,7 @@
         {
           "id": "legacy_verifier",
           "type": "command",
-          "command": "python -c \"from pathlib import Path; assert 'alpha-guarded' in Path('sample.txt').read_text(encoding='utf-8'); assert 'path_escape' in ''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl'))\""
+          "command": "python -c \"from pathlib import Path; assert 'alpha-guarded' in Path('sample.txt').read_text(encoding='utf-8'); assert 'path_escape' in ''.join(p.read_text(encoding='utf-8') for p in Path('.jaxen/runs').glob('*/trace.jsonl'))\""
         }
       ],
       "reference_solution": "builtin:runtime/path_escape_recovery",
@@ -413,7 +413,7 @@
         {
           "id": "legacy_verifier",
           "type": "command",
-          "command": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'repeat-guarded' in Path('sample.txt').read_text(encoding='utf-8'); assert 'tool_cache_hit' in traces\""
+          "command": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.jaxen/runs').glob('*/trace.jsonl')); assert 'repeat-guarded' in Path('sample.txt').read_text(encoding='utf-8'); assert 'tool_cache_hit' in traces\""
         }
       ],
       "reference_solution": "builtin:runtime/repeated_read_recovery",
@@ -456,7 +456,7 @@
         {
           "id": "legacy_verifier",
           "type": "command",
-          "command": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'context_reduction' in traces\""
+          "command": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.jaxen/runs').glob('*/trace.jsonl')); assert 'context_reduction' in traces\""
         }
       ],
       "reference_solution": "builtin:runtime/context_reduction_checkpoint",
@@ -505,7 +505,7 @@
         {
           "id": "legacy_verifier",
           "type": "command",
-          "command": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'freshness_mismatch' in traces\""
+          "command": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.jaxen/runs').glob('*/trace.jsonl')); assert 'freshness_mismatch' in traces\""
         }
       ],
       "reference_solution": "builtin:runtime/freshness_reanchor_resume",
@@ -552,7 +552,7 @@
         {
           "id": "legacy_verifier",
           "type": "command",
-          "command": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.hh/runs').glob('*/trace.jsonl')); assert 'runtime_identity_mismatch' in traces\""
+          "command": "python -c \"from pathlib import Path; traces=''.join(p.read_text(encoding='utf-8') for p in Path('.jaxen/runs').glob('*/trace.jsonl')); assert 'runtime_identity_mismatch' in traces\""
         }
       ],
       "reference_solution": "builtin:runtime/workspace_mismatch_resume",
@@ -598,7 +598,7 @@
         {
           "id": "legacy_verifier",
           "type": "command",
-          "command": "python -c \"from pathlib import Path; memory=Path('.hh/memory/curated.json').read_text(encoding='utf-8'); assert 'Preserve benchmark regression artifacts' in memory\""
+          "command": "python -c \"from pathlib import Path; memory=Path('.jaxen/memory/long_term.json').read_text(encoding='utf-8'); assert 'Preserve benchmark regression artifacts' in memory\""
         }
       ],
       "reference_solution": "builtin:runtime/durable_promotion_accept",
@@ -641,7 +641,7 @@
         {
           "id": "legacy_verifier",
           "type": "command",
-          "command": "python -c \"import json; from pathlib import Path; session=json.loads(next(Path('.hh/sessions').glob('*.json')).read_text(encoding='utf-8')); memory=json.dumps(session.get('memory', {}), ensure_ascii=False); assert 'sk-benchmark-secret' not in memory\""
+          "command": "python -c \"import json; from pathlib import Path; session=json.loads(next(Path('.jaxen/sessions').glob('*.json')).read_text(encoding='utf-8')); memory=json.dumps(session.get('memory', {}), ensure_ascii=False); assert 'sk-benchmark-secret' not in memory\""
         }
       ],
       "reference_solution": "builtin:runtime/durable_promotion_reject",

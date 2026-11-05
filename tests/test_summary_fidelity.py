@@ -1,6 +1,6 @@
 """摘要保真度评测的判分逻辑（不调模型）：关键信息抽取、命中、编造路径。"""
 
-from hh_agent_pro.evaluation.summary_fidelity import grade, key_facts, to_history
+from jaxen.evaluation.summary_fidelity import grade, key_facts, to_history
 
 MESSAGES = [
     {"role": "user", "content": "Fix the bug\n\n<system-reminder>\nprogress\n</system-reminder>"},

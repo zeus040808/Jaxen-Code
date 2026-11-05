@@ -25,11 +25,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from hh_agent_pro.cli import _build_model_client
-from hh_agent_pro.config import load_project_env
-from hh_agent_pro.run_store import RunStore
-from hh_agent_pro.agent import CodingAgent, SessionStore
-from hh_agent_pro.workspace import WorkspaceContext
+from jaxen.cli import _build_model_client
+from jaxen.config import load_project_env
+from jaxen.run_store import RunStore
+from jaxen.agent import CodingAgent, SessionStore
+from jaxen.workspace import WorkspaceContext
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SUITE_PATH = REPO_ROOT / "benchmarks" / "eval_v2" / "enterprise_tasks_v2.json"
@@ -168,7 +168,7 @@ def main(argv=None):
     task = load_task(args.task)
     budgets = task["budgets"]
 
-    with tempfile.TemporaryDirectory(prefix="hh-diagnose-") as temp_dir:
+    with tempfile.TemporaryDirectory(prefix="jaxen-diagnose-") as temp_dir:
         workspace_root = Path(temp_dir) / Path(task["fixture_repo"]).name
         shutil.copytree(REPO_ROOT / task["fixture_repo"], workspace_root)
 
@@ -179,8 +179,8 @@ def main(argv=None):
                 request_timeout=120, context_window=None,
             )),
             workspace=workspace,
-            session_store=SessionStore(workspace_root / ".hh" / "sessions"),
-            run_store=RunStore(workspace_root / ".hh" / "runs"),
+            session_store=SessionStore(workspace_root / ".jaxen" / "sessions"),
+            run_store=RunStore(workspace_root / ".jaxen" / "runs"),
             approval_policy=str(task.get("approval_policy", "auto")),
             read_only=bool(task.get("read_only", False)),
             max_steps=int(args.max_steps or budgets["max_steps"]),

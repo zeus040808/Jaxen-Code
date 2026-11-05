@@ -1,6 +1,6 @@
 """错误恢复故障注入评测作为门禁：静默失败必须为 0，非已知问题的场景必须全部符合预期。"""
 
-from hh_agent_pro.evaluation.fault_injection import SCENARIOS, run_scenario, run_suite
+from jaxen.evaluation.fault_injection import SCENARIOS, run_scenario, run_suite
 
 
 def test_fault_injection_suite_meets_expectations():

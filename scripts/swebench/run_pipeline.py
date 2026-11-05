@@ -2,7 +2,7 @@
 
     下载线程（并行）── 镜像就绪 ──▶ 队列 ──▶ 处理（串行）：
         gold 校验 ─ 官方补丁都过不了 → 记为 env_unusable，跳过
-                  └ 通过 → 跑 agent（run_hh_predictions.py）→ 官方判分 → 写一行结果
+                  └ 通过 → 跑 agent（run_jaxen_predictions.py）→ 官方判分 → 写一行结果
 
 处理串行是因为 agent 跑测试在 amd64 模拟环境里很吃 CPU；下载是 IO，和处理同时进行。
 已有结果的实例会跳过，可以随时中断后续跑。
@@ -128,7 +128,7 @@ def process(args, instance_id, results_path):
         log(f"{instance_id}: gold patch does not pass here -> skipped")
     else:
         command = [
-            args.swe_python, "-I", str(ROOT / "scripts/swebench/run_hh_predictions.py"),
+            args.swe_python, "-I", str(ROOT / "scripts/swebench/run_jaxen_predictions.py"),
             "--instance-ids", instance_id, "--run-name", args.run_name, "--out-dir", str(out_dir),
             "--model", args.model, "--provider", args.provider,
             "--review", args.review,
@@ -180,7 +180,7 @@ def main():
     parser.add_argument("--image-source", choices=sorted(IMAGE_SOURCES), default="dockerhub",
                         help="Where to pull instance images from; images are re-tagged with the official name.")
     parser.add_argument("--max-total-tokens", type=int, default=None)
-    parser.add_argument("--agent-src", default=None, help="传给 run_hh_predictions.py：挂进容器的 agent 代码目录")
+    parser.add_argument("--agent-src", default=None, help="传给 run_jaxen_predictions.py：挂进容器的 agent 代码目录")
     parser.add_argument("--infra-retries", type=int, default=2,
                         help="agent 因模型接口不可用（model_error）结束时，自动重跑几次（默认 2）")
     parser.add_argument("--infra-wait", type=int, default=120, help="自动重跑前等待的秒数（默认 120）")

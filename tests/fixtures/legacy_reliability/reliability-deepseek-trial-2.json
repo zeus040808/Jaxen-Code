@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "artifact_type": "hh-agent-reliability-v1",
+  "artifact_type": "jaxen-reliability-v1",
   "captured_at": "2026-08-18T07:49:15.370717+00:00",
-  "suite_id": "hh-agent-reliability-v1",
+  "suite_id": "jaxen-reliability-v1",
   "suite_path": "benchmarks\\reliability_tasks_v1.json",
   "provider": "deepseek",
   "model": "deepseek-v4-pro",

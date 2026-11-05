@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from hh_agent_pro.evaluation.enterprise_report_v2 import (
+from jaxen.evaluation.enterprise_report_v2 import (
     build_enterprise_summary,
     load_business_feedback,
     load_deterministic_results,
@@ -23,18 +23,18 @@ from hh_agent_pro.evaluation.enterprise_report_v2 import (
     validate_trial_rows,
     write_enterprise_outputs,
 )
-from hh_agent_pro.evaluation.evaluator import run_harness_regression_v2
-from hh_agent_pro.evaluation.metrics import (
+from jaxen.evaluation.evaluator import run_harness_regression_v2
+from jaxen.evaluation.deterministic_suites import (
     run_security_regression_v1,
     run_tool_contract_regression_v1,
 )
-from hh_agent_pro.evaluation.schema_v2 import load_task_suite_v2
+from jaxen.evaluation.schema_v2 import load_task_suite_v2
 
 
 EXPERIMENTS = {
-    "precheck": ("hh-agent-enterprise-fake", "fake", "scripted-eval"),
-    "nightly": ("hh-agent-nightly", "deepseek", "deepseek-v4-pro"),
-    "release": ("hh-agent-release", "deepseek", "deepseek-v4-pro"),
+    "precheck": ("jaxen-enterprise-fake", "fake", "scripted-eval"),
+    "nightly": ("jaxen-nightly", "deepseek", "deepseek-v4-pro"),
+    "release": ("jaxen-release", "deepseek", "deepseek-v4-pro"),
 }
 
 
@@ -161,7 +161,7 @@ def main():
 
     tasks = load_task_suite_v2("benchmarks/eval_v2/enterprise_tasks_v2.json")["tasks"]
     env = dict(os.environ)
-    env["HH_EVAL_RUN_KEY"] = run_key
+    env["JAXEN_EVAL_RUN_KEY"] = run_key
     base_command = [
         "pnpm",
         "exec",

@@ -12,7 +12,7 @@
 | P1-a | 编辑工具：覆盖前必须先读、读后被改则拒绝、编辑返回 diff、`read_file` 默认 2000 行并按整行截断、新增 `glob` | `tool_executor.py`、`tools.py` | `test_edit_tools.py` |
 | P1-c | 交付门禁只提醒一次，之后放行并照实披露；不可重试的失败不再算阻塞 | `agent_loop.py`、`agent.py` | `test_delivery_gate_deadlock.py` |
 | P1-b | 一轮多个工具调用：2~4 个只读并发，其余按顺序执行，上限 8 个 | `agent_loop.py`、`agent.py` | `test_sequential_batch.py` |
-| P1-e | 会话内轻量 todo（`todo_write`，整体替换） | `task_state.py`、`tools.py` | `test_todo_tool.py` |
+| P1-e | 会话内轻量 todo（`todo_write`，整体替换） | `progress.py`、`tools.py` | `test_todo_tool.py` |
 | P1-d | `--toolset core|full`；系统提示只讲已暴露工具的规则 | `agent.py`、`tools.py`、`prompt_prefix.py`、`cli.py` | `test_toolset.py` |
 
 ## 关键设计取舍
@@ -77,8 +77,8 @@
 
 | 改动 | 之前 | 之后 | 回归测试 |
 |---|---|---|---|
-| 验证门禁 | "改了代码没跑通测试"阻止交付；识别靠正则，`cd x && pytest`、复现脚本都算没验证（SWE-bench 冒烟误报 `incomplete_delivery`） | 只在末尾提醒里显示 `Code verification: pending test`，不阻止交付；开头的 `cd … &&` 可识别，`; true`、`|| true` 这类能掩盖失败的写法仍不算 | `test_core_capacity.py`、`test_delegate_and_verification.py` |
-| 子 agent | 默认 3 步，只够读两三个文件 | 默认 20 步、上限 30，沿用主 agent 的总时长；工具说明与提示规则明确"大范围只读调查交给它，主上下文保持精简"；仍只读，编辑与集成由主 agent 负责 | `test_delegate_and_verification.py` |
+| 验证门禁 | "改了代码没跑通测试"阻止交付；识别靠正则，`cd x && pytest`、复现脚本都算没验证（SWE-bench 冒烟误报 `incomplete_delivery`） | 只在末尾提醒里显示 `Code verification: pending test`，不阻止交付；开头的 `cd … &&` 可识别，`; true`、`|| true` 这类能掩盖失败的写法仍不算 | `test_core_capacity.py`、`test_investigate_and_verification.py` |
+| 子 agent | 默认 3 步，只够读两三个文件 | 默认 20 步、上限 30，沿用主 agent 的总时长；工具说明与提示规则明确"大范围只读调查交给它，主上下文保持精简"；仍只读，编辑与集成由主 agent 负责 | `test_investigate_and_verification.py` |
 | 请求重试 | 只对 5xx 重试 3 次、间隔 0.5 秒；429、超时、流中断直接让任务失败 | 429/408/409/425/5xx/529、超时、连接错误、流读到一半中断都按指数退避加抖动重试，最多 6 次、单次最长 60 秒，优先遵守 `Retry-After`；400/401/402/403/404 立即失败；重试过程在终端显示 | `test_model_retry.py` |
 
 验证：`pytest` 231 passed；确定性回归 runtime / tool-contract / security 均 100%；pyflakes 干净。
@@ -116,7 +116,7 @@ django 镜像（6649 个文件）实测：`search` files 模式 1.2 秒、count 
 原因同上：一次失败要等"同一个动作后来成功"才算解决，而错误的路径永远不会成功。
 
 没有沿用上次"改成不可重试"的做法：`retryable` 会展示给模型（"改好参数可以重试"对参数错误是正确提示），也被用来判断重复失败。
-改为调整"什么算已解决"：**只读工具的 `invalid_arguments`，之后任意一次工具调用成功就算已解决**（`task_state.superseded_by_progress`，
+改为调整"什么算已解决"：**只读工具的 `invalid_arguments`，之后任意一次工具调用成功就算已解决**（`progress.superseded_by_progress`，
 任务状态和工具执行器两处共用）。两条原有保护不变，都有测试守着：
 
 - 失败之后一次成功都没有就说"完成"：仍会被拦下（`test_extensions.py::test_tool_failure_feedback_is_structured_and_defers_false_final`）。
@@ -165,7 +165,7 @@ AgentLoop 记为 `model_error`，前面 18 轮、65 万 token 的进度全部作
 这是运行时出错（`tool_failed`，Errno 2），不是参数校验失败（`invalid_arguments`），不适用修复二的规则，一直挂到交付，
 被提醒一次后强制交付成 `incomplete_delivery`。
 
-改法（`task_state.superseded_by_progress`，一行）：只读工具的 `tool_failed` 和 `invalid_arguments` 同样处理——之后有任意一次
+改法（`progress.superseded_by_progress`，一行）：只读工具的 `tool_failed` 和 `invalid_arguments` 同样处理——之后有任意一次
 工具调用成功就算已解决；失败之后一次成功都没有就说"完成"，仍然拦下。会改东西的 shell 命令（测试命令）和修改类工具不受影响：
 测试失败不能被一次成功的读取"绕过去"。
 回归测试：`test_core_capacity.py::test_failed_read_only_search_does_not_block_delivery`（修复前失败）、
@@ -178,7 +178,7 @@ AgentLoop 记为 `model_error`，前面 18 轮、65 万 token 的进度全部作
 |---|---|---|
 | 完整对话记录 | 每个 run 目录新增 `transcript.jsonl`：每轮 `request`（`kept_messages` 条沿用上一轮 + `new_messages`；system 变了才重写）、`response`（原始返回、思考内容、`finish_reason`）、`model_error`、`final`。按 kept + new 逐轮能还原模型收到的全部消息，包括工具结果全文、注入的运行时提示和摘要；只写增量，文件大小随轮数线性增长 | `agent_loop._transcript_request/_transcript_response`、`run_store.append_transcript` |
 | 思考内容 | provider 把 `reasoning_content` 存到 `last_reasoning_content`，只进 transcript，不进 UI 和 trace | `providers/openai_chat.py` |
-| 版本和配置 | `run_started` 新增 `provider`、`model`、`agent_version`（hh_agent_pro 全部 .py 的内容哈希，评测容器里没有 .git、未提交改动也能区分）、`config`（步数、输出上限、时长、审查档位、工具集） | `agent_loop.agent_source_hash` |
+| 版本和配置 | `run_started` 新增 `provider`、`model`、`agent_version`（jaxen 全部 .py 的内容哈希，评测容器里没有 .git、未提交改动也能区分）、`config`（步数、输出上限、时长、审查档位、工具集） | `agent_loop.agent_source_hash` |
 | 父子 run 配对 | 子 agent（调查 / 审查）的 `run_started` 记 `parent_run_id` | `agent.readonly_child` |
 
 transcript 同样经过 `redact_artifact` 脱敏（环境变量里的密钥替换掉）。
@@ -220,7 +220,7 @@ trace 完整性的其余补充：
 | 缺口 | 做法 | 位置 |
 |---|---|---|
 | `egress_denied` 一直是 0 | shell 子进程继承 `HTTP(S)_PROXY`、`NO_PROXY`（大小写两种）：评测里 agent 的 pip/curl 会经过出口代理、被拒绝并计数；公司网络里日常用 pip 也靠它。密钥仍不继承 | `agent.DEFAULT_SHELL_ENV_ALLOWLIST`；测试 `test_eval_isolation.py::test_shell_commands_inherit_proxy_but_not_secrets` |
-| 同一道题多次运行的 trace 混在一起 | 评测 trace 改存到 `traces/<运行名>/<实例>/`；读取时新布局优先、没有就退回旧的 `traces/<实例>/` | `run_hh_predictions.py`、`localization_metrics.instance_trace_dir` |
+| 同一道题多次运行的 trace 混在一起 | 评测 trace 改存到 `traces/<运行名>/<实例>/`；读取时新布局优先、没有就退回旧的 `traces/<实例>/` | `run_jaxen_predictions.py`、`localization_metrics.instance_trace_dir` |
 | 补丁、失败测试、trace 分散三处 | `scripts/swebench/trace_report.py`：整批每题一行的模块触发统计（写出 `<运行名>.trace-report.json`）；`--instance` 输出单题时间线（版本配置、逐步工具调用、关键事件、失败的隐藏测试、transcript 位置） | 测试 `tests/test_trace_report.py` |
 
 验证（第五轮全部改动）：`pytest` 321 passed、4 skipped；确定性回归均 100%；pyflakes 干净。
@@ -240,11 +240,26 @@ trace 完整性的其余补充：
 
 另外两项（同日，压缩评测与 transcript 复盘发现）：
 
-- **search / glob / repo_map 会搜到 agent 自己的 `.hh/`**：git 仓库里用 `git ls-files -co` 列文件，未跟踪文件也会列出，
-  目标仓库的 `.gitignore` 不认识 `.hh`。SWE-bench transcript 里出现过 search 结果是 `.hh/runs/.../run_state.json`。
+- **search / glob / repo_map 会搜到 agent 自己的 `.jaxen/`**：git 仓库里用 `git ls-files -co` 列文件，未跟踪文件也会列出，
+  目标仓库的 `.gitignore` 不认识 `.jaxen`。SWE-bench transcript 里出现过 search 结果是 `.jaxen/runs/.../run_state.json`。
   改为对 git 列出的文件也按忽略名单过滤（`tools._project_files`）；回归测试 `tests/test_code_search.py::test_search_glob_and_repo_map_skip_the_agent_state_dir_in_git_repos`。
 - **兜底裁剪丢掉长请求的后半段**：见 [压缩评测](../evaluation/context-compaction.md)。裁剪后请求全文不在了，留出位置重新裁一次，
   把全文放回末尾提醒（`context_manager.prepare`）。
 - **摘要请求被模型当成对话接着写**：真实模型评测 28 次摘要只有 50% 合格，29% 输出工具调用和假的文件内容却被当成摘要接受。
   改为原文包标签 + 结尾指令、输出上限 16384、输出校验、同一运行失败后不重试；复测 28/28 合格。见 [压缩评测](../evaluation/context-compaction.md)。
+
+## 第七轮：改名 Jaxen 与概念边界整理（2026-11-05）
+
+- 项目改名：包 `jaxen`（网页界面 `jaxen.ui`），命令 `python -m jaxen`，环境变量前缀 `JAXEN_*`，状态目录 `.jaxen/`；
+  评测数据里被摘要钉住的标识和 `artifacts/` 里的证据文件保持原样。
+- 长短任务拆开：进度账本 `ProgressTracker`（原 `TaskState`）只管当前目标；长任务待办 `Backlog`（原项目任务）跨会话，
+  **不再拦当前请求的交付**；`record_evidence` 改为 `record_claim` 归入账本。
+- 定时提示改为用户功能：模型工具 `schedule_cron` 等删除，改为 CLI 的 `/schedule` `/schedules` `/unschedule`，
+  到点由 CLI 直接 `agent.ask(指令)`，agent 不再在循环里处理定时队列。
+- 其他改名：`delegate` → `investigate`，`WorkingMemory` → `WorkingSet`（`agent.memory` → `agent.working_set`），
+  `CuratedMemoryStore` / `DurableMemoryLearner` → `LongTermMemory` / `LongTermMemoryLearner`，`EvidenceLedger` → `SourceEvidence`，
+  后台 task → job，`streaming.py` → `events.py`，`evaluation/metrics.py` → `evaluation/deterministic_suites.py`；去掉 13 个文件的 BOM。
+- 改名过程中发现并修复 2 处"字段改了名、读取处还用旧名"的静默错误（检查点的最近观察、恢复会话时的工作集），补了回归测试。
+
+完整对照表见 [概念与模块地图](module-map.md)。
 

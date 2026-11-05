@@ -3,13 +3,13 @@ from pathlib import Path
 
 import pytest
 
-from hh_agent_pro.evaluation.reliability import (
+from jaxen.evaluation.reliability import (
     analyze_trace,
     classify_row,
     load_reliability_suite,
     summarize_human_review,
 )
-from hh_agent_pro.evaluation.schema_v2 import (
+from jaxen.evaluation.schema_v2 import (
     load_task_suite_v2,
     replay_legacy_artifacts,
 )
@@ -78,7 +78,7 @@ def test_analyze_trace_counts_failed_repeated_and_overlapping_calls():
     assert metrics["run_duration_ms"] == 500
     assert metrics["background_task_starts"] == 1
     assert metrics["background_result_events"] == 0
-    assert metrics["uncollected_background_tasks"] == 1
+    assert metrics["uncollected_background_jobs"] == 1
 
 
 def _base_row(**overrides):

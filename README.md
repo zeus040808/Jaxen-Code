@@ -6,8 +6,7 @@
 这是学习兼求职作品集项目，参考了 Claude Code 的设计。工具系统、上下文管理、交付门禁和审查子 agent 都是自己写的，
 没有套用 agent 框架。目标是每个机制都能讲清楚原理和取舍。
 
-> 代码包名 `hh_agent_pro` / `hh_agent_ui`、环境变量 `HH_*`、状态目录 `.hh/` 沿用旧名 HH Agent Pro，
-> 对外显示的名字（命令行、网页界面）是 **Jaxen**。
+> 包名 `jaxen`（网页界面 `jaxen.ui`），环境变量前缀 `JAXEN_*`，运行时状态目录 `.jaxen/`。
 
 ## 当前成绩
 
@@ -36,7 +35,7 @@ CodingAgent ── 持有模型、工具、会话状态
         │
 AgentLoop ── 每轮：组装上下文 → 调模型 → 执行工具 → 更新任务状态 → 判断能否交付
    │            │                │                    │
-ContextManager  provider         ToolExecutor         TaskState + 审查子 agent
+ContextManager  provider         ToolExecutor         ProgressTracker + 审查子 agent
 稳定前缀+会话   OpenAI 兼容 /     参数校验→审批→执行    未解决的失败不算完成；
 +末尾提醒；     Anthropic        →裁剪→记账            改动交付前由只读子 agent 审一遍
 接近上限才压缩
@@ -65,13 +64,13 @@ RunStore ── trace.jsonl（事件）/ transcript.jsonl（逐轮完整对话�
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 cp .env.example .env        # 填入 API key，.env 已被 git 忽略
-python -m hh_agent_pro      # 进入交互终端
+python -m jaxen      # 进入交互终端
 ```
 
 一次性提问：
 
 ```bash
-python -m hh_agent_pro "解释这个仓库的目录结构"
+python -m jaxen "解释这个仓库的目录结构"
 ```
 
 常用参数：
@@ -82,15 +81,18 @@ python -m hh_agent_pro "解释这个仓库的目录结构"
 | `--approval ask\|auto\|never` | 危险工具的审批策略 |
 | `--read-only` | 禁止一切写操作 |
 | `--review off\|auto\|always` | 交付前的审查子 agent，真实模型默认 auto |
-| `--toolset core\|full` | 工具集，默认 core |
+| `--toolset core\|full` | 工具集，默认 core；full 再加长任务待办、结论登记、长期记忆、技能 |
 | `--resume latest` | 恢复最近一次会话 |
 | `--jsonl` | 非交互机器协议，供评测和 UI 驱动 |
 
 网页界面（经同一个 JSONL 协议驱动 agent，和命令行共用一个核心）：
 
 ```bash
-python -m hh_agent_ui --cwd <要操作的仓库> --port 8765
+python -m jaxen.ui --cwd <要操作的仓库> --port 8765
 ```
+
+交互终端里的常用命令：`/backlog`（长任务待办）、`/schedule <cron 5 段> <指令>`（定时提示，`/schedules` 查看）、`/review`（只读审查当前改动）。
+概念和模块的关系见 [概念与模块地图](docs/architecture/module-map.md)。
 
 测试：
 
@@ -110,22 +112,22 @@ python -m pytest -q
 | SWE-bench Verified | 官方镜像 + 官方判分，隔离环境，流水线自动补跑接口故障 | 是 |
 
 SWE-bench 流水线：gold 补丁校验 → 在官方镜像里跑 agent → 官方 harness 判分，每题一行结果，可以中断续跑。
-对照实验统一用 git 标签 `eval-v3` 的代码。用法见 [SWE-bench 评测手册](docs/evaluation/swebench.md)。
+评测版本用 git 标签冻结，用法见 [SWE-bench 评测手册](docs/evaluation/swebench.md)。
 
 ## 目录结构
 
 ```text
-hh_agent_pro/        agent 本体
+jaxen/        agent 本体
 ├── agent.py         CodingAgent：装配能力、持有会话
 ├── agent_loop.py    单次任务的控制循环与停止条件
 ├── tool_executor.py 工具执行的总闸口
 ├── context_manager.py / prompt_prefix.py   上下文组装与压缩
-├── task_state.py    任务进度与交付门禁
+├── progress.py    任务进度与交付门禁
 ├── review.py / subagent.py                 审查子 agent
 ├── providers/       OpenAI 兼容、Anthropic、脚本化测试模型
 ├── memory/ skills/ services/               记忆、技能、后台服务
 └── run_store.py     运行工件落盘
-hh_agent_ui/         网页界面（服务端 + React 前端）
+jaxen/ui/         网页界面（服务端 + React 前端）
 scripts/swebench/    SWE-bench 流水线、隔离代理、定位指标、trace 复盘
 scripts/eval/        自建任务集评测
 benchmarks/ evals/   任务集与评测定义

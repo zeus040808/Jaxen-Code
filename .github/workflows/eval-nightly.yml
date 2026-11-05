@@ -10,8 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     env:
-      HH_DEEPSEEK_API_KEY: ${{ secrets.HH_DEEPSEEK_API_KEY }}
-      HH_DEEPSEEK_API_BASE: ${{ secrets.HH_DEEPSEEK_API_BASE }}
+      JAXEN_DEEPSEEK_API_KEY: ${{ secrets.JAXEN_DEEPSEEK_API_KEY }}
+      JAXEN_DEEPSEEK_API_BASE: ${{ secrets.JAXEN_DEEPSEEK_API_BASE }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -29,7 +29,7 @@ jobs:
           pnpm install --frozen-lockfile
       - name: Check required provider secret
         shell: bash
-        run: ': "${HH_DEEPSEEK_API_KEY:?HH_DEEPSEEK_API_KEY secret is required}"'
+        run: ': "${JAXEN_DEEPSEEK_API_KEY:?JAXEN_DEEPSEEK_API_KEY secret is required}"'
       - name: Run all real tasks three times
         run: >-
           python scripts/eval/run_eval_profile.py nightly
@@ -40,7 +40,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: hh-agent-nightly-eval
+          name: jaxen-nightly-eval
           path: |
             artifacts/eval-v2/
             artifacts/deterministic/harness-regression-v2.json

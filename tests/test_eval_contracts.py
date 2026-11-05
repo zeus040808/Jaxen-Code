@@ -1,4 +1,4 @@
-from hh_agent_pro.evaluation.metrics import (
+from jaxen.evaluation.deterministic_suites import (
     run_security_experiment_suite,
     run_tool_contract_experiment_suite,
 )

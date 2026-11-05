@@ -1,6 +1,6 @@
 # 上下文工程
 
-代码：`hh_agent_pro/context_manager.py`、`prompt_prefix.py`、`workspace.py`、`providers/base.py`。
+代码：`jaxen/context_manager.py`、`prompt_prefix.py`、`workspace.py`、`providers/base.py`。
 旧的"8 分区字符配额"设计与它的问题见 [history/context-management-v1.md](../history/context-management-v1.md)。
 
 ## 1. 核心原则

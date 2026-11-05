@@ -59,7 +59,7 @@ deepseek-flash 跑了 3 次都失败的 5 道题，换成 Claude Opus 4.8（公�
   自己抛错时也带上值；pylint 要求同时改图表、写出器、工具函数），这类题单靠更强的模型或更多规则都不够，
   可能需要"独立审查"一类的机制，也可能本身就超出了只看 issue 能推断的范围。
 - **Opus 没有出现找答案的行为**（同样的禁止规则）。
-- **接入方式**：新增 Anthropic Messages 兼容 provider（`hh_agent_pro/providers/anthropic_messages.py`），评测出口代理支持
+- **接入方式**：新增 Anthropic Messages 兼容 provider（`jaxen/providers/anthropic_messages.py`），评测出口代理支持
   转发白名单内的普通 HTTP（网关是 `http://`），代码与测试见 `tests/test_anthropic_provider.py`、`tests/test_eval_isolation.py`。
 
 ## 注意事项

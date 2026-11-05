@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "hh-agent-pro"
+name = "jaxen-code"
 version = "2.0.0"
 description = "从零实现的本地 coding agent harness，含可复现的企业式评测体系"
 readme = "README.md"
@@ -17,25 +17,25 @@ dependencies = [
 dev = ["pytest==9.1.0"]
 
 [project.scripts]
-hh = "hh_agent_pro.cli:main"
+jaxen = "jaxen.cli:main"
 
 [tool.setuptools]
 # evaluation/ 是评测工具，随包一起分发以便 CI 直接调用；
 # 它不参与 agent 运行时。
 packages = [
-    "hh_agent_pro",
-    "hh_agent_pro.memory",
-    "hh_agent_pro.skills",
-    "hh_agent_pro.services",
-    "hh_agent_pro.providers",
-    "hh_agent_pro.evaluation",
+    "jaxen",
+    "jaxen.memory",
+    "jaxen.skills",
+    "jaxen.services",
+    "jaxen.providers",
+    "jaxen.evaluation",
 ]
 
 [tool.setuptools.package-data]
 # 内置 skill（如审查清单 code-review）是 Markdown 文件，安装时要随包带上
-"hh_agent_pro.skills" = ["builtin/*/SKILL.md"]
+"jaxen.skills" = ["builtin/*/SKILL.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# 仓库根目录进 sys.path：测试要 import hh_agent_pro 与 scripts.eval（原先靠空的 tests/__init__.py 隐式实现）
+# 仓库根目录进 sys.path：测试要 import jaxen 与 scripts.eval（原先靠空的 tests/__init__.py 隐式实现）
 pythonpath = ["."]

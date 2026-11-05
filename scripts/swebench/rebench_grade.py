@@ -37,7 +37,7 @@ def grade(instance, patch, timeout):
     from swebench.harness.log_parsers.python import parse_log_pytest
 
     iid = instance["instance_id"]
-    container = f"hh-grade-{iid.lower().replace('__', '-')}"[:60]
+    container = f"jaxen-grade-{iid.lower().replace('__', '-')}"[:60]
     docker("rm", "-f", container)
     row = {"instance_id": iid}
     # --pull never：本地没有镜像（如构建失败）时立即报错，而不是去 Docker Hub 拉取——那边连不上会卡住整条流水线。

@@ -1,7 +1,7 @@
 # 2026-10-30 仓库整理记录
 
-目标：只保留有用内容，目录层次清晰。整理前对工作区做了完整备份（含 `.git`、`.hh`）。
-分三阶段，本次完成阶段一、二；阶段三（包结构重组、去掉版本号模块名、移除 `HH`
+目标：只保留有用内容，目录层次清晰。整理前对工作区做了完整备份（含 `.git`、`.jaxen`）。
+分三阶段，本次完成阶段一、二；阶段三（包结构重组、去掉版本号模块名、移除 `Jaxen`
 别名）单独进行。
 
 ## 删除
@@ -9,7 +9,7 @@
 | 内容 | 原因 |
 |---|---|
 | `.tmp/`、`.transcripts/`、`.pytest_cache/`、`.niceeval/`、所有 `__pycache__/` | 本地缓存与旧运行记录（已在 `.gitignore`） |
-| `.hh/` | agent 在本仓库的本地会话与运行记录，与项目代码无关 |
+| `.jaxen/` | agent 在本仓库的本地会话与运行记录，与项目代码无关 |
 | `artifacts/archive/`、`artifacts/reliability-runs/` | 过期评测证据 |
 | `artifacts/eval-v2/` 下 CORRECTIONS / PLAN_C / COMPLETE_SUMMARY 三份报告 | 结论已并入总报告或与之重复 |
 | `artifacts/eval-v2/p0-history-coding-20261030-junit.xml`、`trial-results-flash-ab-v2.jsonl` | 余额不足导致的残缺数据 / 没有对照组的半程 A/B |
@@ -25,11 +25,11 @@
 | `scripts/run_enterprise_eval_profile.py` | `scripts/eval/run_eval_profile.py` |
 | `scripts/run_deterministic_eval_gate.py` | `scripts/eval/run_deterministic_gate.py` |
 | `scripts/diagnose_coding_episode.py` | `scripts/eval/diagnose_episode.py` |
-| `scripts/run_hh_benchmarks.py` | `scripts/eval/run_fixed_benchmark.py` |
+| 根目录下的旧基准脚本 | `scripts/eval/run_fixed_benchmark.py` |
 | `scripts/run_memory_v2_comparison.py` | `scripts/eval/run_memory_ablation.py` |
 | `scripts/{build_grader_gold_set,summarize_human_review}.py` | `scripts/eval/` 下同名 |
 | `scripts/patch_niceeval_windows.py` | `scripts/dev/patch_niceeval_windows.py` |
-| `tests/test_hh_agent_pro_*.py`（8 个） | 去掉前缀，如 `test_jsonl_protocol.py`、`test_memory.py` |
+| `tests/test_jaxen_*.py`（8 个） | 去掉前缀，如 `test_jsonl_protocol.py`、`test_memory.py` |
 | `artifacts/archive/.../reliability-deepseek-trial-{1,2}.json` | `tests/fixtures/legacy_reliability/`（历史回放测试的数据） |
 | `artifacts/eval-v2/FINAL_REPORT_20260819_ZH.md` | `docs/results/2026-08-19-enterprise-eval.md` |
 | `docs/evaluation/{design-v2,schema-v2,runbook-v2,jsonl-protocol-v1}.md` | 去掉版本号 |
@@ -45,7 +45,7 @@
 - `benchmarks/eval_v2/{enterprise,runtime}_tasks_v2.json` 重新生成：只有 `generated_by`
   字段从旧脚本路径变成新路径，任务内容不变，但文件 SHA 随之变化。
 - 文档相对链接按新位置重写，并修好此前已失效的旧文件名链接，`docs/README.md` 重写。
-- `overview.md` 删除对不存在的 `hh_coder_agent` 的对比，更新默认步数与测试数。
+- `overview.md` 删除对已不存在的早期简化版 agent 的对比，更新默认步数与测试数。
 
 ## 验证
 
@@ -57,8 +57,8 @@ tool-contract / security 均 100%；`tsc --noEmit` 通过；文档坏链接 0。
 
 | 内容 | 处理 |
 |---|---|
-| `hh_agent_pro/runtime.py` | 只转发 3 个名字，删除；15 个测试改为从 `agent` / `session_store` 导入 |
-| 别名 `HH = CodingAgent` | 删除；`HH(...)`、`HH.parse`、`HH.from_session` 全部改为 `CodingAgent` |
+| `jaxen/runtime.py` | 只转发 3 个名字，删除；15 个测试改为从 `agent` / `session_store` 导入 |
+| 别名 `Jaxen = CodingAgent` | 删除；`Jaxen(...)`、`Jaxen.parse`、`Jaxen.from_session` 全部改为 `CodingAgent` |
 | `tests/__init__.py` | 空文件（只有 BOM），唯一作用是让 pytest 把仓库根放进 `sys.path`；改为在 `pyproject.toml` 显式写 `pythonpath = ["."]` 后删除 |
 | 35 个从未被调用的函数 | 4 个在 agent 运行时（`note_tool`、`render_memory_text` 两个转发别名，`relative_workspace_path`、`_extract_openai_text_from_sse`），31 个在 `evaluation/`（被删旧脚本留下的实验函数及其辅助函数，迭代 4 轮直到没有新孤儿） |
 | 22 处未使用的 import | 按 pyflakes 结果逐条删除 |

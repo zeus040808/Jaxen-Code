@@ -1,14 +1,14 @@
-# HH Agent Pro 上下文压缩与管理机制详解
+# Jaxen Code 上下文压缩与管理机制详解
 
 > 本文对应当前仓库实现，核心代码位于：
 >
-> - `hh_agent_pro/context_manager.py`
-> - `hh_agent_pro/evidence.py`
-> - `hh_agent_pro/agent_loop.py`
-> - `hh_agent_pro/agent.py`
-> - `hh_agent_pro/tool_executor.py`
-> - `hh_agent_pro/prompt_prefix.py`
-> - `hh_agent_pro/providers/clients.py`
+> - `jaxen/context_manager.py`
+> - `jaxen/source_evidence.py`
+> - `jaxen/agent_loop.py`
+> - `jaxen/agent.py`
+> - `jaxen/tool_executor.py`
+> - `jaxen/prompt_prefix.py`
+> - `jaxen/providers/clients.py`
 
 ## 1. 这次为什么必须修改
 
@@ -49,8 +49,8 @@ Task State / Run State 是控制数据，不是代码证据。
 SECTION_ORDER = (
     "prefix",
     "working_memory",
-    "durable_memory",
-    "task_state",
+    "long_term_memory",
+    "progress",
     "evidence",
     "relevant_memory",
     "history",
@@ -64,14 +64,14 @@ SECTION_ORDER = (
 |---|---|---:|---:|
 | `prefix` | Agent 身份、规则、运行环境、工具策略、仓库导航 | 根据 workspace 重建 | 工作区快照可压缩，核心规则受保护 |
 | `working_memory` | 当前任务摘要、最近文件、文件短摘要 | Session | 是 |
-| `durable_memory` | 用户偏好、项目约定、长期决策等稳定事实 | `.hh/memory` | 是 |
-| `task_state` | 目标、子任务、失败、开放问题、最小 Run 进度 | Session | 是，但优先级较高 |
+| `long_term_memory` | 用户偏好、项目约定、长期决策等稳定事实 | `.jaxen/memory` | 是 |
+| `progress` | 目标、子任务、失败、开放问题、最小 Run 进度 | Session | 是，但优先级较高 |
 | `evidence` | 当前任务读过的源文件结构、范围、freshness、证据 ID | Session 的 `source_evidence` | 是，但拥有较高保底预算 |
 | `relevant_memory` | 根据当前问题召回的最多三条相关记忆 | 每轮动态检索 | 优先压缩 |
 | `history` | 最近对话和工具事件，用于局部连续性 | Session / Archive | 强压缩 |
 | `current_request` | 当前用户请求及 final-only 指令 | 当前调用 | 永不裁剪 |
 
-这里最关键的变化是新增 `evidence`。它不是 Durable Memory，也不是 TaskState 中泛化的“任务进展证据”，所以 Session 字段明确命名为：
+这里最关键的变化是新增 `evidence`。它不是 Durable Memory，也不是 ProgressTracker 中泛化的“任务进展证据”，所以 Session 字段明确命名为：
 
 ```python
 self.session["source_evidence"]
@@ -95,14 +95,14 @@ self.session["source_evidence"]
 - 读取范围是否完整；
 - 文件是否在读取后发生变化。
 
-这些信息由 `hh_agent_pro/evidence.py` 的 `EvidenceLedger` 负责保存。
+这些信息由 `jaxen/source_evidence.py` 的 `SourceEvidence` 负责保存。
 
 ### 3.2 Evidence 的状态结构
 
 核心结构是：
 
 ```python
-def default_evidence_state():
+def default_source_evidence_state():
     return {
         "schema_version": "v1",
         "task_id": "",
@@ -118,7 +118,7 @@ def default_evidence_state():
 ```json
 {
   "id": "E2",
-  "path": "hh_agent_pro/features/memory.py",
+  "path": "jaxen/features/memory.py",
   "summary": "purpose=...; classes=DurableMemoryStore, LayeredMemory; functions=...; imports=...",
   "start": 1,
   "end": 200,
@@ -162,7 +162,7 @@ for node in tree.body:
 
 ```text
 purpose=Current task working set;
-classes=WorkingMemory;
+classes=WorkingSet;
 functions=render_context, set_file_summary;
 imports=.memory.policy, .workspace;
 excerpt_sha256=4ccf17...
@@ -188,7 +188,7 @@ excerpt_sha256=4ccf17...
 if paths:
     for item in paths:
         self._remember_source_evidence(name, item, args)
-    self.session["memory"] = self.memory.to_dict()
+    self.session["working_set"] = self.working_set.to_dict()
     self.session["source_evidence"] = self.source_evidence.to_dict()
     return
 ```
@@ -197,7 +197,7 @@ if paths:
 
 ```python
 summary = summarize_source_text(canonical, excerpt)
-self.memory.set_file_summary(canonical, summary)
+self.working_set.set_file_summary(canonical, summary)
 return self.source_evidence.record_file(
     canonical,
     summary,
@@ -247,8 +247,8 @@ DEFAULT_TOTAL_BUDGET = 24000
 DEFAULT_SECTION_BUDGETS = {
     "prefix": 5200,
     "working_memory": 850,
-    "durable_memory": 500,
-    "task_state": 950,
+    "long_term_memory": 500,
+    "progress": 950,
     "evidence": 5200,
     "relevant_memory": 700,
     "history": 7200,
@@ -270,10 +270,10 @@ Source Evidence 5.2K > History 7.2K 中任意单条工具结果 2.6K
 ```python
 DEFAULT_REDUCTION_ORDER = (
     "relevant_memory",
-    "durable_memory",
+    "long_term_memory",
     "working_memory",
     "history",
-    "task_state",
+    "progress",
     "evidence",
     "prefix",
 )
@@ -282,10 +282,10 @@ DEFAULT_REDUCTION_ORDER = (
 逐项解释：
 
 1. `relevant_memory` 是检索增强信息，和当前任务直接证据相比更容易舍弃；
-2. `durable_memory` 是长期背景，不一定与当前下一步有关；
+2. `long_term_memory` 是长期背景，不一定与当前下一步有关；
 3. `working_memory` 与 Evidence 有一定重复；
-4. `history` 的旧原文已由 Evidence/TaskState 提炼；
-5. `task_state` 决定是否还能安全交付，后期才压；
+4. `history` 的旧原文已由 Evidence/ProgressTracker 提炼；
+5. `progress` 决定是否还能安全交付，后期才压；
 6. `evidence` 是当前代码判断的核心依据，拥有较高保底；
 7. `prefix` 最后压，而且核心规则段受到特殊保护。
 
@@ -316,7 +316,7 @@ def _render_prefix(raw, budget):
 
 Evidence 不能使用普通的字符串截尾，因为那会只留下前几个文件、删除后面的文件。
 
-`EvidenceLedger.render(budget)` 的策略是：
+`SourceEvidence.render(budget)` 的策略是：
 
 1. 预算足够：显示完整结构摘要、读取范围和已观察调用；
 2. 预算不足：所有有效文件平均分配摘要额度；
@@ -467,7 +467,7 @@ Prefer list_files, read_file/read_files, search and runtime_info before run_shel
 ```json
 {
   "messages": [
-    {"role": "system", "content": "HH rules and runtime identity"},
+    {"role": "system", "content": "Jaxen rules and runtime identity"},
     {"role": "user", "content": "Current task context + source evidence"},
     {"role": "user", "content": "用户当前问题"},
     {
@@ -579,7 +579,7 @@ tool_steps = 真正执行了几次有效工具动作
 
 只有纯读取工具适合这种复用。以下调用即使参数相同，也可能因为外部状态变化而应该重新执行：
 
-- `complete_task`：之前可能缺 Evidence，后来已经补齐；
+- `backlog_complete`：之前可能缺 Evidence，后来已经补齐；
 - `run_shell`：命令结果可能变化；
 - `write_file/patch_file`：重复执行可能有副作用；
 - 定时任务和后台任务工具：状态会变化。
@@ -691,7 +691,7 @@ Thinking - decision 7/18 | tools 6/6 | final-only
 
 1. 清空本 Run 的读取缓存与失败计数；
 2. 设置 Working Memory 的任务摘要；
-3. `TaskState.begin()` 决定这是新任务还是延续任务；
+3. `ProgressTracker.begin()` 决定这是新任务还是延续任务；
 4. `SourceEvidence.begin(task_id)`：新逻辑任务则清空，延续任务则保留；
 5. 用户消息写入完整 Session History。
 
@@ -727,9 +727,9 @@ Thinking - decision 7/18 | tools 6/6 | final-only
 
 ```text
 Verified source evidence:
-- E1 hh_agent_pro/memory/models.py: classes=MemoryEntry...
-- E2 hh_agent_pro/memory/policy.py: functions=tokenize...
-- E3 hh_agent_pro/features/memory.py: classes=LayeredMemory...
+- E1 jaxen/memory/models.py: classes=MemoryEntry...
+- E2 jaxen/memory/policy.py: functions=tokenize...
+- E3 jaxen/features/memory.py: classes=LayeredMemory...
 - already_observed_calls:
   - read_files {...}
   - read_file {...}
@@ -843,7 +843,7 @@ Session History 仍然最适合直观看问答和工具内容；Trace 则用于�
 ```text
 规则用 Prefix 保护；
 源代码事实用 Source Evidence 保底；
-任务进度用 TaskState 表达；
+任务进度用 ProgressTracker 表达；
 运行计数用最小 Run 视图表达；
 最近原文用 History 补充；
 完整回放仍留在 Session/Archive。
@@ -884,9 +884,9 @@ pytest 的 `FAILED ... AssertionError` 和汇总行、编译器最后的报错�
 
 | 位置 | 改前 | 改后 |
 |---|---|---|
-| `system` | 规则前缀 | 规则前缀 + `durable_memory` + `skills`（Session 级冻结快照） |
+| `system` | 规则前缀 | 规则前缀 + `long_term_memory` + `skills`（Session 级冻结快照） |
 | 中间 | 最后 10 条，7200 字符 | 完整 Session 历史，按 `native_history_budget`（默认 200k 字符）从最旧淘汰，工具调用对不拆开 |
-| 最后一条 | — | `working_memory` / `task_state` / `evidence` + 完整当前请求 + 运行时指令 |
+| 最后一条 | — | `working_memory` / `progress` / `evidence` + 完整当前请求 + 运行时指令 |
 
 - 单条上限：工具结果 `NATIVE_TOOL_MESSAGE_LIMIT = MAX_TOOL_OUTPUT`（12000），文本 `NATIVE_TEXT_MESSAGE_LIMIT = 8000`。
 - 历史最后一条是 user 时，易变上下文拼到它后面，避免连续两条 user 消息。

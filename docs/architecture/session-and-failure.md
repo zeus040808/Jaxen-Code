@@ -1,12 +1,12 @@
-# HH Agent Pro：`...` 故障复盘与 Session 全字段源码指南
+# Jaxen Code：`...` 故障复盘与 Session 全字段源码指南
 
-本文只讨论 `hh_agent_pro`，并以 Session `20260813-093305-8927c7` 和 Run
+本文只讨论 `jaxen`，并以 Session `20260813-093305-8927c7` 和 Run
 `run_20260813-093341-8df593` 为真实样本。
 
 阅读完本文，你应该能回答四个问题：
 
 1. 为什么 Agent 连续思考两轮，最后却只回答 `...`；
-2. Session、History、Memory、TaskState、Checkpoint、RunState 和 Trace 各自负责什么；
+2. Session、History、Memory、ProgressTracker、Checkpoint、RunState 和 Trace 各自负责什么；
 3. Session JSON 每个字段由哪段代码建立、在什么时候赋值；
 4. 本次修复怎样避免同类问题再次被误判为“任务成功”。
 
@@ -38,7 +38,7 @@ flowchart TD
     E --> F["决策 2：再次调用 DeepSeek"]
     F --> G["模型可见答案只有 ..."]
     G --> H["旧解析器只检查非空，因此判定 final"]
-    H --> I["TaskState、Checkpoint、Session 全部错误标记 completed"]
+    H --> I["ProgressTracker、Checkpoint、Session 全部错误标记 completed"]
 ```
 
 这次故障由两个代码缺口叠加造成：
@@ -75,7 +75,7 @@ Runtime notice: model returned an incomplete <final> answer.
 ```
 
 这说明 DeepSeek 主动结束了返回，但返回协议不完整。`finish_reason=stop` 只表示服务端正常
-停止生成，不代表文本符合 HH 的 `<final>...</final>` 协议。
+停止生成，不代表文本符合 Jaxen 的 `<final>...</final>` 协议。
 
 第二轮 Trace 是：
 
@@ -100,17 +100,17 @@ Runtime notice: model returned an incomplete <final> answer.
 这证明两件事：
 
 1. 不是 `max_new_tokens=2048` 导致的截断，因为 `output_truncated=false`；
-2. 是 HH 的完成判定把 `...` 放行了。
+2. 是 Jaxen 的完成判定把 `...` 放行了。
 
 `output_tokens=477` 看上去和三个点不相称。推测 DeepSeek 的 usage 包含了模型侧推理 token，
 而用户可见 content 很短；当前 Trace 没保存完整原始响应，所以不能仅凭 usage 精确还原每个
-token 的去向。但这不影响故障结论：HH 最终实际解析到的可见文本就是 `...`。
+token 的去向。但这不影响故障结论：Jaxen 最终实际解析到的可见文本就是 `...`。
 
 ---
 
 ## 3. 修复一：默认模型改为 DeepSeek V4 Pro
 
-入口位于 `hh_agent_pro/cli.py`。
+入口位于 `jaxen/cli.py`。
 
 ```python
 DEFAULT_DEEPSEEK_MODEL = "deepseek-v4-pro"
@@ -122,7 +122,7 @@ def _effective_model(args, provider):
 
     if provider == "deepseek":
         model = provider_env(
-            "HH_DEEPSEEK_MODEL",
+            "JAXEN_DEEPSEEK_MODEL",
             ("DEEPSEEK_MODEL", "LLM_MODEL_ID"),
         )
         return model or DEFAULT_DEEPSEEK_MODEL
@@ -143,14 +143,14 @@ parser.add_argument(
 
 ```text
 命令行 --model
-    > 环境变量 HH_DEEPSEEK_MODEL
+    > 环境变量 JAXEN_DEEPSEEK_MODEL
     > 代码默认 deepseek-v4-pro
 ```
 
 因此直接运行：
 
 ```powershell
-python -m hh_agent_pro
+python -m jaxen
 ```
 
 默认使用 `deepseek / deepseek-v4-pro`。多模型切换仍然保留：
@@ -165,7 +165,7 @@ python -m hh_agent_pro
 /model anthropic claude-sonnet-4-6
 ```
 
-如果 `.env` 中显式配置了其他 `HH_DEEPSEEK_MODEL`，环境变量会按设计覆盖代码默认值。
+如果 `.env` 中显式配置了其他 `JAXEN_DEEPSEEK_MODEL`，环境变量会按设计覆盖代码默认值。
 
 ---
 
@@ -184,7 +184,7 @@ if kind == "retry":
 
 问题是 `payload` 不是模型对用户说的话，而是 Runtime 对模型下达的内部指令。
 
-正确设计位于 `hh_agent_pro/agent_loop.py`：
+正确设计位于 `jaxen/agent_loop.py`：
 
 ```python
 if kind == "retry":
@@ -199,7 +199,7 @@ if kind == "retry":
 ```
 
 现在它只进入临时字段 `model_output_correction`，并由
-`hh_agent_pro/context_manager.py` 拼到当前请求旁边：
+`jaxen/context_manager.py` 拼到当前请求旁边：
 
 ```python
 correction = str(
@@ -228,7 +228,7 @@ Runtime 对下一次决策的纠错    -> 当前 Prompt 的 authoritative direct
 
 ## 5. 修复三：`...` 不能再让任务完成
 
-修复位于 `hh_agent_pro/agent.py` 的 `CodingAgent.parse()`。
+修复位于 `jaxen/agent.py` 的 `CodingAgent.parse()`。
 
 ```python
 if "<final>" in raw:
@@ -336,7 +336,7 @@ if material_reductions:
 
 Session 是“可恢复的长期会话状态”，本质是一个 Python 字典，最终保存成 JSON。
 
-新 Session 的骨架在 `hh_agent_pro/agent.py` 的 `CodingAgent.__init__()` 中建立：
+新 Session 的骨架在 `jaxen/agent.py` 的 `CodingAgent.__init__()` 中建立：
 
 ```python
 self.session = session or {
@@ -346,14 +346,14 @@ self.session = session or {
     "workspace_root": str(self.root),
     "history": [],
     "memory": memorylib.default_memory_state(),
-    "source_evidence": default_evidence_state(),
-    "task_state": default_task_state(),
+    "source_evidence": default_source_evidence_state(),
+    "progress": default_progress(),
 }
 ```
 
 随后 `_ensure_session_shape()` 给旧版本 Session 补齐新字段。这使程序升级后仍能读取旧 JSON。
 
-Session 最终由 `hh_agent_pro/session_store.py` 保存：
+Session 最终由 `jaxen/session_store.py` 保存：
 
 ```python
 def save(self, session):
@@ -396,8 +396,8 @@ Session 可以保存很多历史，但 `ContextManager` 会按预算、相关性
 | `history` | 用户、assistant、tool 的权威事件流 | `agent.py: CodingAgent.record` |
 | `archive_next_sequence` | 下一条消息的会话内顺序号 | `agent.py: CodingAgent.record` |
 | `memory` | 轻量工作记忆和笔记 | `features/memory.py` |
-| `task_state` | 当前用户任务的语义进度 | `task_state.py`、`agent_loop.py` |
-| `source_evidence` | 当前任务读过的文件和工具动作证据 | `evidence.py`、`agent_loop.py` |
+| `progress` | 当前用户任务的语义进度 | `progress.py`、`agent_loop.py` |
+| `source_evidence` | 当前任务读过的文件和工具动作证据 | `source_evidence.py`、`agent_loop.py` |
 | `checkpoints` | 可恢复的阶段性任务书签集合 | `checkpoint.py: create_checkpoint` |
 | `resume_state` | 当前环境是否还能信任最新书签 | `checkpoint.py: evaluate_resume_state` |
 | `runtime_identity` | 模型、目录、工具、预算等运行身份 | `checkpoint.py: current_runtime_identity` |
@@ -421,7 +421,7 @@ Session 可以保存很多历史，但 `ContextManager` 会按预算、相关性
 
 ### `id`
 
-- 用途：唯一定位 Session；文件路径通常是 `.hh/sessions/<id>.json`；
+- 用途：唯一定位 Session；文件路径通常是 `.jaxen/sessions/<id>.json`；
 - 组成：本地可读时间前缀 + 随机短串；
 - 随机短串避免同一秒启动两个会话时重名。
 
@@ -568,7 +568,7 @@ session["archive_next_sequence"] = sequence_no + 1
 
 ## 12. `memory`：轻量记忆，不是完整历史
 
-默认结构来自 `hh_agent_pro/features/memory.py`：
+默认结构来自 `jaxen/features/memory.py`：
 
 ```python
 def default_memory_state():
@@ -588,7 +588,7 @@ def default_memory_state():
 
 - 当前任务的一句话摘要；
 - 每次 `AgentLoop.run(user_message)` 开始时调用
-  `agent.memory.set_task_summary(user_message)`；
+  `agent.working_set.set_task_summary(user_message)`；
 - 样本值正是“你讲讲你的工具调用流程是什么”。
 
 ### `working.recent_files`
@@ -626,20 +626,19 @@ def default_memory_state():
 
 ---
 
-## 13. `task_state`：当前任务到底做到哪了
+## 13. `progress`：当前任务到底做到哪了
 
-默认结构来自 `hh_agent_pro/task_state.py` 的 `default_task_state()`。
+默认结构来自 `jaxen/progress.py` 的 `default_progress()`。
 
 | 字段 | 含义 | 主要赋值点 |
 |---|---|---|
-| `schema_version` | TaskState 数据格式版本 | `default_task_state()` |
-| `task_id` | 当前逻辑任务 ID | `TaskState._reset()` |
-| `goal` | 用户任务目标 | `TaskState._reset()` |
+| `schema_version` | ProgressTracker 数据格式版本 | `default_progress()` |
+| `goal_id` | 当前目标 ID | `ProgressTracker._reset()` |
+| `goal` | 用户任务目标 | `ProgressTracker._reset()` |
 | `status` | `idle/running/waiting_for_user/paused/blocked/completed` | `begin/mark_*` |
 | `run_ids` | 承载该任务的 Run 列表 | `_reset()`、`begin()` |
 | `continuation_requests` | 用户后续的“继续/补充”请求 | `begin()` |
-| `subtask_ids` | 显式项目子任务 ID | `observe_tool()`、`record_claim()` |
-| `evidence` | 工具、声明、后台结果、最终交付摘要 | `_append_evidence()` |
+| `observations` | 工具、结论、后台命令、最终交付摘要 | `_append_observation()` |
 | `claims` | 需要验证或已经验证的结论 | `record_claim()` |
 | `open_questions` | 需要用户补充的问题 | `mark_waiting()` |
 | `failures` | 工具失败、是否可重试、是否已解决 | `observe_tool()` |
@@ -650,14 +649,14 @@ def default_memory_state():
 每轮开始：
 
 ```python
-agent.task_state.begin(user_message, run_state.run_id)
+agent.progress.begin(user_message, run_state.run_id)
 ```
 
 如果上一任务已完成，新问题会触发 `_reset()`：
 
 ```python
 self.state.update({
-    "task_id": "taskrun_" + uuid.uuid4().hex[:10],
+    "goal_id": "goal_" + uuid.uuid4().hex[:10],
     "goal": clip(goal, 1000),
     "status": "running",
     "run_ids": [run_id],
@@ -672,7 +671,7 @@ self.state.update({
 def mark_completed(self, final_answer):
     self.state["status"] = "completed"
     self.state["next_action"] = ""
-    self._append_evidence({
+    self._append_observation({
         "kind": "delivery",
         "summary": clip(final_answer, 500),
         "created_at": now(),
@@ -683,24 +682,24 @@ def mark_completed(self, final_answer):
 
 ```json
 "status": "completed",
-"evidence": [{"kind": "delivery", "summary": "..."}]
+"observations": [{"kind": "delivery", "summary": "..."}]
 ```
 
-它不是 TaskState 自己判断错了，而是上游解析器错误地把 `...` 定义成了合法 final，
+它不是 ProgressTracker 自己判断错了，而是上游解析器错误地把 `...` 定义成了合法 final，
 `AgentLoop` 才正常调用 `mark_completed("...")`。所以修复应该发生在完成入口，而不是让
-TaskState 猜测语言质量。
+ProgressTracker 猜测语言质量。
 
 ---
 
 ## 14. `source_evidence`：当前任务的源码证据账本
 
-默认结构来自 `hh_agent_pro/evidence.py`：
+默认结构来自 `jaxen/source_evidence.py`：
 
 ```python
-def default_evidence_state():
+def default_source_evidence_state():
     return {
         "schema_version": "v1",
-        "task_id": "",
+        "goal_id": "",
         "next_id": 1,
         "files": {},
         "actions": [],
@@ -711,7 +710,7 @@ def default_evidence_state():
 | 字段 | 含义 |
 |---|---|
 | `schema_version` | 证据账本格式版本 |
-| `task_id` | 证据属于哪个 TaskState |
+| `goal_id` | 证据属于哪个目标（ProgressTracker 的 `goal_id`） |
 | `next_id` | 下一个文件证据编号，例如 `E1` |
 | `files` | 按路径保存的源码证据 |
 | `actions` | 最近的工具动作摘要 |
@@ -721,15 +720,15 @@ def default_evidence_state():
 
 ```python
 agent.source_evidence.begin(
-    agent.task_state.to_dict().get("task_id", "")
+    agent.progress.to_dict().get("goal_id", "")
 )
 ```
 
-如果 task ID 变了，旧任务证据会清空，防止把上一个问题读过的文件误当成当前问题证据。
+如果目标 ID 变了，旧目标的证据会清空，防止把上一个问题读过的文件误当成当前问题证据。
 
 ### `files` 中每个文件项
 
-`EvidenceLedger.record_file()` 产生：
+`SourceEvidence.record_file()` 产生：
 
 ```python
 item = {
@@ -792,7 +791,7 @@ tool、args、status、cache_hit、created_at
 - `items`：所有保留的 Checkpoint，以 ID 为键；
 - 当前最多保留 100 个，超出后淘汰最旧项。
 
-每个 Checkpoint 由 `hh_agent_pro/checkpoint.py:create_checkpoint()` 生成。
+每个 Checkpoint 由 `jaxen/checkpoint.py:create_checkpoint()` 生成。
 
 | 字段 | 含义 | 值的来源 |
 |---|---|---|
@@ -800,16 +799,16 @@ tool、args、status、cache_hit、created_at
 | `parent_checkpoint_id` | 上一个书签 ID | 创建前的 `current_id` |
 | `schema_version` | 书签格式版本 | `CHECKPOINT_SCHEMA_VERSION` |
 | `created_at` | 创建时间 | `now()` |
-| `current_goal` | 当前用户目标 | `task_state.goal`，回退到 user message |
-| `task_state_id` | 对应任务 ID | `task_state.task_id` |
-| `task_status` | 创建时任务状态 | `task_state.status` |
-| `completed` | 已完成子任务及最终回答摘要 | `completed_summaries()` + final |
+| `current_goal` | 当前用户目标 | `progress.goal`，回退到 user message |
+| `goal_id` | 对应目标 ID | `progress.goal_id` |
+| `goal_status` | 创建时目标状态 | `progress.status` |
+| `completed` | 已完成的 todo 及最终回答摘要 | `completed_summaries()` + final |
 | `excluded` | 明确排除项 | 当前实现预留，默认 `[]` |
-| `current_blocker` | 当前阻塞原因 | `task_state.blocker_summary()` 或 stop reason |
-| `next_step` | 恢复后的下一步 | `task_state.next_action` 或 `infer_next_step()` |
-| `verified_claims` | 最近已验证结论 | `task_state.claims` |
-| `open_questions` | 等用户补充的问题 | `task_state.open_questions` |
-| `evidence` | 最近证据摘要 | `task_state.evidence` |
+| `current_blocker` | 当前阻塞原因 | `progress.blocker_summary()` 或 stop reason |
+| `next_step` | 恢复后的下一步 | `progress.next_action` 或 `infer_next_step()` |
+| `verified_claims` | 最近已验证结论 | `progress.claims` |
+| `open_questions` | 等用户补充的问题 | `progress.open_questions` |
+| `observations` | 最近观察摘要 | `progress.observations` |
 | `key_files` | 关键文件及 freshness | `memory.working.recent_files` |
 | `freshness` | `path -> 文件哈希` 映射 | `file_freshness()` |
 | `summary` | 建书签的触发原因和请求摘要 | `trigger + user_message` |
@@ -836,7 +835,7 @@ tool、args、status、cache_hit、created_at
 ```python
 agent.record(assistant_final)
 run_state.finish_success(final)
-agent.task_state.mark_completed(final)
+agent.progress.mark_completed(final)
 self._finalize_run(...)
 ```
 
@@ -983,7 +982,7 @@ agent.session["pending_output"] = {
 | Session | 多轮、可跨重启 | 这段会话保存了什么 | 不整体注入 |
 | History | 多轮事件流 | 用户、模型、工具当时说了什么 | 经压缩和角色整理后注入 |
 | Memory | 多轮精炼状态 | 哪些小事实值得继续带着 | 按预算/相关性注入 |
-| TaskState | 一个逻辑用户任务 | 目标、证据、失败、下一步是什么 | 高优先级注入 |
+| ProgressTracker | 一个逻辑用户任务 | 目标、证据、失败、下一步是什么 | 高优先级注入 |
 | SourceEvidence | 一个逻辑用户任务 | 当前结论读过哪些源文件 | 高保底预算注入 |
 | Checkpoint | 任务阶段 | 中断后从哪里继续 | 最新书签摘要注入 |
 | ResumeState | 每次建 Prompt 前重算 | 旧书签还能否信任 | 作为恢复提示注入 |
@@ -1027,8 +1026,8 @@ flowchart TD
     C --> D["Memory.set_task_summary"]
     C --> E["CodingAgent.record user -> history + archive + JSON"]
     C --> F["RunState.create"]
-    C --> G["TaskState.begin"]
-    G --> H["EvidenceLedger.begin"]
+    C --> G["ProgressTracker.begin"]
+    G --> H["SourceEvidence.begin"]
     H --> I["CodingAgent._build_prompt_and_metadata"]
     I --> J["evaluate_resume_state"]
     I --> K["ContextManager.build"]
@@ -1038,12 +1037,12 @@ flowchart TD
     N --> I
     M -- "tool" --> O["ToolExecutor.execute"]
     O --> P["CodingAgent.record tool result"]
-    O --> Q["更新 Memory / TaskState / Evidence"]
+    O --> Q["更新 Memory / ProgressTracker / Evidence"]
     Q --> I
     M -- "final" --> R["完成前交付检查"]
     R --> S["CodingAgent.record assistant final"]
     S --> T["RunState.finish_success"]
-    T --> U["TaskState.mark_completed"]
+    T --> U["ProgressTracker.mark_completed"]
     U --> V["创建 run_finished Checkpoint"]
     V --> W["保存 Session + Run report + Trace"]
 ```
@@ -1055,8 +1054,8 @@ cli.py
   -> agent.py: CodingAgent.ask / CodingAgent.record / CodingAgent.parse
   -> agent_loop.py: AgentLoop.run
   -> context_manager.py: build / provider_request
-  -> task_state.py
-  -> evidence.py
+  -> progress.py
+  -> source_evidence.py
   -> checkpoint.py
   -> session_store.py
   -> memory/session_archive.py
@@ -1120,11 +1119,11 @@ cli.py
 
 ## 23. 一段可以直接复述的项目讲解
 
-> HH Agent Pro 把“保存”和“给模型看”分成了两层。Session 保存完整可恢复状态，包括
-> history、轻量 memory、当前 TaskState、源码 Evidence、Checkpoint 和运行身份；
+> Jaxen Code 把“保存”和“给模型看”分成了两层。Session 保存完整可恢复状态，包括
+> history、轻量 memory、当前 ProgressTracker、源码 Evidence、Checkpoint 和运行身份；
 > ContextManager 每次只从这些状态中选出当前决策需要的有限视图，并按分区预算压缩。
 > History 只记录用户、模型和工具真正发生过的事件，平台纠错属于 Runtime 指令，只进入
 > 下一轮 Prompt 和 Trace，不能冒充 assistant 消息。模型输出先经过协议解析和完成条件
-> 校验，只有真实有效的 final 才能推进 RunState、TaskState 和 Checkpoint 到 completed。
+> 校验，只有真实有效的 final 才能推进 RunState、ProgressTracker 和 Checkpoint 到 completed。
 > Trace 用于解释请求、压缩、解析和工具执行过程，Session history 用于理解对话，两者不再
 > 混在一起。本次还把默认 Provider 改为 DeepSeek V4 Pro，并通过 182 项测试验证兼容性。

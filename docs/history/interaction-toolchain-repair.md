@@ -1,4 +1,4 @@
-# HH Agent Pro 交互与工具调用链完整修复
+# Jaxen Code 交互与工具调用链完整修复
 
 ## 1. 修复目标
 
@@ -52,7 +52,7 @@ Provider
   ├─ read_file / read_files
   ├─ search
   ├─ 条件审批 run_shell
-  └─ 其他 HH 工具
+  └─ 其他 Jaxen 工具
   ↓
 ToolExecutor 校验、执行、脱敏、记录
   ↓
@@ -178,7 +178,7 @@ read_only
 所以用户问“你现在是什么模型”时，Agent 不需要读取 `.env`。这避免 API Key
 进入工具结果、Session、Trace 或模型上下文。
 
-工具结果在进入 UI、TaskState、Session、Trace 和下一轮 prompt 之前统一经过
+工具结果在进入 UI、ProgressTracker、Session、Trace 和下一轮 prompt 之前统一经过
 `redact_text()`；即便某个 shell 命令意外输出已配置的密钥值，也会被替换为
 `<redacted>`。
 
@@ -248,13 +248,13 @@ assistant history item；`ContextManager._native_history_messages()` 在下一�
 ```
 
 随后的 tool message 使用同一个 `call_ds_42`。`reasoning_content` 只为满足 Provider
-协议而持久化，不进入终端 UI、Trace、TaskState、Evidence 或普通 history 文本渲染。
+协议而持久化，不进入终端 UI、Trace、ProgressTracker、Evidence 或普通 history 文本渲染。
 
 旧 Session 已经丢失的 reasoning 无法安全伪造。对于 DeepSeek V4 Pro，这类旧 assistant
 tool-call 不再作为原生工具消息重放；对应结果降级成 `Legacy tool observation` 普通上下文，
 避免恢复旧会话时再次触发 HTTP 400。
 
-DeepSeek Chat Completions 请求现在携带由 HH 工具注册表生成的 JSON Schema：
+DeepSeek Chat Completions 请求现在携带由 Jaxen 工具注册表生成的 JSON Schema：
 
 ```json
 {
@@ -275,7 +275,7 @@ DeepSeek Chat Completions 请求现在携带由 HH 工具注册表生成的 JSON
 ```
 
 SSE 中分片到达的 `tool_calls[].function.arguments` 会先完整拼接，再做 JSON 解析，
-最后转换成 HH 内部统一的 `<tool>...</tool>` 决策。执行仍然只能经过 HH 的
+最后转换成 Jaxen 内部统一的 `<tool>...</tool>` 决策。执行仍然只能经过 Jaxen 的
 `ToolExecutor`，provider 无法绕过审批或路径校验。
 
 这比要求 DeepSeek纯文本拼出 XML/JSON 更稳定，显著减少：
@@ -322,7 +322,7 @@ Trace 新增：
 ## 9. Codex CLI Session 复用取舍
 
 本机 Codex CLI 提供 `codex exec resume`，但恢复要求先前 Session 已经持久化；
-HH 当前使用 `--ephemeral`，目的是不把每轮包含 Session/history/memory 的完整内部
+Jaxen 当前使用 `--ephemeral`，目的是不把每轮包含 Session/history/memory 的完整内部
 prompt 再长期保存到 Codex 的本地 Session 存储。
 
 因此本轮没有为了速度取消 `--ephemeral`。优化采用更小的风险面：
@@ -375,16 +375,16 @@ actual tools: list_files, read_files
 
 ```powershell
 cd C:\Users\ASUS\OneDrive\Desktop\HundredHouses-Agent
-.\.venv\Scripts\python.exe -m hh_agent_pro --provider deepseek --approval ask
+.\.venv\Scripts\python.exe -m jaxen --provider deepseek --approval ask
 ```
 
 依次输入：
 
 ```text
 你现在使用的 provider、模型和 shell 是什么？
-列出 hh_agent_pro/memory 下的文件，不要使用 shell。
-批量读取 hh_agent_pro/memory 下所有 Python 文件，总结每个文件职责。
-比较 hh_agent_pro/features/memory.py 和 hh_agent_pro/memory 目录，判断是否应该合并。
+列出 jaxen/memory 下的文件，不要使用 shell。
+批量读取 jaxen/memory 下所有 Python 文件，总结每个文件职责。
+比较 jaxen/features/memory.py 和 jaxen/memory 目录，判断是否应该合并。
 ```
 
 预期：
@@ -398,7 +398,7 @@ cd C:\Users\ASUS\OneDrive\Desktop\HundredHouses-Agent
 
 ## 12. 仍然存在的外部限制
 
-本轮修复保证的是 HH 自己的控制链、工具链和可观测性稳定，不可能消除 provider
+本轮修复保证的是 Jaxen 自己的控制链、工具链和可观测性稳定，不可能消除 provider
 网络本身的超时或限流。Codex 如果继续反复 reconnect，单次模型决策仍可能慢；
 区别是现在任务需要的决策次数更少、重连会进入 Trace、用户中断后也能正确恢复。
 

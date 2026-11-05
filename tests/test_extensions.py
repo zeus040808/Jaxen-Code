@@ -6,12 +6,12 @@ from pathlib import Path
 
 import pytest
 
-from hh_agent_pro.checkpoint import MAX_CHECKPOINTS
-from hh_agent_pro.services.cron_scheduler import cron_matches, validate_cron
-from hh_agent_pro.run_state import RunState, STATUS_COMPLETED, STATUS_FAILED, STATUS_STOPPED, STATUS_WAITING, STOP_REASON_APPROVAL_DENIED, STOP_REASON_FINAL_ANSWER_RETURNED, STOP_REASON_MODEL_ERROR, STOP_REASON_NEEDS_USER_INPUT, STOP_REASON_REPEATED_FAILED_CALL
-from hh_agent_pro.agent import CodingAgent
-from hh_agent_pro.session_store import SessionStore
-from hh_agent_pro.workspace import WorkspaceContext, file_freshness
+from jaxen.checkpoint import MAX_CHECKPOINTS
+from jaxen.services.scheduler import cron_matches, validate_cron
+from jaxen.run_state import RunState, STATUS_COMPLETED, STATUS_FAILED, STATUS_STOPPED, STATUS_WAITING, STOP_REASON_APPROVAL_DENIED, STOP_REASON_FINAL_ANSWER_RETURNED, STOP_REASON_MODEL_ERROR, STOP_REASON_NEEDS_USER_INPUT, STOP_REASON_REPEATED_FAILED_CALL
+from jaxen.agent import CodingAgent
+from jaxen.session_store import SessionStore
+from jaxen.workspace import WorkspaceContext, file_freshness
 
 
 class ScriptedModel:
@@ -36,7 +36,7 @@ class FailingModel:
 
 def make_agent(tmp_path, outputs=None, approval="auto", model=None, max_steps=4):
     workspace = WorkspaceContext.build(str(tmp_path))
-    store = SessionStore(str(tmp_path / ".hh" / "sessions"))
+    store = SessionStore(str(tmp_path / ".jaxen" / "sessions"))
     return CodingAgent(
         model_client=model or ScriptedModel(outputs),
         workspace=workspace,
@@ -47,8 +47,8 @@ def make_agent(tmp_path, outputs=None, approval="auto", model=None, max_steps=4)
     )
 
 
-def test_hh_base_runtime_is_preserved_with_run_artifacts(tmp_path):
-    (tmp_path / "README.md").write_text("hello hh", encoding="utf-8")
+def test_base_runtime_is_preserved_with_run_artifacts(tmp_path):
+    (tmp_path / "README.md").write_text("hello jaxen", encoding="utf-8")
     agent = make_agent(
         tmp_path,
         [
@@ -109,104 +109,67 @@ def test_checkpoint_with_key_files_can_resume_and_ask(tmp_path):
     assert resumed.current_run_state.resume_status == "full-valid"
 
 
-def test_project_task_tools_use_hh_tool_executor(tmp_path):
+def test_backlog_tools_run_through_the_tool_executor(tmp_path):
     agent = make_agent(tmp_path)
 
-    created = agent.run_tool("create_task", {"subject": "Add parser tests"})
-    assert "created task_" in created
-    task_id = created.split()[1].rstrip(":")
-    assert "pending" in agent.run_tool("list_tasks", {})
-    assert "claimed" in agent.run_tool("claim_task", {"task_id": task_id, "owner": "tester"})
-    assert "completed" in agent.run_tool("complete_task", {"task_id": task_id})
+    created = agent.run_tool("backlog_add", {"subject": "Add parser tests"})
+    assert "created item_" in created
+    item_id = created.split()[1].rstrip(":")
+    assert "pending" in agent.run_tool("backlog_list", {})
+    assert "claimed" in agent.run_tool("backlog_claim", {"item_id": item_id, "owner": "tester"})
+    assert "completed" in agent.run_tool("backlog_complete", {"item_id": item_id})
+    assert (tmp_path / ".jaxen" / "backlog" / f"{item_id}.json").exists()
 
 
-def test_project_task_acceptance_evidence_and_failure_states(tmp_path):
+def test_backlog_acceptance_evidence_and_failure_states(tmp_path):
     agent = make_agent(tmp_path)
 
-    created = agent.run_tool(
-        "create_task",
-        {
-            "subject": "Verify parser",
-            "acceptance_criteria": ["parser test passes"],
-        },
-    )
-    task_id = created.split()[1].rstrip(":")
-    assert "claimed" in agent.run_tool("claim_task", {"task_id": task_id})
-    assert "needs at least 1 evidence" in agent.run_tool("complete_task", {"task_id": task_id})
-    assert "recorded verified claim" in agent.run_tool(
-        "record_evidence",
-        {
-            "task_id": task_id,
-            "claim": "parser test passes",
-            "evidence": "pytest tests/test_parser.py: 4 passed",
-            "verified": True,
-        },
-    )
-    assert "completed" in agent.run_tool("complete_task", {"task_id": task_id})
-    completed = agent.project_tasks.load(task_id)
+    created = agent.run_tool("backlog_add", {"subject": "Verify parser", "acceptance_criteria": ["parser test passes"]})
+    item_id = created.split()[1].rstrip(":")
+    assert "claimed" in agent.run_tool("backlog_claim", {"item_id": item_id})
+    assert "needs at least 1 evidence" in agent.run_tool("backlog_complete", {"item_id": item_id})
+    assert "completed" in agent.run_tool(
+        "backlog_complete", {"item_id": item_id, "evidence": ["pytest tests/test_parser.py: 4 passed"]})
+    completed = agent.backlog.load(item_id)
     assert completed.status == "completed"
     assert completed.evidence == ["pytest tests/test_parser.py: 4 passed"]
 
-    failed_id = agent.run_tool("create_task", {"subject": "Unavailable dependency"}).split()[1].rstrip(":")
-    assert "failed" in agent.run_tool(
-        "fail_task",
-        {"task_id": failed_id, "reason": "package index unavailable"},
+    failed_id = agent.run_tool("backlog_add", {"subject": "Unavailable dependency"}).split()[1].rstrip(":")
+    assert "failed" in agent.run_tool("backlog_fail", {"item_id": failed_id, "reason": "package index unavailable"})
+    assert agent.backlog.load(failed_id).failure_reason == "package index unavailable"
+
+    blocked_id = agent.run_tool("backlog_add", {"subject": "Need target path"}).split()[1].rstrip(":")
+    assert "blocked" in agent.run_tool("backlog_block", {"item_id": blocked_id, "reason": "target path missing"})
+    assert agent.backlog.load(blocked_id).status == "blocked"
+
+
+def test_open_backlog_item_does_not_block_delivery_of_the_current_request(tmp_path):
+    # 2026-11-05 拆分长短任务：原来当前请求里建的待办没做完会卡交付，长任务和短任务混在一起。
+    # 现在待办是跨会话的长任务清单，和当前请求的交付门禁无关；当前请求的计划用 todo。
+    agent = make_agent(
+        tmp_path,
+        [
+            '<tool>{"name":"backlog_add","args":{"subject":"Migrate the config format next week"}}</tool>',
+            "<final>noted for later</final>",
+        ],
+        max_steps=3,
     )
-    assert agent.project_tasks.load(failed_id).failure_reason == "package index unavailable"
 
-    blocked_id = agent.run_tool("create_task", {"subject": "Need target path"}).split()[1].rstrip(":")
-    assert "blocked" in agent.run_tool(
-        "block_task",
-        {"task_id": blocked_id, "reason": "target path missing"},
-    )
-    assert agent.project_tasks.load(blocked_id).status == "blocked"
-
-
-def test_delivery_gate_rejects_final_until_tracked_subtask_is_verified(tmp_path):
-    class PlanningModel(ScriptedModel):
-        def __init__(self):
-            super().__init__([])
-            self.step = 0
-
-        def complete(self, request):
-
-            prompt = request.text()
-            self.step += 1
-            if self.step == 1:
-                return (
-                    '<tool>{"name":"create_task","args":{"subject":"Verify change",'
-                    '"acceptance_criteria":["verification passes"]}}</tool>'
-                )
-            task_id = re.search(r"\btask_[A-Za-z0-9_]+\b", prompt).group(0)
-            if self.step == 2:
-                return "<final>finished too early</final>"
-            if self.step == 3:
-                return f'<tool>{{"name":"claim_task","args":{{"task_id":"{task_id}"}}}}</tool>'
-            if self.step == 4:
-                return (
-                    f'<tool>{{"name":"complete_task","args":{{"task_id":"{task_id}",'
-                    '"evidence":["verification: passed"]}}</tool>'
-                )
-            return "<final>verified delivery</final>"
-
-    agent = make_agent(tmp_path, model=PlanningModel(), max_steps=5)
-
-    assert agent.ask("make and verify a change") == "verified delivery"
+    assert agent.ask("remember to migrate the config later") == "noted for later"
     trace = agent.run_store.trace_path(agent.current_run_state).read_text(encoding="utf-8")
-    assert '"event": "completion_deferred"' in trace
-    assert agent.task_state.to_dict()["status"] == "completed"
-    task_id = agent.task_state.to_dict()["subtask_ids"][0]
-    assert agent.project_tasks.load(task_id).status == "completed"
+    assert '"event": "completion_deferred"' not in trace
+    assert "Subtasks" not in agent.progress.render()
+    assert "pending" in agent.backlog.render()
 
 
 def test_unverified_claim_blocks_delivery(tmp_path):
     agent = make_agent(
         tmp_path,
         [
-            '<tool>{"name":"record_evidence","args":{"claim":"the fix works",'
+            '<tool>{"name":"record_claim","args":{"claim":"the fix works",'
             '"evidence":"not tested yet","verified":false}}</tool>',
             "<final>done</final>",
-            '<tool>{"name":"record_evidence","args":{"claim":"the fix works",'
+            '<tool>{"name":"record_claim","args":{"claim":"the fix works",'
             '"evidence":"pytest: 8 passed","verified":true}}</tool>',
             "<final>verified now</final>",
         ],
@@ -214,47 +177,27 @@ def test_unverified_claim_blocks_delivery(tmp_path):
     )
 
     assert agent.ask("check the fix") == "verified now"
-    assert agent.task_state.to_dict()["claims"][0]["verified"] is True
-    assert agent.task_state.to_dict()["claims"][0]["evidence"] == "pytest: 8 passed"
+    assert agent.progress.to_dict()["claims"][0]["verified"] is True
+    assert agent.progress.to_dict()["claims"][0]["evidence"] == "pytest: 8 passed"
     trace = agent.run_store.trace_path(agent.current_run_state).read_text(encoding="utf-8")
     assert "claim is not verified" in trace
 
 
-def test_task_state_survives_session_resume_and_continues_subtask(tmp_path):
-    class ResumeModel(ScriptedModel):
-        def __init__(self):
-            super().__init__([])
-            self.step = 0
-
-        def complete(self, request):
-
-            prompt = request.text()
-            self.step += 1
-            task_id = re.search(r"\btask_[A-Za-z0-9_]+\b", prompt).group(0)
-            if self.step == 1:
-                return f'<tool>{{"name":"claim_task","args":{{"task_id":"{task_id}"}}}}</tool>'
-            if self.step == 2:
-                return (
-                    f'<tool>{{"name":"complete_task","args":{{"task_id":"{task_id}",'
-                    '"evidence":["user supplied target"]}}</tool>'
-                )
-            return "<final>resumed and completed</final>"
-
+def test_progress_survives_session_resume_and_backlog_survives_the_session(tmp_path):
     first = make_agent(
         tmp_path,
         [
-            '<tool>{"name":"create_task","args":{"subject":"Use target",'
-            '"acceptance_criteria":["target supplied"]}}</tool>',
+            '<tool>{"name":"todo_write","args":{"todos":[{"content":"ask for target","status":"in_progress"}]}}</tool>',
+            '<tool>{"name":"backlog_add","args":{"subject":"Document the target setting"}}</tool>',
             "<needs_user_input>Please provide the target.</needs_user_input>",
         ],
         max_steps=4,
     )
     assert first.ask("configure the target") == "Please provide the target."
     session_id = first.session["id"]
-    task_id = first.task_state.to_dict()["subtask_ids"][0]
 
     resumed = CodingAgent.from_session(
-        model_client=ResumeModel(),
+        model_client=ScriptedModel(["<final>resumed and completed</final>"]),
         workspace=WorkspaceContext.build(str(tmp_path)),
         session_store=first.session_store,
         session_id=session_id,
@@ -263,11 +206,12 @@ def test_task_state_survives_session_resume_and_continues_subtask(tmp_path):
         max_new_tokens=256,
     )
     assert resumed.ask("The target is production.") == "resumed and completed"
-    state = resumed.task_state.to_dict()
-    assert state["task_id"] == first.task_state.to_dict()["task_id"]
+    state = resumed.progress.to_dict()
+    assert state["goal_id"] == first.progress.to_dict()["goal_id"]  # 同一个目标的第二次运行
     assert len(state["run_ids"]) == 2
-    assert any(item["kind"] == "user_followup" for item in state["evidence"])
-    assert resumed.project_tasks.load(task_id).status == "completed"
+    assert any(item["kind"] == "user_followup" for item in state["observations"])
+    assert state["todos"][0]["content"] == "ask for target"
+    assert "Document the target setting" in resumed.backlog.render()  # 长任务清单跨会话保留
 
 
 def test_background_shell_extension_collects_notification(tmp_path):
@@ -279,7 +223,7 @@ def test_background_shell_extension_collects_notification(tmp_path):
     assert "background task" in result
     notes = []
     for _ in range(50):
-        notes = agent.background_tasks.collect()
+        notes = agent.background_jobs.collect()
         if notes:
             break
         time.sleep(0.02)
@@ -295,8 +239,8 @@ def test_slow_shell_stays_foreground_without_explicit_background_flag(tmp_path):
     result = agent.run_tool("run_shell", {"command": command, "timeout": 20})
 
     assert "exit_code: 0" in result
-    assert agent.background_tasks._counter == 0
-    assert agent.background_tasks.collect() == []
+    assert agent.background_jobs._counter == 0
+    assert agent.background_jobs.collect() == []
 
 
 def test_explicit_background_result_is_collected_inside_same_agent_loop(tmp_path):
@@ -313,7 +257,7 @@ def test_explicit_background_result_is_collected_inside_same_agent_loop(tmp_path
                 command = f'"{sys.executable}" -c "print(\'same-run-done\')"'
                 return f'<tool>{{"name":"run_shell","args":{{"command":{json.dumps(command)},"timeout":20,"background":true}}}}</tool>'
             if (
-                "<task_notification>" in prompt
+                "<job_notification>" in prompt
                 and "<status>completed</status>" in prompt
                 and "<summary>" in prompt
                 and "same-run-done" in prompt
@@ -426,21 +370,35 @@ def test_repeated_unchanged_reads_use_cache_then_enter_final_only(tmp_path):
     assert '"reason": "repeated_cached_read"' in trace
 
 
-def test_cron_tools_and_matching(tmp_path):
-    agent = make_agent(tmp_path)
+def test_scheduled_prompts_are_a_cli_feature_not_a_model_tool(tmp_path):
+    # 2026-11-05 改造：定时提示原来是模型可调用的 schedule_cron 工具；现在由用户在 CLI 里 /schedule，
+    # 到点时 CLI 直接把这条指令当成用户消息交给 agent.ask()，模型看不到任何定时工具。
+    from datetime import datetime
+    from jaxen.cli import schedule_command
+    from jaxen.services.scheduler import PromptScheduler
 
     assert validate_cron("*/5 * * * *") is None
     assert validate_cron("*/0 * * * *")
-    assert cron_matches("30 9 * * 2", __import__("datetime").datetime(2026, 7, 7, 9, 30))
+    assert cron_matches("30 9 * * 2", datetime(2026, 7, 7, 9, 30))
 
-    result = agent.run_tool("schedule_cron", {"cron": "30 9 * * *", "prompt": "Review tasks"})
-    assert "scheduled cron_" in result
-    assert "Review tasks" in agent.run_tool("list_crons", {})
-    job_id = result.split()[1].rstrip(":")
-    assert "cancelled" in agent.run_tool("cancel_cron", {"job_id": job_id})
+    scheduler = PromptScheduler(tmp_path)
+    reply = schedule_command(scheduler, "30 9 * * * Review open backlog items")
+    assert reply.startswith("scheduled sched_")
+    assert "Review open backlog items" in scheduler.render()
+    assert (tmp_path / ".jaxen" / "schedules.json").exists()
+    scheduler.poll(datetime(2026, 7, 7, 9, 30))
+    scheduler.poll(datetime(2026, 7, 7, 9, 30))  # 同一分钟只触发一次
+    assert scheduler.pop_due().prompt == "Review open backlog items"
+    assert scheduler.pop_due() is None
+    assert schedule_command(scheduler, "30 9 * *").startswith("usage:")
+    job_id = reply.split()[1].rstrip(":")
+    assert "cancelled" in scheduler.cancel(job_id)
+
+    agent = make_agent(tmp_path)  # full 工具集
+    assert not any("cron" in name or "schedul" in name for name in agent.tools)
 
 
-def test_child_agent_does_not_expose_cron_tools(tmp_path):
+def test_child_agent_does_not_expose_backlog_tools(tmp_path):
     parent = make_agent(tmp_path)
     child = CodingAgent(
         model_client=ScriptedModel(),
@@ -452,9 +410,9 @@ def test_child_agent_does_not_expose_cron_tools(tmp_path):
         read_only=True,
     )
 
-    assert "schedule_cron" in parent.tools
-    assert "schedule_cron" not in child.tools
-    assert "create_task" not in child.tools
+    assert "backlog_add" in parent.tools
+    assert "backlog_add" not in child.tools
+    assert "record_claim" not in child.tools
 
 
 def test_session_store_writes_readable_json_and_rejects_path_escape(tmp_path):
@@ -489,7 +447,7 @@ def test_session_store_retries_transient_windows_replace_lock(tmp_path, monkeypa
 
 
 def test_legacy_session_shape_is_repaired_and_reset_clears_recovery_state(tmp_path):
-    store = SessionStore(tmp_path / ".hh" / "sessions")
+    store = SessionStore(tmp_path / ".jaxen" / "sessions")
     store.save(
         {
             "id": "legacy",
@@ -508,7 +466,7 @@ def test_legacy_session_shape_is_repaired_and_reset_clears_recovery_state(tmp_pa
     )
 
     assert agent.session["history"] == []
-    assert isinstance(agent.session["memory"], dict)
+    assert isinstance(agent.session["working_set"], dict)
     assert agent.session["checkpoints"] == {"current_id": "", "items": {}}
     assert isinstance(agent.session["runtime_identity"], dict)
     assert agent.resume_state["status"] == "no-checkpoint"
@@ -629,3 +587,38 @@ def test_checkpoint_history_is_bounded_and_keeps_a_valid_parent_chain(tmp_path):
     assert len(items) == MAX_CHECKPOINTS
     assert oldest["parent_checkpoint_id"] == ""
     assert agent.session["checkpoints"]["current_id"] == run_state.checkpoint_id
+
+
+def test_checkpoint_carries_recent_progress_observations(tmp_path):
+    # 2026-11-05 改名时 progress 的 evidence 字段改成 observations，检查点仍读旧字段，"最近观察"会悄悄变空；补这条回归。
+    (tmp_path / "notes.txt").write_text("alpha\n", encoding="utf-8")
+    agent = make_agent(
+        tmp_path,
+        ['<tool>{"name":"read_file","args":{"path":"notes.txt"}}</tool>', "<final>read it</final>"],
+        max_steps=3,
+    )
+    agent.ask("read notes.txt")
+
+    checkpoint = agent.create_checkpoint(agent.current_run_state, "read notes.txt", trigger="test")
+    assert checkpoint["observations"] and "notes.txt" in " ".join(checkpoint["observations"])
+    assert checkpoint["goal_status"] == agent.progress.to_dict()["status"]
+    assert "Recent observations:" in agent.render_checkpoint_text()
+
+
+def test_working_set_survives_session_resume(tmp_path):
+    # 2026-11-05 WorkingMemory 改名 WorkingSet、会话键改为 working_set 时，初始化仍读旧键，恢复会话会丢掉关注的文件。
+    (tmp_path / "notes.txt").write_text("alpha\n", encoding="utf-8")
+    first = make_agent(
+        tmp_path,
+        ['<tool>{"name":"read_file","args":{"path":"notes.txt"}}</tool>', "<final>read it</final>"],
+        max_steps=3,
+    )
+    first.ask("read notes.txt")
+    assert "notes.txt" in str(first.working_set.to_dict())
+
+    resumed = CodingAgent.from_session(
+        model_client=ScriptedModel(), workspace=WorkspaceContext.build(str(tmp_path)),
+        session_store=first.session_store, session_id=first.session["id"], approval_policy="auto",
+    )
+    assert "notes.txt" in str(resumed.working_set.to_dict())
+    assert "memory" not in resumed.session  # 只有一个键，不会两套状态并存

@@ -7,7 +7,7 @@
 .venv/bin/python scripts/eval/run_context_compaction.py   # 结果写入 artifacts/deterministic/context-compaction-v1.json
 ```
 
-代码：`hh_agent_pro/evaluation/context_compaction.py`，门禁测试 `tests/test_context_compaction_eval.py`。
+代码：`jaxen/evaluation/context_compaction.py`，门禁测试 `tests/test_context_compaction_eval.py`。
 
 ## 判分：每次请求的不变量
 
@@ -27,7 +27,7 @@
 ## 两部分
 
 - **A：直接调用 `prepare()`**。造出历史后把预算设成"当前请求恰好占 X%"，精确落在某个档位。和真实运行一样先
-  `task_state.begin()`，提醒里会带任务目标。
+  `progress.begin()`，提醒里会带任务目标。
 - **B：真实 agent 跑长任务**。复用[故障注入](fault-injection.md)的假服务器：16 次大文件读取 + 修复，预算 7000 token；
   假服务器回答摘要请求，并逐个检查 agent 发出的每一次请求。
 
@@ -62,7 +62,7 @@
 ### 搭评测时踩的坑
 
 - 只用 `prepare()` 而不开始任务，提醒里没有任务目标，会误以为短请求也会丢；真实运行里短请求靠任务目标保住了。
-  所以 A 部分改成先 `task_state.begin()`。
+  所以 A 部分改成先 `progress.begin()`。
 - 在 `json.dumps(messages)` 里找请求原文会因为换行被转义而找不到，改为比对消息原文。
 - "最早的事实"要取第一条：轻压缩保留最近 8 条工具结果，更早但仍在这 8 条里的不会被清理。
 
@@ -77,7 +77,7 @@
 - 样本：6 份完整对话记录（transcript），每份在历史的 50% 和 100% 处各截一段，共 14 段；跑了 2 遍，共 28 次摘要。
 - 请求和 `ContextManager._summarize()` 完全一样（同一提示词、每条最多 4000 字符、最多输出 4096 token）。
 - 标准答案用程序从历史里抽：改过的文件、跑过的测试文件 / 模块、失败输出里的异常类型、读过的文件；
-  另查摘要里出现、历史里从没出现过的 `.py` 路径（编造）。代码 `hh_agent_pro/evaluation/summary_fidelity.py`。
+  另查摘要里出现、历史里从没出现过的 `.py` 路径（编造）。代码 `jaxen/evaluation/summary_fidelity.py`。
 
 | 输出类型 | 次数 | 现在的代码怎么处理 |
 |---|---|---|

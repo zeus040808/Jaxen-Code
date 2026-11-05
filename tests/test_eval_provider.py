@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from hh_agent_pro.evaluation.schema_v2 import fixture_digest
-from hh_agent_pro.providers import EvalScriptModelClient, ModelRequest
+from jaxen.evaluation.schema_v2 import fixture_digest
+from jaxen.providers import EvalScriptModelClient, ModelRequest
 
 
 def test_eval_script_provider_requires_explicit_enable(monkeypatch):

@@ -3,13 +3,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from hh_agent_pro.agent import CodingAgent
-from hh_agent_pro.cli import PROVIDER_NAMES, _build_model_client, _effective_model, _switch_model, build_arg_parser
-from hh_agent_pro.providers import ModelRequest, OpenAIChatClient
-from hh_agent_pro.session_store import SessionStore
-from hh_agent_pro.streaming import CallbackEventSink
-from hh_agent_pro.terminal_ui import TerminalEventSink
-from hh_agent_pro.workspace import WorkspaceContext
+from jaxen.agent import CodingAgent
+from jaxen.cli import PROVIDER_NAMES, _build_model_client, _effective_model, _switch_model, build_arg_parser
+from jaxen.providers import ModelRequest, OpenAIChatClient
+from jaxen.session_store import SessionStore
+from jaxen.events import CallbackEventSink
+from jaxen.terminal_ui import TerminalEventSink
+from jaxen.workspace import WorkspaceContext
 
 
 class FakeHttpResponse:
@@ -26,12 +26,12 @@ class FakeHttpResponse:
 def _clear_provider_env(monkeypatch):
     # 别的测试经 build_agent() 把本机 .env 载入了 os.environ，这里先隔离。
     for name in (
-        "HH_DEEPSEEK_MODEL", "DEEPSEEK_MODEL", "HH_DEEPSEEK_API_KEY", "DEEPSEEK_API_KEY",
-        "HH_DEEPSEEK_API_BASE", "DEEPSEEK_API_BASE",
-        "HH_OPENAI_MODEL", "OPENAI_MODEL", "HH_OPENAI_API_KEY", "OPENAI_API_KEY",
-        "HH_OPENAI_API_BASE", "OPENAI_API_BASE",
-        "HH_ANTHROPIC_MODEL", "ANTHROPIC_MODEL", "HH_ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY",
-        "HH_ANTHROPIC_API_BASE", "ANTHROPIC_BASE_URL",
+        "JAXEN_DEEPSEEK_MODEL", "DEEPSEEK_MODEL", "JAXEN_DEEPSEEK_API_KEY", "DEEPSEEK_API_KEY",
+        "JAXEN_DEEPSEEK_API_BASE", "DEEPSEEK_API_BASE",
+        "JAXEN_OPENAI_MODEL", "OPENAI_MODEL", "JAXEN_OPENAI_API_KEY", "OPENAI_API_KEY",
+        "JAXEN_OPENAI_API_BASE", "OPENAI_API_BASE",
+        "JAXEN_ANTHROPIC_MODEL", "ANTHROPIC_MODEL", "JAXEN_ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY",
+        "JAXEN_ANTHROPIC_API_BASE", "ANTHROPIC_BASE_URL",
     ):
         monkeypatch.delenv(name, raising=False)
 
@@ -50,9 +50,9 @@ def test_providers_and_flash_default(monkeypatch):
 
 def test_deepseek_uses_its_own_environment_configuration(monkeypatch):
     _clear_provider_env(monkeypatch)
-    monkeypatch.setenv("HH_DEEPSEEK_API_KEY", "test-key")
-    monkeypatch.setenv("HH_DEEPSEEK_MODEL", "deepseek-v4-pro")
-    monkeypatch.setenv("HH_DEEPSEEK_API_BASE", "https://api.deepseek.example")
+    monkeypatch.setenv("JAXEN_DEEPSEEK_API_KEY", "test-key")
+    monkeypatch.setenv("JAXEN_DEEPSEEK_MODEL", "deepseek-v4-pro")
+    monkeypatch.setenv("JAXEN_DEEPSEEK_API_BASE", "https://api.deepseek.example")
 
     client = _build_model_client(build_arg_parser().parse_args(["--provider", "deepseek"]))
 
@@ -65,7 +65,7 @@ def test_deepseek_uses_its_own_environment_configuration(monkeypatch):
 
 def test_openai_provider_targets_any_compatible_endpoint(monkeypatch):
     _clear_provider_env(monkeypatch)
-    monkeypatch.setenv("HH_OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("JAXEN_OPENAI_API_KEY", "test-key")
     args = build_arg_parser().parse_args([
         "--provider", "openai", "--model", "qwen-plus",
         "--base-url", "https://dashscope.example/compatible-mode", "--context-window", "131072",
@@ -80,9 +80,9 @@ def test_openai_provider_targets_any_compatible_endpoint(monkeypatch):
 
 def test_openai_provider_requires_model_and_base_url(monkeypatch):
     _clear_provider_env(monkeypatch)
-    monkeypatch.setenv("HH_OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("JAXEN_OPENAI_API_KEY", "test-key")
 
-    with pytest.raises(RuntimeError, match="base-url|HH_OPENAI_API_BASE"):
+    with pytest.raises(RuntimeError, match="base-url|JAXEN_OPENAI_API_BASE"):
         _build_model_client(build_arg_parser().parse_args(["--provider", "openai", "--model", "m"]))
 
 
@@ -114,7 +114,7 @@ def test_runtime_model_switch_preserves_agent_and_uses_requested_model(monkeypat
         captured.update(vars(switch_args))
         return replacement
 
-    monkeypatch.setattr("hh_agent_pro.cli._build_model_client", fake_build)
+    monkeypatch.setattr("jaxen.cli._build_model_client", fake_build)
     message = _switch_model(agent, args, "deepseek", "deepseek-v4-pro")
 
     assert agent.model_client is replacement
@@ -133,7 +133,7 @@ def test_stream_consumes_sse_and_emits_safe_status(monkeypatch):
         "data: [DONE]\n",
     ]
     monkeypatch.setattr(
-        "hh_agent_pro.providers.openai_chat.urllib.request.urlopen",
+        "jaxen.providers.openai_chat.urllib.request.urlopen",
         lambda request, timeout: FakeHttpResponse(chunks),
     )
     client = OpenAIChatClient("deepseek-flash", "https://api.deepseek.com", "test-key", 0.2, 5, label="DeepSeek")
@@ -211,7 +211,7 @@ def test_agent_loop_streams_reasoning_tool_and_final_answer(tmp_path):
             "<final>README contains hello.</final>",
         ]),
         workspace=WorkspaceContext.build(tmp_path),
-        session_store=SessionStore(tmp_path / ".hh" / "sessions"),
+        session_store=SessionStore(tmp_path / ".jaxen" / "sessions"),
         approval_policy="auto",
         event_sink=CallbackEventSink(events.append),
     )
@@ -229,7 +229,7 @@ def test_agent_loop_streams_needs_user_input(tmp_path):
     agent = CodingAgent(
         model_client=StreamingScriptedModel(["<needs_user_input>请选择：\n1. 修改现有文件\n2. 创建新文件</needs_user_input>"]),
         workspace=WorkspaceContext.build(tmp_path),
-        session_store=SessionStore(tmp_path / ".hh" / "sessions"),
+        session_store=SessionStore(tmp_path / ".jaxen" / "sessions"),
         approval_policy="auto",
         event_sink=CallbackEventSink(events.append),
     )
@@ -241,13 +241,13 @@ def test_agent_loop_streams_needs_user_input(tmp_path):
 
 
 def test_anthropic_provider_builds_messages_client(monkeypatch):
-    from hh_agent_pro.cli import _build_model_client
-    from hh_agent_pro.providers import AnthropicMessagesClient
+    from jaxen.cli import _build_model_client
+    from jaxen.providers import AnthropicMessagesClient
 
     _clear_provider_env(monkeypatch)
-    monkeypatch.setenv("HH_ANTHROPIC_API_KEY", "k")
-    monkeypatch.setenv("HH_ANTHROPIC_API_BASE", "http://gw.local/anthropic")
-    monkeypatch.setenv("HH_ANTHROPIC_MODEL", "Claude-Opus-4.8-joybuilder")
+    monkeypatch.setenv("JAXEN_ANTHROPIC_API_KEY", "k")
+    monkeypatch.setenv("JAXEN_ANTHROPIC_API_BASE", "http://gw.local/anthropic")
+    monkeypatch.setenv("JAXEN_ANTHROPIC_MODEL", "Claude-Opus-4.8-joybuilder")
     client = _build_model_client(build_arg_parser().parse_args(["--provider", "anthropic"]))
     assert isinstance(client, AnthropicMessagesClient)
     assert client.model == "Claude-Opus-4.8-joybuilder" and client.base_url == "http://gw.local/anthropic"

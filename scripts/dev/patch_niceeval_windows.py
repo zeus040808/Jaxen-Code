@@ -31,7 +31,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-MARKER = "HH patch: 目录 fsync"
+MARKER = "Jaxen patch: 目录 fsync"
 DEGRADE = ".pipe(effect_1.Effect.catchAll(() => effect_1.Effect.void))"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -119,7 +119,7 @@ def patch_one(package_root, target, apply_changes):
     updated = source[:start] + comment + "    " + patched + source[end:]
 
     if apply_changes:
-        backup = path.with_suffix(path.suffix + ".hh-orig")
+        backup = path.with_suffix(path.suffix + ".jaxen-orig")
         if not backup.exists():
             backup.write_text(source, encoding="utf-8", newline="")
         path.write_text(updated, encoding="utf-8", newline="")

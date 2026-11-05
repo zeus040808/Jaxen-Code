@@ -2,10 +2,10 @@ import io
 import json
 import time
 
-from hh_agent_pro.jsonl_protocol import process_request
-from hh_agent_pro.agent import CodingAgent
-from hh_agent_pro.session_store import SessionStore
-from hh_agent_pro.workspace import WorkspaceContext
+from jaxen.jsonl_protocol import process_request
+from jaxen.agent import CodingAgent
+from jaxen.session_store import SessionStore
+from jaxen.workspace import WorkspaceContext
 
 
 class ScriptedModel:
@@ -47,7 +47,7 @@ def parse_lines(stream):
 
 def make_factory(tmp_path, models, *, approval="never", timeout_ms=180000, secret_names=()):
     models = list(models)
-    store = SessionStore(tmp_path / ".hh" / "sessions")
+    store = SessionStore(tmp_path / ".jaxen" / "sessions")
 
     def factory(protocol_request, sink):
         workspace = WorkspaceContext.build(str(tmp_path), repo_root_override=tmp_path)
@@ -230,14 +230,14 @@ def test_jsonl_rejected_approval_is_not_tool_failure_or_mutation(tmp_path):
 
 
 def test_jsonl_redacts_secret_and_enforces_episode_timeout(tmp_path, monkeypatch):
-    monkeypatch.setenv("HH_JSONL_TEST_SECRET", "TOP_SECRET_VALUE")
+    monkeypatch.setenv("JAXEN_JSONL_TEST_SECRET", "TOP_SECRET_VALUE")
     secret_stream = io.StringIO()
     secret_turn = process_request(
         request("req_secret", "answer"),
         make_factory(
             tmp_path,
             [ScriptedModel(["<final>TOP_SECRET_VALUE</final>"])],
-            secret_names=("HH_JSONL_TEST_SECRET",),
+            secret_names=("JAXEN_JSONL_TEST_SECRET",),
         ),
         secret_stream,
     )

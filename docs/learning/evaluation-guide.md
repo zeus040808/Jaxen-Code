@@ -1,4 +1,4 @@
-# HH Agent 可靠性测评指南
+# Jaxen 可靠性测评指南
 
 这份文档面向第一次接触 Agent 测评的开发者。目标不是只记住几个百分比，而是能够回答下面四个问题：
 
@@ -39,23 +39,23 @@
 - Agent Runtime 合同是否稳定；
 - 整个产品端到端是否可靠。
 
-HH Agent 当前刻意把**确定性 Runtime 测评**和**真实模型测评**分开，这是正确的设计。
+Jaxen 当前刻意把**确定性 Runtime 测评**和**真实模型测评**分开，这是正确的设计。
 
 ## 2. 当前评测的四层结构
 
 | 层级 | 使用什么 | 主要回答什么 | 当前入口 |
 |---|---|---|---|
 | 单元/集成测试 | Pytest | 单个模块和模块契约是否正确 | `python -m pytest -q` |
-| 确定性 Harness | `FakeModelClient` + 固定 Tool Call | Agent Loop、工具、预算、落盘和验证器是否稳定 | `python -m scripts.run_hh_benchmarks` |
+| 确定性 Harness | `FakeModelClient` + 固定 Tool Call | Agent Loop、工具、预算、落盘和验证器是否稳定 | `python scripts/eval/run_fixed_benchmark.py` |
 | 专项消融实验 | 固定输入，开关某个模块 | Context、Memory、Recovery 是否真正带来收益 | 同上 |
-| 真实 Provider | DeepSeek 等真实模型 | 模型能否遵循 HH 工具协议并完成真实文件修改 | `python -m scripts.run_real_provider_benchmark` |
+| 真实 Provider | DeepSeek 等真实模型 | 模型能否遵循 Jaxen 工具协议并完成真实文件修改 | `python -m scripts.run_real_provider_benchmark` |
 
 完整数据链路如下：
 
 ```mermaid
 flowchart LR
     A["评估集 JSON"] --> B["复制 fixture 到临时工作区"]
-    B --> C["构建 HH Agent"]
+    B --> C["构建 Jaxen"]
     C --> D["agent.ask(prompt)"]
     D --> E["模型返回 Tool Call 或 Final"]
     E --> F["工具执行并写回结果"]
@@ -107,7 +107,7 @@ flowchart LR
 
 ### 3.2 为什么必须有独立 verifier
 
-模型说“已经完成”不等于真的完成。HH Agent 使用独立进程执行 verifier，例如：
+模型说“已经完成”不等于真的完成。Jaxen 使用独立进程执行 verifier，例如：
 
 ```powershell
 python -c "from pathlib import Path; assert 'beta-provider' in Path('sample.txt').read_text().splitlines()"
@@ -117,7 +117,7 @@ python -c "from pathlib import Path; assert 'beta-provider' in Path('sample.txt'
 
 ## 4. 当前严格成功条件
 
-在 `hh_agent_pro/evaluation/evaluator.py` 中，一条 Harness 任务只有同时满足以下条件才算通过：
+在 `jaxen/evaluation/evaluator.py` 中，一条 Harness 任务只有同时满足以下条件才算通过：
 
 ```text
 passed =
@@ -168,7 +168,7 @@ passed =
 
 ### 5.2 步骤效率
 
-HH Agent 记录两种不同的“步数”：
+Jaxen 记录两种不同的“步数”：
 
 - `attempts`：调用模型的轮数；
 - `tool_steps`：真正进入执行阶段的工具调用次数。
@@ -213,7 +213,7 @@ attempt 3: 模型返回 final          -> tool_steps 仍为 2
 - 工具结果是否正确写回下一轮 Prompt？
 - 重复调用、超时和部分成功是否被正确识别？
 
-HH Agent 的 `trace.jsonl` 会记录 `tool_executed` 事件，其中包含：
+Jaxen 的 `trace.jsonl` 会记录 `tool_executed` 事件，其中包含：
 
 - 工具名和参数；
 - 截断后的执行结果；
@@ -229,7 +229,7 @@ HH Agent 的 `trace.jsonl` 会记录 `tool_executed` 事件，其中包含：
 - 缺少参数的 patch；
 - 非唯一 old text；
 - 超范围 timeout；
-- 空 delegate task；
+- 空 investigate task；
 - 重复相同调用；
 - 工具失败后继续完成任务。
 
@@ -306,7 +306,7 @@ Recovery Ablation 还专门构造了 10 类恢复状态：
 | `patch_nonunique` | 拒绝不唯一替换 |
 | `patch_missing_new_text` | 拒绝缺少字段的参数 |
 | `timeout_out_of_range` | 拒绝非法超时参数 |
-| `empty_delegate_task` | 拒绝空委派任务 |
+| `empty_investigate_task` | 拒绝空委派任务 |
 
 安全场景不是看返回字符串里有没有“拒绝”，而是对比结构化元数据：
 
@@ -402,7 +402,7 @@ compression_ratio =
 每次 `ask()` 会生成一个独立 run 目录：
 
 ```text
-.hh/runs/<run_id>/
+.jaxen/runs/<run_id>/
   run_state.json
   trace.jsonl
   report.json
@@ -431,19 +431,19 @@ compression_ratio =
 ### 7.1 代码入口
 
 - 任务加载、隔离执行、verifier 和严格通过规则：
-  `hh_agent_pro/evaluation/evaluator.py`
+  `jaxen/evaluation/evaluator.py`
 - Context、Memory、Recovery、Security 指标：
-  `hh_agent_pro/evaluation/metrics.py`
+  `jaxen/evaluation/deterministic_suites.py`
 - 离线总入口：
   `scripts/eval/run_fixed_benchmark.py`
 - 真实 Provider 入口：
   `scripts/run_real_provider_benchmark.py（2026-10-30 已删除）`
 - Agent 步数和停止状态：
-  `hh_agent_pro/run_state.py`
+  `jaxen/run_state.py`
 - Trace、RunState、Report 落盘：
-  `hh_agent_pro/run_store.py`
+  `jaxen/run_store.py`
 - 主循环中的事件记录：
-  `hh_agent_pro/agent_loop.py`
+  `jaxen/agent_loop.py`
 
 ### 7.2 原始结果
 
@@ -509,7 +509,7 @@ compression_ratio =
 - 是否运行必要测试；
 - 最终回答是否与实际修改一致；
 - 是否正常停止；
-- `.hh/runs/<run_id>/` 是否留下完整证据。
+- `.jaxen/runs/<run_id>/` 是否留下完整证据。
 
 ### 8.4 执行后怎样判定
 
@@ -562,7 +562,7 @@ compression_ratio =
 
 ```powershell
 python -m pytest -q
-python -m scripts.run_hh_benchmarks --quick
+python scripts/eval/run_fixed_benchmark.py --quick
 ```
 
 `--quick` 只把专项实验重复一次，适合开发中快速发现明显回归。
@@ -571,7 +571,7 @@ python -m scripts.run_hh_benchmarks --quick
 
 ```powershell
 python -m pytest -q
-python -m scripts.run_hh_benchmarks
+python scripts/eval/run_fixed_benchmark.py
 ```
 
 它会重新生成确定性 Harness、Context、Memory、Recovery、Security artifact 和核心报告。

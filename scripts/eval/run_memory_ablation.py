@@ -1,4 +1,4 @@
-"""生成 HH Agent Pro memory v1/v2 确定性能力对照。"""
+"""生成 Jaxen Code memory v1/v2 确定性能力对照。"""
 
 import argparse
 import json
@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from hh_agent_pro.evaluation.memory_v2 import write_memory_v2_comparison
+from jaxen.evaluation.memory_v2 import write_memory_v2_comparison
 
 
 def main():

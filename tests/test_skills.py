@@ -2,10 +2,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from hh_agent_pro.agent import CodingAgent
-from hh_agent_pro.session_store import SessionStore
-from hh_agent_pro.skills import SkillLearner, SkillStore, SkillValidationError
-from hh_agent_pro.workspace import WorkspaceContext
+from jaxen.agent import CodingAgent
+from jaxen.session_store import SessionStore
+from jaxen.skills import SkillLearner, SkillStore, SkillValidationError
+from jaxen.workspace import WorkspaceContext
 
 
 class FinalModel:
@@ -21,13 +21,13 @@ def make_agent(root):
     return CodingAgent(
         model_client=FinalModel(),
         workspace=WorkspaceContext.build(root),
-        session_store=SessionStore(root / ".hh" / "sessions"),
+        session_store=SessionStore(root / ".jaxen" / "sessions"),
         approval_policy="auto",
     )
 
 
 def test_skill_store_crud_and_security(tmp_path):
-    store = SkillStore(tmp_path / ".hh" / "skills")
+    store = SkillStore(tmp_path / ".jaxen" / "skills")
     store.create("release-check", "Verify a release", "# Release\n\nMARKER_BODY\n")
 
     assert [skill.name for skill in store.list()] == ["release-check"]
@@ -45,7 +45,7 @@ def test_skill_store_crud_and_security(tmp_path):
 
 
 def test_prompt_injects_only_skill_index_and_skill_view_loads_body(tmp_path):
-    store = SkillStore(tmp_path / ".hh" / "skills")
+    store = SkillStore(tmp_path / ".jaxen" / "skills")
     store.create("release-check", "Verify a release", "# Release\n\nPRIVATE_PROCEDURE_MARKER\n")
     agent = make_agent(tmp_path)
 
@@ -59,7 +59,7 @@ def test_prompt_injects_only_skill_index_and_skill_view_loads_body(tmp_path):
 
 
 def test_auto_learner_requires_verified_complex_edit_and_deduplicates(tmp_path):
-    store = SkillStore(tmp_path / ".hh" / "skills")
+    store = SkillStore(tmp_path / ".jaxen" / "skills")
     learner = SkillLearner(store, minimum_tool_steps=5)
     run = SimpleNamespace(status="completed", tool_steps=5)
     actions = [

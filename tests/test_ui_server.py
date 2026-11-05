@@ -1,4 +1,4 @@
-"""UI 服务（hh_agent_ui）：只通过 CLI 的 JSONL 协议驱动 agent，自己不碰 agent 内部。
+"""UI 服务（jaxen.ui）：只通过 CLI 的 JSONL 协议驱动 agent，自己不碰 agent 内部。
 
 用假的 agent 进程（读一行请求、吐几行事件）测流式转发，不调用真实模型。
 """
@@ -11,13 +11,13 @@ from http.server import ThreadingHTTPServer
 
 import pytest
 
-from hh_agent_ui.server import Handler, build_command, request_line
-from hh_agent_pro.jsonl_protocol import validate_request
+from jaxen.ui.server import Handler, build_command, request_line
+from jaxen.jsonl_protocol import validate_request
 
 
 def test_build_command_uses_cli_jsonl_mode():
     command = build_command("/py", "/repo", "ask", "deepseek-v4-pro")
-    assert command == ["/py", "-m", "hh_agent_pro", "--jsonl", "--cwd", "/repo", "--approval", "ask",
+    assert command == ["/py", "-m", "jaxen", "--jsonl", "--cwd", "/repo", "--approval", "ask",
                        "--model", "deepseek-v4-pro"]
     with pytest.raises(ValueError):
         build_command("/py", "/repo", "yolo")
@@ -38,8 +38,8 @@ def server(tmp_path):
         subprocess.run(["git", *args], cwd=repo, check=True)
     (repo / "a.py").write_text("x = 2\n", encoding="utf-8")
     (repo / "new.py").write_text("", encoding="utf-8")
-    (repo / ".hh").mkdir()
-    (repo / ".hh" / "state.json").write_text("{}", encoding="utf-8")
+    (repo / ".jaxen").mkdir()
+    (repo / ".jaxen" / "state.json").write_text("{}", encoding="utf-8")
 
     # 假 agent：忽略命令行参数，读一行请求，按 JSONL 协议吐两个事件和一个 turn
     fake = tmp_path / "fake_python"
@@ -66,7 +66,7 @@ def server(tmp_path):
 def test_diff_lists_changes_but_hides_agent_state_dir(server):
     data = json.load(urllib.request.urlopen(server + "/api/diff"))
     assert "+x = 2" in data["diff"]
-    assert data["untracked"] == ["new.py"]  # .hh/ 是 agent 自己的目录，不算用户改动
+    assert data["untracked"] == ["new.py"]  # .jaxen/ 是 agent 自己的目录，不算用户改动
 
 
 def test_turn_streams_agent_events_line_by_line(server):
@@ -87,7 +87,7 @@ def test_turn_rejects_unknown_approval_mode(server):
 
 
 def test_serves_built_app_and_blocks_path_traversal(server, tmp_path, monkeypatch):
-    import hh_agent_ui.server as ui
+    import jaxen.ui.server as ui
 
     dist = tmp_path / "dist"
     (dist / "assets").mkdir(parents=True)
@@ -105,7 +105,7 @@ def test_serves_built_app_and_blocks_path_traversal(server, tmp_path, monkeypatc
 
 
 def test_list_dirs_shows_subfolders_only(tmp_path):
-    from hh_agent_ui.server import list_dirs
+    from jaxen.ui.server import list_dirs
 
     (tmp_path / "proj" / ".git").mkdir(parents=True)
     (tmp_path / "notes").mkdir()
@@ -121,10 +121,10 @@ def test_list_dirs_shows_subfolders_only(tmp_path):
 
 def test_list_files_respects_gitignore_and_query(server):
     data = json.load(urllib.request.urlopen(server + "/api/files?q=PY"))
-    assert data["files"] == ["a.py", "new.py"]  # .hh/ 不出现；查询不区分大小写
+    assert data["files"] == ["a.py", "new.py"]  # .jaxen/ 不出现；查询不区分大小写
 
 
-def test_upload_saves_into_hh_uploads_without_path_escape(server, tmp_path):
+def test_upload_saves_into_jaxen_uploads_without_path_escape(server, tmp_path):
     import base64
 
     def upload(name, data=b"hello"):
@@ -132,8 +132,8 @@ def test_upload_saves_into_hh_uploads_without_path_escape(server, tmp_path):
         request = urllib.request.Request(server + "/api/upload", data=body, headers={"Content-Type": "application/json"})
         return json.load(urllib.request.urlopen(request))["path"]
 
-    assert upload("spec.md") == ".hh/uploads/spec.md"
-    assert upload("spec.md") == ".hh/uploads/spec-1.md"  # 同名不覆盖
-    assert upload("../../evil.sh") == ".hh/uploads/evil.sh"  # 只取文件名，不能写到工作区外
-    assert (tmp_path / "repo" / ".hh" / "uploads" / "evil.sh").read_bytes() == b"hello"
+    assert upload("spec.md") == ".jaxen/uploads/spec.md"
+    assert upload("spec.md") == ".jaxen/uploads/spec-1.md"  # 同名不覆盖
+    assert upload("../../evil.sh") == ".jaxen/uploads/evil.sh"  # 只取文件名，不能写到工作区外
+    assert (tmp_path / "repo" / ".jaxen" / "uploads" / "evil.sh").read_bytes() == b"hello"
     assert not (tmp_path / "evil.sh").exists()
